@@ -45,7 +45,7 @@ jobs:
         run: |
           set -eo pipefail
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \

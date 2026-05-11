@@ -11,7 +11,7 @@ const typeConfig = {
   follow: { icon: UserPlus, color: 'text-brand-secondary', fill: '', text: 'followed you' },
 };
 
-export default function NotificationsTab({ user, notifications, users, onProfileClick }) {
+export default function NotificationsTab({ notifications, users, onProfileClick }) {
   const [permission, setPermission] = useState(window.Notification?.permission || 'default');
 
   const requestPush = async () => {

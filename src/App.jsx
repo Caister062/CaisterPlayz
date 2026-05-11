@@ -20,6 +20,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('home');
   const [homeSubTab, setHomeSubTab] = useState('foryou');
+  const [exploreSearchQuery, setExploreSearchQuery] = useState('');
   const [viewingProfileId, setViewingProfileId] = useState(null);
   const [prevTab, setPrevTab] = useState(null);
   const mainRef = useRef(null);
@@ -55,6 +56,7 @@ export default function App() {
     if (tab === activeTab && !viewingProfileId) {
       // Re-tapping the same tab scrolls to top
       scrollToTop();
+      if (tab === 'explore') setExploreSearchQuery('');
       return;
     }
     setActiveTab(tab);
@@ -158,6 +160,8 @@ export default function App() {
               users={allUsers}
               followingIds={followingIds}
               onProfileClick={handleProfileClick}
+              searchQuery={exploreSearchQuery}
+              setSearchQuery={setExploreSearchQuery}
             />
           )}
 

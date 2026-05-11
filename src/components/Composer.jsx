@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Image, X, Loader2, Music, Play, Square, Check } from 'lucide-react';
+import { Image, X, Loader2, Music, Play, Square, Check, Gamepad2 } from 'lucide-react';
 import { Avatar } from './Shared';
 import { compressImage } from '../utils';
 import { createPost } from '../hooks';
 import { MUSIC_TRACKS, previewTrack, stopTrack } from '../musicLibrary';
+import { playPostSound } from '../sounds';
 
 export default function Composer({ currentUserId, profile }) {
   const [text, setText] = useState('');
@@ -14,6 +15,7 @@ export default function Composer({ currentUserId, profile }) {
   const [showMusicPicker, setShowMusicPicker] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [previewingId, setPreviewingId] = useState(null);
+  const [selectedTag, setSelectedTag] = useState('');
   const fileRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -36,6 +38,30 @@ export default function Composer({ currentUserId, profile }) {
   const handleImageSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.type.startsWith('video/')) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Video must be less than 10MB.');
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
+      setCompressing(true);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target.result;
+        setImagePreview(base64);
+        setCompressedImage(base64);
+        setCompressing(false);
+      };
+      reader.onerror = () => {
+        alert('Failed to read video file.');
+        setCompressing(false);
+      };
+      reader.readAsDataURL(file);
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+
     setCompressing(true);
     try {
       const base64 = await compressImage(file, 800, 0.75);
@@ -77,12 +103,13 @@ export default function Composer({ currentUserId, profile }) {
   };
 
   const handlePost = async () => {
-    if ((!text.trim() && !compressedImage) || posting) return;
+    const finalContent = selectedTag ? `${selectedTag} ${text.trim()}` : text.trim();
+    if ((!finalContent && !compressedImage) || posting) return;
     setPosting(true);
     try {
       await createPost(
         currentUserId,
-        text.trim(),
+        finalContent,
         compressedImage,
         selectedTrack?.id || '',
         selectedTrack?.name || ''
@@ -91,6 +118,8 @@ export default function Composer({ currentUserId, profile }) {
       setImagePreview('');
       setCompressedImage('');
       setSelectedTrack(null);
+      setSelectedTag('');
+      playPostSound();
       window.dispatchEvent(new Event('refreshPosts'));
     } catch (err) {
       console.error('Post failed:', err);
@@ -118,13 +147,22 @@ export default function Composer({ currentUserId, profile }) {
             className="w-full bg-transparent text-dark-text text-lg placeholder-dark-muted resize-none focus:outline-none py-2 overflow-hidden"
           />
 
-          {/* Image Preview */}
+          {/* Image/Video Preview */}
           {imagePreview && (
             <div className="relative mt-2 mb-3 rounded-2xl overflow-hidden border border-dark-border animate-fade-slide">
-              <img src={imagePreview} alt="Preview" className="w-full max-h-[300px] object-cover" />
+              {imagePreview.startsWith('data:video/') ? (
+                <>
+                  <video src={imagePreview} controls className="w-full max-h-[300px] bg-black" />
+                  <p className="text-xs text-brand-warning p-2 bg-brand-warning/10 border-t border-brand-warning/20">
+                    By uploading, you agree that this video is appropriate. No AI content, nudes, or deepfakes allowed.
+                  </p>
+                </>
+              ) : (
+                <img src={imagePreview} alt="Preview" className="w-full max-h-[300px] object-cover" />
+              )}
               <button
                 onClick={removeImage}
-                className="absolute top-2 right-2 w-8 h-8 bg-dark-bg/70 backdrop-blur rounded-full flex items-center justify-center hover:bg-dark-bg/90 transition-colors"
+                className="absolute top-2 right-2 w-8 h-8 bg-dark-bg/70 backdrop-blur rounded-full flex items-center justify-center hover:bg-dark-bg/90 transition-colors z-10"
               >
                 <X className="w-4 h-4 text-white" />
               </button>
@@ -151,7 +189,7 @@ export default function Composer({ currentUserId, profile }) {
           {compressing && (
             <div className="flex items-center gap-2 text-brand-primary text-sm mb-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Compressing image...
+              Processing media...
             </div>
           )}
 
@@ -161,7 +199,7 @@ export default function Composer({ currentUserId, profile }) {
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 onChange={handleImageSelect}
                 className="hidden"
               />
@@ -184,6 +222,24 @@ export default function Composer({ currentUserId, profile }) {
                   <Music className="w-5 h-5" />
                 </button>
               )}
+            </div>
+
+            {/* Game Tag Selector */}
+            <div className="flex gap-2 overflow-x-auto flex-1 mx-2" style={{ scrollbarWidth: 'none' }}>
+              {['#Fortnite', '#RobloxGhosts', '#LFG'].map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
+                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                    selectedTag === tag 
+                      ? 'bg-brand-primary text-black shadow-[0_0_8px_rgba(0,240,255,0.6)]' 
+                      : 'bg-dark-surface text-dark-muted border border-dark-border hover:text-brand-primary'
+                  }`}
+                >
+                  <Gamepad2 className="w-3 h-3" />
+                  {tag.replace('#', '')}
+                </button>
+              ))}
             </div>
 
             <div className="flex items-center gap-3">
@@ -212,8 +268,8 @@ export default function Composer({ currentUserId, profile }) {
 
               <button
                 onClick={handlePost}
-                disabled={(!text.trim() && !compressedImage) || posting || compressing}
-                className="px-5 py-2 bg-brand-primary text-white font-bold rounded-full text-sm disabled:opacity-40 hover:bg-brand-primary/90 transition-all active:scale-95"
+                disabled={(!text.trim() && !compressedImage && !selectedTag) || posting || compressing}
+                className="px-5 py-2 bg-brand-primary text-black font-bold rounded-full text-sm disabled:opacity-40 hover:bg-brand-primary/90 transition-all active:scale-95 shadow-[0_0_10px_rgba(0,240,255,0.4)]"
               >
                 {posting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

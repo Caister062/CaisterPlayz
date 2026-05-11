@@ -5,8 +5,7 @@ import { Avatar, FollowButton } from './Shared';
 import { followUser, unfollowUser } from '../hooks';
 import { engagementScore } from '../utils';
 
-export default function ExploreTab({ posts, currentUserId, users, followingIds, onProfileClick }) {
-  const [searchQuery, setSearchQuery] = useState('');
+export default function ExploreTab({ posts, currentUserId, users, followingIds, onProfileClick, searchQuery, setSearchQuery }) {
   const [searchFocused, setSearchFocused] = useState(false);
 
   // Who to Follow: users NOT already followed and NOT self

@@ -6,8 +6,8 @@ import { followUser, unfollowUser, updateProfile } from '../hooks';
 import { compressAvatar, formatCount, formatTime } from '../utils';
 
 export default function ProfileTab({
-  viewingUserId, currentUserId, profile: currentProfile, users, posts,
-  followingIds, followerIds, allFollows, onProfileClick, onBack
+  viewingUserId, currentUserId, users, posts,
+  followingIds, allFollows, onProfileClick, onBack
 }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const isOwnProfile = viewingUserId === currentUserId;

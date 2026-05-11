@@ -61,7 +61,7 @@ export function useUserProfile(userId) {
     pb.collection('cplayz_users').getOne(userId).then(setProfile).catch(() => {});
     const interval = setInterval(() => {
       pb.collection('cplayz_users').getOne(userId).then(setProfile).catch(() => {});
-    }, 3000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [userId]);
 
@@ -89,7 +89,7 @@ export function usePosts() {
     fetchPosts();
     const interval = setInterval(() => {
       fetchPosts();
-    }, 3000);
+    }, 30000);
     
     window.addEventListener('refreshPosts', fetchPosts);
     
@@ -124,7 +124,7 @@ export function useComments(postId) {
     fetchComments();
     const interval = setInterval(() => {
       fetchComments();
-    }, 3000);
+    }, 30000);
     
     window.addEventListener('refreshComments', fetchComments);
     
@@ -187,7 +187,7 @@ export function useNotifications(userId) {
                     vibrate: [200, 100, 200]
                   });
                 });
-              } catch (e) {
+              } catch {
                 new Notification('CaisterPlayz', { body: text });
               }
             }).catch(() => {});
@@ -206,7 +206,7 @@ export function useNotifications(userId) {
     fetchNotifications();
 
     // Poll as fallback
-    const interval = setInterval(fetchNotifications, 3000);
+    const interval = setInterval(fetchNotifications, 30000);
 
     // Real-time subscription for instant notifications
     let unsubscribe = null;
@@ -250,7 +250,7 @@ export function useFollows(userId) {
     fetchFollows();
     const interval = setInterval(() => {
       fetchFollows();
-    }, 3000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [userId, fetchFollows]);
 
@@ -274,7 +274,7 @@ export function useAllUsers() {
     fetchUsers();
     const interval = setInterval(() => {
       fetchUsers();
-    }, 5000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchUsers]);
 
@@ -324,7 +324,7 @@ export function useAllFollows() {
     fetchAllFollows();
     const interval = setInterval(() => {
       fetchAllFollows();
-    }, 5000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchAllFollows]);
 
@@ -346,7 +346,7 @@ export async function createPost(userId, text, imageUrl = '', musicId = '', musi
     viewedBy: [],
     repostedBy: [],
     favoritedBy: [],
-  });
+  }, { fields: 'id' });
 }
 
 export async function deletePost(postId, userId) {
@@ -380,7 +380,7 @@ export async function toggleLike(postId, userId, isLiked, postOwnerId) {
     }
   }
   likedBy = [...new Set(likedBy)];
-  await pb.collection('cplayz_posts').update(postId, { likedBy });
+  await pb.collection('cplayz_posts').update(postId, { likedBy }, { fields: 'id' });
 }
 
 export async function toggleRepost(postId, userId, isReposted, postOwnerId) {
@@ -403,7 +403,7 @@ export async function toggleRepost(postId, userId, isReposted, postOwnerId) {
     }
   }
   repostedBy = [...new Set(repostedBy)];
-  await pb.collection('cplayz_posts').update(postId, { repostedBy });
+  await pb.collection('cplayz_posts').update(postId, { repostedBy }, { fields: 'id' });
 }
 
 export async function toggleBookmark(postId, userId, isBookmarked) {
@@ -417,7 +417,7 @@ export async function toggleBookmark(postId, userId, isBookmarked) {
     }
   }
   favoritedBy = [...new Set(favoritedBy)];
-  await pb.collection('cplayz_posts').update(postId, { favoritedBy });
+  await pb.collection('cplayz_posts').update(postId, { favoritedBy }, { fields: 'id' });
 }
 
 export async function addView(postId, userId) {
@@ -425,7 +425,7 @@ export async function addView(postId, userId) {
   const viewedBy = post.viewedBy || [];
   if (!viewedBy.includes(userId) && post.userId !== userId) {
     const updatedViewedBy = [...new Set([...viewedBy, userId])];
-    await pb.collection('cplayz_posts').update(postId, { viewedBy: updatedViewedBy });
+    await pb.collection('cplayz_posts').update(postId, { viewedBy: updatedViewedBy }, { fields: 'id' });
   }
 }
 

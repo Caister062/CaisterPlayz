@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Heart, MessageCircle, Share, Bookmark, Music, ChevronUp, ChevronDown, Volume2, VolumeX } from 'lucide-react';
-import { Avatar, AnimatedNumber } from './Shared';
+import { Avatar } from './Shared';
 import { toggleLike, toggleBookmark, addComment } from '../hooks';
 import { formatCount, formatTime } from '../utils';
 import { getTrackById, playTrack, stopTrack } from '../musicLibrary';
@@ -114,6 +114,18 @@ function ReelCard({ reel, isActive, currentUserId, users, muted, onToggleMute, o
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const lastTapRef = useRef(0);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isActive) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+    }
+  }, [isActive]);
 
   const author = users.find(u => u.id === reel.userId);
   const track = reel.musicId ? getTrackById(reel.musicId) : null;
@@ -130,7 +142,7 @@ function ReelCard({ reel, isActive, currentUserId, users, muted, onToggleMute, o
     setLikeCount(prev => newLiked ? prev + 1 : Math.max(0, prev - 1));
     try {
       await toggleLike(reel.id, currentUserId, liked, reel.userId);
-    } catch (err) {
+    } catch {
       setLiked(liked);
       setLikeCount((reel.likedBy || []).filter(id => id !== reel.userId).length);
     }
@@ -159,7 +171,7 @@ function ReelCard({ reel, isActive, currentUserId, users, muted, onToggleMute, o
   const handleShare = async () => {
     if (navigator.share) {
       try { await navigator.share({ title: 'CaisterPlayz Reel', url: window.location.origin }); }
-      catch {}
+      catch { /* ignore */ }
     }
   };
 
@@ -183,15 +195,26 @@ function ReelCard({ reel, isActive, currentUserId, users, muted, onToggleMute, o
       style={{ height: 'calc(100vh - 120px)', scrollSnapAlign: 'start' }}
       onClick={handleDoubleTap}
     >
-      {/* Background Image */}
+      {/* Background Media */}
       <div className="absolute inset-0 bg-dark-bg">
-        <img
-          src={reel.imageUrl}
-          alt="Reel"
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+        {reel.imageUrl?.startsWith('data:video/') ? (
+          <video
+            ref={videoRef}
+            src={reel.imageUrl}
+            className="w-full h-full object-cover"
+            loop
+            playsInline
+            muted={muted}
+          />
+        ) : (
+          <img
+            src={reel.imageUrl}
+            alt="Reel"
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
       </div>
 
       {/* Double-tap Heart */}

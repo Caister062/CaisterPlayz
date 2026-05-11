@@ -87,7 +87,7 @@ export function engagementScore(post) {
 }
 
 /* ─── Rich Text Parsing ─── */
-const URL_REGEX = /(https?:\/\/[^\s<]+[^\s<.,;:!?\])'">\-])/g;
+const URL_REGEX = /(https?:\/\/[^\s<]+[^\s<.,;:!?\])'">-]|#(?:Fortnite|RobloxGhosts|LFG)\b)/gi;
 
 export function parsePostText(text) {
   if (!text) return [];
@@ -100,8 +100,15 @@ export function parsePostText(text) {
     if (match.index > lastIndex) {
       parts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
     }
-    parts.push({ type: 'link', content: match[0] });
-    lastIndex = match.index + match[0].length;
+    
+    const token = match[0];
+    if (token.startsWith('#')) {
+      parts.push({ type: 'game-tag', content: token });
+    } else {
+      parts.push({ type: 'link', content: token });
+    }
+    
+    lastIndex = match.index + token.length;
   }
   
   if (lastIndex < text.length) {
@@ -109,4 +116,24 @@ export function parsePostText(text) {
   }
   
   return parts.length > 0 ? parts : [{ type: 'text', content: text }];
+}
+
+/* ─── Gamification ─── */
+export function getGamerBadge(userId) {
+  if (!userId) return null;
+  const badges = [
+    { text: 'Pro Ghost Hunter 👻', color: 'text-brand-success' },
+    { text: 'Victory Royale Elite 🏆', color: 'text-brand-primary' },
+    { text: 'Sweat 💧', color: 'text-brand-accent' },
+    { text: 'Phantom Menace 💀', color: 'text-brand-secondary' },
+    { text: 'Loot Goblin 💰', color: 'text-brand-warning' },
+    { text: 'Sniper God 🎯', color: 'text-red-500' }
+  ];
+  // Deterministic badge assignment based on userId string
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % badges.length;
+  return badges[index];
 }

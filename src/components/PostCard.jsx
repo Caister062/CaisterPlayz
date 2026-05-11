@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Heart, Repeat2, MessageCircle, Bookmark, Eye, Share, Trash2, Loader2 } from 'lucide-react';
 import { Avatar, AnimatedNumber, ImageLightbox, RichText } from './Shared';
-import { formatTime, parsePostText } from '../utils';
+import { formatTime, parsePostText, getGamerBadge } from '../utils';
 import { toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, useComments } from '../hooks';
+import { playLikeSound, playRepostSound } from '../sounds';
 
 export default function PostCard({ post, currentUserId, users, onProfileClick }) {
   const [showComments, setShowComments] = useState(false);
@@ -14,10 +15,8 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
-  const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
   const postRef = useRef(null);
   const viewedRef = useRef(false);
-  const lastTapRef = useRef(0);
   const commentInputRef = useRef(null);
   const { comments, refreshComments } = useComments(showComments ? post.id : null);
 
@@ -31,11 +30,12 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
     setLocalFavoritedBy(null);
   }, [post.likedBy, post.repostedBy, post.favoritedBy]);
 
-  const actualLikedBy = localLikedBy !== null ? localLikedBy : (post.likedBy || []);
-  const actualRepostedBy = localRepostedBy !== null ? localRepostedBy : (post.repostedBy || []);
-  const actualFavoritedBy = localFavoritedBy !== null ? localFavoritedBy : (post.favoritedBy || []);
+  const actualLikedBy = useMemo(() => localLikedBy !== null ? localLikedBy : (post.likedBy || []), [localLikedBy, post.likedBy]);
+  const actualRepostedBy = useMemo(() => localRepostedBy !== null ? localRepostedBy : (post.repostedBy || []), [localRepostedBy, post.repostedBy]);
+  const actualFavoritedBy = useMemo(() => localFavoritedBy !== null ? localFavoritedBy : (post.favoritedBy || []), [localFavoritedBy, post.favoritedBy]);
 
   const author = users.find(u => u.id === post.userId);
+  const gamerBadge = getGamerBadge(post.userId);
   const isLiked = actualLikedBy.includes(currentUserId);
   const isReposted = actualRepostedBy.includes(currentUserId);
   const isBookmarked = actualFavoritedBy.includes(currentUserId);
@@ -85,6 +85,9 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
     const newLikedBy = isLiked 
       ? actualLikedBy.filter(id => id !== currentUserId) 
       : [...actualLikedBy, currentUserId];
+    
+    if (!isLiked) playLikeSound();
+    
     setLocalLikedBy(newLikedBy);
 
     try {
@@ -95,22 +98,6 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
     }
   }, [isLiked, actualLikedBy, currentUserId, post.id, post.userId]);
 
-  // Double-tap to like
-  const handleContentTap = useCallback(() => {
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) {
-      // Double-tap detected
-      if (!isLiked) {
-        handleLike();
-      }
-      setShowDoubleTapHeart(true);
-      setTimeout(() => setShowDoubleTapHeart(false), 900);
-      lastTapRef.current = 0; // Reset to prevent triple-tap
-    } else {
-      lastTapRef.current = now;
-    }
-  }, [isLiked, handleLike]);
-
   const handleRepost = async () => {
     setRepostAnim(true);
     setTimeout(() => setRepostAnim(false), 400);
@@ -118,6 +105,9 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
     const newRepostedBy = isReposted 
       ? actualRepostedBy.filter(id => id !== currentUserId) 
       : [...actualRepostedBy, currentUserId];
+
+    if (!isReposted) playRepostSound();
+
     setLocalRepostedBy(newRepostedBy);
 
     try {
@@ -226,6 +216,11 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
                 >
                   {author.displayName}
                 </span>
+                {gamerBadge && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-dark-border bg-dark-bg ${gamerBadge.color}`}>
+                    {gamerBadge.text}
+                  </span>
+                )}
                 <span className="text-dark-muted text-sm truncate">
                   @{author.displayName?.toLowerCase().replace(/\s+/g, '')}
                 </span>
@@ -253,56 +248,40 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
             </div>
 
             {/* Text with rich links */}
-            <div onClick={handleContentTap} className="relative select-none">
+            <div className="relative">
               {post.text && (
                 <RichText
                   parts={textParts}
                   className="text-dark-text text-[15px] leading-relaxed whitespace-pre-wrap break-words mb-2"
                 />
               )}
-
-              {/* Double-tap heart overlay */}
-              {showDoubleTapHeart && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                  <Heart className="w-16 h-16 text-red-500 fill-red-500 animate-double-tap-heart drop-shadow-lg" />
-                </div>
-              )}
             </div>
 
-            {/* Image */}
+            {/* Image/Video */}
             {post.imageUrl && (
               <div
-                className="mt-2 mb-3 rounded-2xl overflow-hidden border border-dark-border cursor-pointer relative"
-                onClick={(e) => {
-                  // Double-tap detection for images too
-                  const now = Date.now();
-                  if (now - lastTapRef.current < 300) {
-                    if (!isLiked) handleLike();
-                    setShowDoubleTapHeart(true);
-                    setTimeout(() => setShowDoubleTapHeart(false), 900);
-                    lastTapRef.current = 0;
-                  } else {
-                    lastTapRef.current = now;
-                    // Single tap opens lightbox after a delay (to distinguish from double-tap)
-                    setTimeout(() => {
-                      if (lastTapRef.current === now) {
-                        setShowLightbox(true);
-                      }
-                    }, 310);
+                className={`mt-2 mb-3 rounded-2xl overflow-hidden border border-dark-border relative ${
+                  post.imageUrl.startsWith('data:video/') ? '' : 'cursor-pointer'
+                }`}
+                onClick={() => {
+                  if (!post.imageUrl.startsWith('data:video/')) {
+                    setShowLightbox(true);
                   }
                 }}
               >
-                <img
-                  src={post.imageUrl}
-                  alt="Post"
-                  className="w-full max-h-[500px] object-cover"
-                  loading="lazy"
-                />
-                {/* Double-tap heart on image */}
-                {showDoubleTapHeart && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <Heart className="w-20 h-20 text-red-500 fill-red-500 animate-double-tap-heart drop-shadow-2xl" />
-                  </div>
+                {post.imageUrl.startsWith('data:video/') ? (
+                  <video
+                    src={post.imageUrl}
+                    controls
+                    className="w-full max-h-[500px] bg-black"
+                  />
+                ) : (
+                  <img
+                    src={post.imageUrl}
+                    alt="Post"
+                    className="w-full max-h-[500px] object-cover"
+                    loading="lazy"
+                  />
                 )}
               </div>
             )}

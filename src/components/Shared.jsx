@@ -34,10 +34,11 @@ export function Avatar({ src, name, size = 'md', onClick }) {
   const textSizes = { sm: 'text-xs', md: 'text-sm', lg: 'text-xl', xl: 'text-2xl' };
 
   return (
-    <div
-      onClick={onClick}
-      className={`${sizes[size]} rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center cursor-pointer ring-2 ring-dark-border hover:ring-brand-primary transition-all duration-200`}
-    >
+    <div className="relative inline-block">
+      <div
+        onClick={onClick}
+        className={`${sizes[size]} rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center cursor-pointer ring-2 ring-dark-border hover:ring-brand-primary transition-all duration-200 shadow-[0_0_15px_rgba(0,240,255,0.2)]`}
+      >
       {src ? (
         <img src={src} alt={name || 'avatar'} className="w-full h-full object-cover" />
       ) : (
@@ -45,6 +46,10 @@ export function Avatar({ src, name, size = 'md', onClick }) {
           {(name || '?')[0].toUpperCase()}
         </span>
       )}
+      </div>
+      
+      {/* Online presence indicator */}
+      <div className="absolute bottom-0 right-0 w-3 h-3 bg-brand-success rounded-full border-2 border-dark-bg shadow-[0_0_8px_rgba(57,255,20,0.8)] animate-pulse-live" />
     </div>
   );
 }
@@ -230,6 +235,14 @@ export function RichText({ parts, className = '' }) {
             {part.content.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40)}
             {part.content.replace(/^https?:\/\/(www\.)?/, '').length > 40 ? '…' : ''}
           </a>
+        ) : part.type === 'game-tag' ? (
+          <span 
+            key={i} 
+            className="inline-flex items-center px-2 py-0.5 rounded border border-brand-primary/50 bg-brand-primary/10 text-brand-primary text-xs font-bold shadow-[0_0_8px_rgba(0,240,255,0.4)] cursor-pointer hover:bg-brand-primary/20 mx-0.5"
+            onClick={(e) => { e.stopPropagation(); /* Optional: handle tag click */ }}
+          >
+            {part.content}
+          </span>
         ) : (
           <span key={i}>{part.content}</span>
         )

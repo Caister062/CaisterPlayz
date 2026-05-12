@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# iOS signing credentials (NEVER commit these)
+ios-signing/
+*.p12
+*.mobileprovision
+*.cer
+*.pem

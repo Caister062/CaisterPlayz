@@ -89,9 +89,9 @@ jobs:
         working-directory: ios/App
         run: |
           set -eo pipefail
-          # Use workspace instead of project for Capacitor
+          # Use xcodeproj (Capacitor with SPM, no CocoaPods)
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \

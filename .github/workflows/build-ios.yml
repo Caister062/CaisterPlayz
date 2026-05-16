@@ -57,9 +57,9 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           # import certificate, key and provisioning profile from secrets
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-          echo -n "$BUILD_PRIVATE_KEY_BASE64" | base64 --decode -o $KEY_PATH
-          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          echo "$BUILD_CERTIFICATE_BASE64" | tr -d '\n\r ' | base64 --decode > $CERTIFICATE_PATH
+          echo "$BUILD_PRIVATE_KEY_BASE64" | tr -d '\n\r ' | base64 --decode > $KEY_PATH
+          echo "$BUILD_PROVISION_PROFILE_BASE64" | tr -d '\n\r ' | base64 --decode > $PP_PATH
 
           # convert certificate to PEM and package with key into a p12 (macOS native OpenSSL ensures compatibility)
           openssl x509 -in $CERTIFICATE_PATH -inform der -out $RUNNER_TEMP/build_certificate.pem

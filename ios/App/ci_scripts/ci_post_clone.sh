@@ -1,10 +1,16 @@
 #!/bin/sh
 
-# Install Node.js using Homebrew to ensure npm is available in the container
+# Install Node.js
 brew install node
 
-# Navigate up from ios/App/ci_scripts to the root of the repository
+# Navigate up to the root of the repository
 cd ../../../
 
-# Install the node modules and ignore peer dependency conflicts
+# 1. Install dependencies (You already have this)
 npm install --legacy-peer-deps
+
+# 2. Compile the raw web code into the production bundle
+npm run build
+
+# 3. Sync the compiled bundle and config files into the iOS native folder
+npx cap sync ios

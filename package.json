@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "emulators": "firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data",
     "build": "vite build",
     "build:ios": "vite build && npx cap sync ios",
     "cap:sync": "npx cap sync",
@@ -20,7 +19,6 @@
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
     "@tailwindcss/vite": "^4.2.4",
-    "firebase": "^12.12.1",
     "lucide-react": "^1.11.0",
     "pocketbase": "^0.26.8",
     "react": "^19.2.5",

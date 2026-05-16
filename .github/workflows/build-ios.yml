@@ -50,16 +50,14 @@ jobs:
           P12_PASSWORD: "temp_password"
         run: |
           # create variables
-          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.cer
+          CERTIFICATE_PATH=ios-signing/certificate.cer
           KEY_PATH=$RUNNER_TEMP/build_private.key
           P12_PATH=$RUNNER_TEMP/build_certificate.p12
-          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          PP_PATH=ios-signing/profile.mobileprovision
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-          # import certificate, key and provisioning profile from secrets
-          echo "$BUILD_CERTIFICATE_BASE64" | tr -d '\n\r ' | base64 --decode > $CERTIFICATE_PATH
+          # decode private key from secret
           echo "$BUILD_PRIVATE_KEY_BASE64" | tr -d '\n\r ' | base64 --decode > $KEY_PATH
-          echo "$BUILD_PROVISION_PROFILE_BASE64" | tr -d '\n\r ' | base64 --decode > $PP_PATH
 
           # convert certificate to PEM and package with key into a p12 (macOS native OpenSSL ensures compatibility)
           openssl x509 -in $CERTIFICATE_PATH -inform der -out $RUNNER_TEMP/build_certificate.pem

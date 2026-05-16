@@ -23,9 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# iOS signing credentials (NEVER commit these)
-ios-signing/
+# iOS signing credentials (Protect private keys, allow public certs/profiles)
+ios-signing/*.key
+ios-signing/*.p12
+*.key
 *.p12
-*.mobileprovision
-*.cer
-*.pem

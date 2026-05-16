@@ -6,5 +6,5 @@ brew install node
 # Navigate up from ios/App/ci_scripts to the root of the repository
 cd ../../../
 
-# Install the node modules
-npm install
+# Install the node modules and ignore peer dependency conflicts
+npm install --legacy-peer-deps

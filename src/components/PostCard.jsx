@@ -15,10 +15,13 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
+  
   const postRef = useRef(null);
   const viewedRef = useRef(false);
   const commentInputRef = useRef(null);
-  const { comments, refreshComments } = useComments(showComments ? post.id : null);
+  
+  // Safely fallback to an empty array if comments are still loading or undefined
+  const { comments = [], refreshComments } = useComments(showComments ? post.id : null);
 
   const [localLikedBy, setLocalLikedBy] = useState(null);
   const [localRepostedBy, setLocalRepostedBy] = useState(null);
@@ -39,9 +42,10 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   const isLiked = actualLikedBy.includes(currentUserId);
   const isReposted = actualRepostedBy.includes(currentUserId);
   const isBookmarked = actualFavoritedBy.includes(currentUserId);
-  const likeCount = actualLikedBy.filter(id => id !== post.userId).length;
-  const repostCount = actualRepostedBy.filter(id => id !== post.userId).length;
-  const viewCount = (post.viewedBy || []).filter(id => id !== post.userId).length;
+  
+  const likeCount = actualLikedBy.length;
+  const repostCount = actualRepostedBy.length;
+  const viewCount = (post.viewedBy || []).length;
 
   // Parse post text for rich links
   const textParts = parsePostText(post.text);
@@ -98,7 +102,7 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
     }
   }, [isLiked, actualLikedBy, currentUserId, post.id, post.userId]);
 
-  const handleRepost = async () => {
+  const handleRepost = useCallback(async () => {
     setRepostAnim(true);
     setTimeout(() => setRepostAnim(false), 400);
 
@@ -116,9 +120,9 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
       console.error(err);
       setLocalRepostedBy(null);
     }
-  };
+  }, [isReposted, actualRepostedBy, currentUserId, post.id, post.userId]);
 
-  const handleBookmark = async () => {
+  const handleBookmark = useCallback(async () => {
     setBookmarkAnim(true);
     setTimeout(() => setBookmarkAnim(false), 400);
 
@@ -133,7 +137,7 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
       console.error(err);
       setLocalFavoritedBy(null);
     }
-  };
+  }, [isBookmarked, actualFavoritedBy, currentUserId, post.id]);
 
   const handleComment = async (e) => {
     e.preventDefault();
@@ -143,8 +147,11 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
       await addComment(post.id, currentUserId, commentText.trim(), post.userId);
       setCommentText('');
       refreshComments();
-    } catch (err) { console.error(err); }
-    setSubmitting(false);
+    } catch (err) { 
+      console.error(err); 
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async (e) => {
@@ -185,8 +192,9 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   };
 
   const handleToggleComments = () => {
-    setShowComments(!showComments);
-    if (!showComments) {
+    const nextShowComments = !showComments;
+    setShowComments(nextShowComments);
+    if (nextShowComments) {
       setTimeout(() => commentInputRef.current?.focus(), 100);
     }
   };

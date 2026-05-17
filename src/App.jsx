@@ -31,7 +31,7 @@ export default function App() {
   // Comment counts per post
   const [commentCounts, setCommentCounts] = useState({});
   useEffect(() => {
-    if (posts.length === 0) return;
+    if (!posts || posts.length === 0) return;
     getCommentCounts(posts).then(setCommentCounts).catch(console.error);
   }, [posts]);
 
@@ -122,19 +122,21 @@ export default function App() {
   return (
     <div className="w-full min-h-screen bg-dark-bg flex justify-center">
       <div className="w-full max-w-lg flex flex-col min-h-screen relative border-x border-dark-border">
-        {/* ─── Top Header ─── */}
-        <header className="sticky top-0 z-40 bg-dark-bg/95 backdrop-blur-xl border-b border-dark-border h-[53px] flex flex-col justify-center">
-          <div className="flex items-center justify-between px-4">
-            <div className="flex items-center gap-2">
-              <Zap className="w-6 h-6 text-brand-primary" fill="currentColor" />
-              <span className="text-lg font-black text-dark-text tracking-tight">CaisterPlayz</span>
+        {/* ─── Top Header (Hidden on Reels Tab for a clean, immersive look) ─── */}
+        {activeTab !== 'reels' && (
+          <header className="sticky top-0 z-40 bg-dark-bg/95 backdrop-blur-xl border-b border-dark-border h-[53px] flex flex-col justify-center">
+            <div className="flex items-center justify-between px-4">
+              <div className="flex items-center gap-2">
+                <Zap className="w-6 h-6 text-brand-primary" fill="currentColor" />
+                <span className="text-lg font-black text-dark-text tracking-tight">CaisterPlayz</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-brand-success animate-pulse-live" />
+                <span className="text-xs font-semibold text-brand-success">Live</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-brand-success animate-pulse-live" />
-              <span className="text-xs font-semibold text-brand-success">Live</span>
-            </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* ─── Main Content ─── */}
         <main ref={mainRef} className="flex-1 pb-20">
@@ -204,9 +206,9 @@ export default function App() {
           <div className="flex items-center justify-around py-2">
             <NavItem icon={Home} active={activeTab === 'home'} onClick={() => handleTabChange('home')} />
             <NavItem icon={Search} active={activeTab === 'explore'} onClick={() => handleTabChange('explore')} />
-            <NavItem icon={Film} active={activeTab === 'reels'} onClick={() => handleTabChange('reels')} label="Reels" />
+            <NavItem icon={Film} active={activeTab === 'reels'} onClick={() => handleTabChange('reels')} />
             <NavItem icon={Bell} active={activeTab === 'notifications'} onClick={() => handleTabChange('notifications')} badge={unreadCount} />
-            <NavItem icon={User} active={activeTab === 'profile' && !viewingProfileId} onClick={() => handleTabChange('profile')} />
+            <NavItem icon={User} active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
           </div>
         </nav>
 
@@ -218,6 +220,9 @@ export default function App() {
 }
 
 function NavItem({ icon: Icon, active, onClick, badge }) {
+  // Safe fill strategy depending on whether icon allows path fills cleanly
+  const shouldFill = active && (Icon === Home || Icon === Bell || Icon === User);
+
   return (
     <button
       onClick={onClick}
@@ -225,7 +230,11 @@ function NavItem({ icon: Icon, active, onClick, badge }) {
         active ? 'text-brand-primary' : 'text-dark-muted hover:text-dark-text hover:bg-dark-hover'
       }`}
     >
-      <Icon className="w-6 h-6" strokeWidth={active ? 2.5 : 1.5} fill={active ? 'currentColor' : 'none'} />
+      <Icon 
+        className="w-6 h-6" 
+        strokeWidth={active ? 2.5 : 1.5} 
+        fill={shouldFill ? 'currentColor' : 'none'} 
+      />
       {badge > 0 && (
         <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center px-1 bg-brand-primary text-white text-[10px] font-bold rounded-full animate-pop">
           {badge > 99 ? '99+' : badge}

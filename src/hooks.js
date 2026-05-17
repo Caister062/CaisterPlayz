@@ -41,8 +41,9 @@ export function useAuth() {
     } catch (err) {
       console.error('Auth init error:', err);
       setError(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -58,10 +59,13 @@ export function useUserProfile(userId) {
 
   useEffect(() => {
     if (!userId) return;
-    pb.collection('cplayz_users').getOne(userId).then(setProfile).catch(() => {});
-    const interval = setInterval(() => {
+    
+    const fetchProfile = () => {
       pb.collection('cplayz_users').getOne(userId).then(setProfile).catch(() => {});
-    }, 30000);
+    };
+
+    fetchProfile();
+    const interval = setInterval(fetchProfile, 30000);
     return () => clearInterval(interval);
   }, [userId]);
 
@@ -81,15 +85,14 @@ export function usePosts() {
       setPosts(result.items);
     } catch (err) {
       console.error('Fetch posts error:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
     fetchPosts();
-    const interval = setInterval(() => {
-      fetchPosts();
-    }, 30000);
+    const interval = setInterval(fetchPosts, 30000);
     
     window.addEventListener('refreshPosts', fetchPosts);
     
@@ -120,11 +123,13 @@ export function useComments(postId) {
   }, [postId]);
 
   useEffect(() => {
-    if (!postId) { setComments([]); return; }
+    if (!postId) { 
+      setComments([]); 
+      return; 
+    }
+    
     fetchComments();
-    const interval = setInterval(() => {
-      fetchComments();
-    }, 30000);
+    const interval = setInterval(fetchComments, 30000);
     
     window.addEventListener('refreshComments', fetchComments);
     
@@ -158,7 +163,7 @@ export function useNotifications(userId) {
         const created = new Date((notif.created || '').replace(' ', 'T'));
         const ageSec = (now - created) / 1000;
         if (ageSec > 15) {
-          // Try to clean up from DB silently (may fail due to permissions)
+          // Clean up from DB silently
           pb.collection('cplayz_notifications').delete(notif.id).catch(() => {});
           return false;
         }
@@ -205,20 +210,20 @@ export function useNotifications(userId) {
     if (!userId) return;
     fetchNotifications();
 
-    // Poll as fallback
     const interval = setInterval(fetchNotifications, 30000);
+    let unsubscribeFn = null;
 
-    // Real-time subscription for instant notifications
-    let unsubscribe = null;
     pb.collection('cplayz_notifications').subscribe('*', (e) => {
       if (e.record?.recipientId === userId) {
         fetchNotifications();
       }
-    }).then(unsub => { unsubscribe = unsub; }).catch(() => {});
+    }).then(unsub => { 
+      unsubscribeFn = unsub; 
+    }).catch(console.error);
 
     return () => {
       clearInterval(interval);
-      if (unsubscribe) unsubscribe();
+      if (unsubscribeFn) unsubscribeFn();
     };
   }, [userId, fetchNotifications]);
 
@@ -248,9 +253,7 @@ export function useFollows(userId) {
   useEffect(() => {
     if (!userId) return;
     fetchFollows();
-    const interval = setInterval(() => {
-      fetchFollows();
-    }, 30000);
+    const interval = setInterval(fetchFollows, 30000);
     return () => clearInterval(interval);
   }, [userId, fetchFollows]);
 
@@ -272,9 +275,7 @@ export function useAllUsers() {
 
   useEffect(() => {
     fetchUsers();
-    const interval = setInterval(() => {
-      fetchUsers();
-    }, 30000);
+    const interval = setInterval(fetchUsers, 30000);
     return () => clearInterval(interval);
   }, [fetchUsers]);
 
@@ -284,24 +285,28 @@ export function useAllUsers() {
 /* ─── New User Join Alert Hook ─── */
 export function useNewUserAlert(users, currentUserId) {
   const [newUserAlert, setNewUserAlert] = useState(null);
-  const prevCountRef = useRef(0);
+  const prevUsersRef = useRef([]);
 
   useEffect(() => {
     if (!users || users.length === 0) return;
 
-    if (prevCountRef.current === 0) {
-      prevCountRef.current = users.length;
+    if (prevUsersRef.current.length === 0) {
+      prevUsersRef.current = users;
       return;
     }
 
-    if (users.length > prevCountRef.current) {
-      const newest = users[0];
+    if (users.length > prevUsersRef.current.length) {
+      // Find the user object present in current list but missing from history
+      const prevIds = new Set(prevUsersRef.current.map(u => u.id));
+      const newest = users.find(u => !prevIds.has(u.id));
+
       if (newest && newest.id !== currentUserId) {
         setNewUserAlert(newest);
-        setTimeout(() => setNewUserAlert(null), 15000);
+        const timer = setTimeout(() => setNewUserAlert(null), 15000);
+        return () => clearTimeout(timer);
       }
     }
-    prevCountRef.current = users.length;
+    prevUsersRef.current = users;
   }, [users, currentUserId]);
 
   return newUserAlert;
@@ -322,9 +327,7 @@ export function useAllFollows() {
 
   useEffect(() => {
     fetchAllFollows();
-    const interval = setInterval(() => {
-      fetchAllFollows();
-    }, 30000);
+    const interval = setInterval(fetchAllFollows, 30000);
     return () => clearInterval(interval);
   }, [fetchAllFollows]);
 
@@ -332,7 +335,7 @@ export function useAllFollows() {
 }
 
 /* ═══════════════════════════════════════════
-   Firestore-style Actions (PocketBase)
+    PocketBase Engine Write Actions
    ═══════════════════════════════════════════ */
 
 export async function createPost(userId, text, imageUrl = '', musicId = '', musicName = '') {
@@ -363,6 +366,7 @@ export async function deletePost(postId, userId) {
 export async function toggleLike(postId, userId, isLiked, postOwnerId) {
   const post = await pb.collection('cplayz_posts').getOne(postId, { fields: 'id,likedBy,userId' });
   let likedBy = post.likedBy || [];
+  
   if (isLiked) {
     likedBy = likedBy.filter(id => id !== userId);
   } else {
@@ -375,17 +379,18 @@ export async function toggleLike(postId, userId, isLiked, postOwnerId) {
           type: 'like',
           postId,
           read: false,
-        });
+        }).catch(() => {}); // catch silent notification errors
       }
     }
   }
-  likedBy = [...new Set(likedBy)];
-  await pb.collection('cplayz_posts').update(postId, { likedBy }, { fields: 'id' });
+  const cleanArray = [...new Set(likedBy)];
+  await pb.collection('cplayz_posts').update(postId, { likedBy: cleanArray }, { fields: 'id' });
 }
 
 export async function toggleRepost(postId, userId, isReposted, postOwnerId) {
   const post = await pb.collection('cplayz_posts').getOne(postId, { fields: 'id,repostedBy,userId' });
   let repostedBy = post.repostedBy || [];
+  
   if (isReposted) {
     repostedBy = repostedBy.filter(id => id !== userId);
   } else {
@@ -398,17 +403,18 @@ export async function toggleRepost(postId, userId, isReposted, postOwnerId) {
           type: 'repost',
           postId,
           read: false,
-        });
+        }).catch(() => {});
       }
     }
   }
-  repostedBy = [...new Set(repostedBy)];
-  await pb.collection('cplayz_posts').update(postId, { repostedBy }, { fields: 'id' });
+  const cleanArray = [...new Set(repostedBy)];
+  await pb.collection('cplayz_posts').update(postId, { repostedBy: cleanArray }, { fields: 'id' });
 }
 
 export async function toggleBookmark(postId, userId, isBookmarked) {
   const post = await pb.collection('cplayz_posts').getOne(postId, { fields: 'id,favoritedBy' });
   let favoritedBy = post.favoritedBy || [];
+  
   if (isBookmarked) {
     favoritedBy = favoritedBy.filter(id => id !== userId);
   } else {
@@ -416,8 +422,8 @@ export async function toggleBookmark(postId, userId, isBookmarked) {
       favoritedBy = [...favoritedBy, userId];
     }
   }
-  favoritedBy = [...new Set(favoritedBy)];
-  await pb.collection('cplayz_posts').update(postId, { favoritedBy }, { fields: 'id' });
+  const cleanArray = [...new Set(favoritedBy)];
+  await pb.collection('cplayz_posts').update(postId, { favoritedBy: cleanArray }, { fields: 'id' });
 }
 
 export async function addView(postId, userId) {
@@ -442,7 +448,7 @@ export async function addComment(postId, userId, text, postOwnerId) {
       type: 'comment',
       postId,
       read: false,
-    });
+    }).catch(() => {});
   }
 }
 
@@ -457,7 +463,7 @@ export async function followUser(followerId, followingId) {
     type: 'follow',
     postId: '',
     read: false,
-  });
+  }).catch(() => {});
 }
 
 export async function unfollowUser(followerId, followingId) {
@@ -484,12 +490,13 @@ export async function markNotificationRead(notifId) {
 /* ─── Comment Count Helper ─── */
 export async function getCommentCounts(posts) {
   const counts = {};
+  if (!posts || posts.length === 0) return counts;
+  
   try {
     const result = await pb.collection('cplayz_comments').getList(1, 5000);
     const allComments = result.items;
     
     for (const post of posts) {
-      // Count ALL comments so the displayed number matches what users see in the comment list
       const validComments = allComments.filter(c => c.postId === post.id);
       counts[post.id] = validComments.length;
     }

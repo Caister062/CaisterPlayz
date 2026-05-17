@@ -7,8 +7,9 @@ const config: CapacitorConfig = {
   server: {
     // For development, use your local IP. For production, set your hosted PocketBase URL.
     // url: 'https://your-pocketbase-url.pockethost.io',
-    androidScheme: 'https',
-    iosScheme: 'https',
+    androidScheme: 'http',
+    iosScheme: 'http',
+    cleartext: true
   },
   plugins: {
     SplashScreen: {

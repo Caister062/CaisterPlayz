@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { ArrowLeft, LinkIcon, Calendar, X, Loader2, Camera } from 'lucide-react';
 import PostCard from './PostCard';
 import { Avatar, FollowButton } from './Shared';
@@ -12,7 +12,14 @@ export default function ProfileTab({
   const [showEditModal, setShowEditModal] = useState(false);
   const isOwnProfile = viewingUserId === currentUserId;
   const viewingUser = users.find(u => u.id === viewingUserId);
-  const isFollowing = followingIds.includes(viewingUserId);
+  
+  // Use a local state fallback to allow immediate/optimistic toggle feedback
+  const [localIsFollowing, setLocalIsFollowing] = useState(false);
+
+  // Sync state whenever external dependencies update
+  useEffect(() => {
+    setLocalIsFollowing(followingIds.includes(viewingUserId));
+  }, [followingIds, viewingUserId]);
 
   // Counts for the viewing user
   const userPosts = useMemo(() =>
@@ -35,17 +42,27 @@ export default function ProfileTab({
   );
 
   const totalLikes = useMemo(() =>
-    userPosts.reduce((sum, p) => sum + (p.likedBy || []).filter(id => id !== p.userId).length, 0),
+    userPosts.reduce((sum, p) => sum + (p.likedBy || []).length, 0),
     [userPosts]
   );
 
-  const handleFollow = async () => {
-    if (isFollowing) {
-      await unfollowUser(currentUserId, viewingUserId);
-    } else {
-      await followUser(currentUserId, viewingUserId);
+  const handleFollow = useCallback(async () => {
+    const originalState = localIsFollowing;
+    // Optimistic UI Update
+    setLocalIsFollowing(!originalState);
+    
+    try {
+      if (originalState) {
+        await unfollowUser(currentUserId, viewingUserId);
+      } else {
+        await followUser(currentUserId, viewingUserId);
+      }
+    } catch (err) {
+      console.error("Follow transaction failed:", err);
+      // Revert if API failed
+      setLocalIsFollowing(originalState);
     }
-  };
+  }, [localIsFollowing, currentUserId, viewingUserId]);
 
   if (!viewingUser) return null;
 
@@ -82,7 +99,7 @@ export default function ProfileTab({
             </button>
           ) : (
             <FollowButton
-              isFollowing={isFollowing}
+              isFollowing={localIsFollowing}
               onClick={handleFollow}
             />
           )}
@@ -200,9 +217,10 @@ function EditProfileModal({ profile, uid, onClose }) {
     } catch (err) {
       console.error('Avatar compression failed:', err);
       alert('Failed to process image.');
+    } finally {
+      setCompressing(false);
+      if (fileRef.current) fileRef.current.value = '';
     }
-    setCompressing(false);
-    if (fileRef.current) fileRef.current.value = '';
   };
 
   const handleSave = async () => {
@@ -220,8 +238,9 @@ function EditProfileModal({ profile, uid, onClose }) {
     } catch (err) {
       console.error('Profile update failed:', err);
       alert('Failed to update profile.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (
@@ -242,7 +261,7 @@ function EditProfileModal({ profile, uid, onClose }) {
           <button
             onClick={handleSave}
             disabled={!name.trim() || saving}
-            className="px-5 py-1.5 bg-white text-black font-bold text-sm rounded-full disabled:opacity-40 hover:bg-gray-200 transition-colors"
+            className="px-5 py-1.5 bg-white text-black font-bold text-sm rounded-full disabled:opacity-40 hover:bg-gray-200 transition-colors flex items-center justify-center min-w-[70px]"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
           </button>
@@ -263,7 +282,7 @@ function EditProfileModal({ profile, uid, onClose }) {
               <button
                 onClick={() => fileRef.current?.click()}
                 disabled={compressing}
-                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-100"
               >
                 {compressing ? (
                   <Loader2 className="w-6 h-6 text-white animate-spin" />

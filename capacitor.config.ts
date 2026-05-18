@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.caisterplayz.social',
+  appId: 'com.caisterplayz.socialapp',
   appName: 'CaisterPlayz',
   webDir: 'dist',
   server: {

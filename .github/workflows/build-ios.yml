@@ -136,7 +136,7 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
         run: |
-          xcrun altool --upload-app -f build/CaisterPlayz.ipa -t ios -u "$APPLE_ID" -p "$APP_SPECIFIC_PASSWORD" || echo "Upload to App Store failed. Please verify your Apple ID and App-Specific Password."
+          xcrun altool --upload-app -f build/CaisterPlayz.ipa -t ios -u "$APPLE_ID" -p "$APP_SPECIFIC_PASSWORD"
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4

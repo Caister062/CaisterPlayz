@@ -7,7 +7,7 @@ import { compressAvatar, formatCount, formatTime } from '../utils';
 
 export default function ProfileTab({
   viewingUserId, currentUserId, users, posts,
-  followingIds, allFollows, onProfileClick, onBack
+  followingIds, allFollows, onProfileClick, onBack, onProfileUpdate
 }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const isOwnProfile = viewingUserId === currentUserId;
@@ -183,14 +183,17 @@ export default function ProfileTab({
           profile={viewingUser}
           uid={currentUserId}
           onClose={() => setShowEditModal(false)}
+          onSaved={() => {
+            onProfileUpdate?.();
+          }}
         />
       )}
     </div>
   );
 }
 
-/* ─── Edit Profile Modal ─── */
-function EditProfileModal({ profile, uid, onClose }) {
+      /* ─── Edit Profile Modal ─── */
+function EditProfileModal({ profile, uid, onClose, onSaved }) {
   const [name, setName] = useState(profile?.displayName || '');
   const [bio, setBio] = useState(profile?.bio || '');
   const [website, setWebsite] = useState(profile?.website || '');
@@ -235,6 +238,7 @@ function EditProfileModal({ profile, uid, onClose }) {
       if (avatarBase64) data.avatarUrl = avatarBase64;
       await updateProfile(uid, data);
       onClose();
+      onSaved?.();
     } catch (err) {
       console.error('Profile update failed:', err);
       alert('Failed to update profile.');

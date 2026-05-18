@@ -197,6 +197,7 @@ export default function App() {
               allFollows={allFollows}
               onProfileClick={handleProfileClick}
               onBack={handleProfileBack}
+              onProfileUpdate={authRetry}
             />
           )}
         </main>

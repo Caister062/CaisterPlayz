@@ -28,3 +28,16 @@ ios-signing/*.key
 ios-signing/*.p12
 *.key
 *.p12
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+deploy_ec2.js
+deploy_ec2.cjs
+
+
+
+
+*hf*.js
+test_free_tier.cjs

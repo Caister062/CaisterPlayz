@@ -157,18 +157,9 @@ export function useNotifications(userId) {
       });
       const notifs = result.items;
 
-      // Auto-hide notifications older than 15 seconds (filter client-side)
-      const now = new Date();
-      const recentNotifs = notifs.filter(notif => {
-        const created = new Date((notif.created || '').replace(' ', 'T'));
-        const ageSec = (now - created) / 1000;
-        if (ageSec > 15) {
-          // Clean up from DB silently
-          pb.collection('cplayz_notifications').delete(notif.id).catch(() => {});
-          return false;
-        }
-        return true;
-      });
+      // Don't filter by age — show all notifications to the user.
+      // Periodic cleanup is handled elsewhere (cron / admin).
+      const recentNotifs = notifs;
 
       if (prevCountRef.current > 0 && recentNotifs.length > prevCountRef.current) {
         const newest = recentNotifs[0];
@@ -353,14 +344,14 @@ export async function createPost(userId, text, imageUrl = '', musicId = '', musi
 }
 
 export async function deletePost(postId, userId) {
-  try {
-    await pb.collection('cplayz_posts').delete(postId, {
-      headers: { 'x-user-id': userId }
-    });
-  } catch (err) {
-    console.error('Delete post error:', err);
-    throw err;
+  // Verify ownership first
+  const post = await pb.collection('cplayz_posts').getOne(postId, {
+    fields: 'id,userId'
+  });
+  if (post.userId !== userId) {
+    throw new Error('Not authorized to delete this post');
   }
+  await pb.collection('cplayz_posts').delete(postId);
 }
 
 export async function toggleLike(postId, userId, isLiked, postOwnerId) {

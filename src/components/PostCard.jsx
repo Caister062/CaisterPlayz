@@ -23,19 +23,42 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   // Safely fallback to an empty array if comments are still loading or undefined
   const { comments = [], refreshComments } = useComments(showComments ? post.id : null);
 
-  const [localLikedBy, setLocalLikedBy] = useState(null);
-  const [localRepostedBy, setLocalRepostedBy] = useState(null);
-  const [localFavoritedBy, setLocalFavoritedBy] = useState(null);
+  // Track the last server-confirmed arrays so we can compare contents not references
+  const serverLikedRef = useRef(null);
+  const serverRepRef = useRef(null);
+  const serverFavRef = useRef(null);
 
+  // Sync server arrays; reset local overlay whenever server data changes (poll/refetch)
   useEffect(() => {
-    setLocalLikedBy(null);
-    setLocalRepostedBy(null);
-    setLocalFavoritedBy(null);
+    if (serverLikedRef.current !== post.likedBy) {
+      setLocalLikedBy(null);
+      serverLikedRef.current = post.likedBy;
+    }
+    if (serverRepRef.current !== post.repostedBy) {
+      setLocalRepostedBy(null);
+      serverRepRef.current = post.repostedBy;
+    }
+    if (serverFavRef.current !== post.favoritedBy) {
+      setLocalFavoritedBy(null);
+      serverFavRef.current = post.favoritedBy;
+    }
   }, [post.likedBy, post.repostedBy, post.favoritedBy]);
 
-  const actualLikedBy = useMemo(() => localLikedBy !== null ? localLikedBy : (post.likedBy || []), [localLikedBy, post.likedBy]);
-  const actualRepostedBy = useMemo(() => localRepostedBy !== null ? localRepostedBy : (post.repostedBy || []), [localRepostedBy, post.repostedBy]);
-  const actualFavoritedBy = useMemo(() => localFavoritedBy !== null ? localFavoritedBy : (post.favoritedBy || []), [localFavoritedBy, post.favoritedBy]);
+  // Stable "source of truth" — starts as null, then follows server state
+  const [stableLiked, setStableLiked] = useState(null);
+  const [stableRep, setStableRep] = useState(null);
+  const [stableFav, setStableFav] = useState(null);
+
+  // Once server gives us data, lock in as the new baseline (no more null-wipes)
+  useEffect(() => {
+    if (post.likedBy && post.likedBy.length > 0) setStableLiked(post.likedBy);
+    if (post.repostedBy && post.repostedBy.length > 0) setStableRep(post.repostedBy);
+    if (post.favoritedBy && post.favoritedBy.length > 0) setStableFav(post.favoritedBy);
+  }, [post.likedBy, post.repostedBy, post.favoritedBy]);
+
+  const actualLikedBy = useMemo(() => localLikedBy !== null ? [...localLikedBy] : (stableLiked !== null ? [...stableLiked] : [...(post.likedBy || [])]), [localLikedBy, stableLiked, post.likedBy]);
+  const actualRepostedBy = useMemo(() => localRepostedBy !== null ? [...localRepostedBy] : (stableRep !== null ? [...stableRep] : [...(post.repostedBy || [])]), [localRepostedBy, stableRep, post.repostedBy]);
+  const actualFavoritedBy = useMemo(() => localFavoritedBy !== null ? [...localFavoritedBy] : (stableFav !== null ? [...stableFav] : [...(post.favoritedBy || [])]), [localFavoritedBy, stableFav, post.favoritedBy]);
 
   const author = users.find(u => u.id === post.userId);
   const gamerBadge = getGamerBadge(post.userId);

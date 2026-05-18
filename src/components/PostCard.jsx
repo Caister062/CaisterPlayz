@@ -15,6 +15,9 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
+  const [localLikedBy, setLocalLikedBy] = useState(null);
+  const [localRepostedBy, setLocalRepostedBy] = useState(null);
+  const [localFavoritedBy, setLocalFavoritedBy] = useState(null);
   
   const postRef = useRef(null);
   const viewedRef = useRef(false);

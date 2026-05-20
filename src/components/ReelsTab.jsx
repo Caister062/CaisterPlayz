@@ -743,3 +743,5 @@ function ReelCard({
         </div>
       )}
     </div>
+  );
+}

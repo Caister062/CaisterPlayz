@@ -40,20 +40,26 @@ export default function App() {
     [posts, commentCounts]
   );
 
-  // Infinite scroll window listener
+  // Infinite scroll listener
   useEffect(() => {
     const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+      const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop;
+      const clientHeight = window.innerHeight || document.documentElement.clientHeight;
+
       // Trigger when user is within 300px of bottom
-      if (
-        window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight - 300
-      ) {
+      if (scrollHeight - scrollTop - clientHeight < 300) {
         loadMore();
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('scroll', handleScroll);
+    };
   }, [loadMore]);
 
   const handleProfileClick = (userId) => {

@@ -27,7 +27,9 @@ export function useAuth() {
         filter: `deviceId="${deviceId}"`
       });
       if (existing.items.length > 0) {
-        setUser(existing.items[0]);
+        const u = existing.items[0];
+        localStorage.setItem('cplayz_user_id', u.id);
+        setUser(u);
       } else {
         const newUser = await pb.collection('cplayz_users').create({
           displayName: `User_${deviceId.slice(4, 10)}`,
@@ -36,6 +38,7 @@ export function useAuth() {
           avatarUrl: '',
           deviceId: deviceId,
         });
+        localStorage.setItem('cplayz_user_id', newUser.id);
         setUser(newUser);
       }
     } catch (err) {

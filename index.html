@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/CaisterPlayz/favicon.svg" />
+    <link rel="apple-touch-icon" href="/CaisterPlayz/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+    <meta name="description" content="CaisterPlayz — A real-time social media platform. Share, connect, and discover." />
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>CaisterPlayz</title>
+    <script type="module" crossorigin src="/CaisterPlayz/assets/index-C5fgMDPS.js"></script>
+    <link rel="stylesheet" crossorigin href="/CaisterPlayz/assets/index-Bw8FCvdy.css">
+  <link rel="manifest" href="/CaisterPlayz/manifest.webmanifest"></head>
+  <body>
+    <div id="root">
+      <style>
+        body { margin: 0; background-color: #000; overflow: hidden; }
+        .startup-loader {
+          position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+          background: radial-gradient(circle at center, #0a0a14 0%, #000000 100%); z-index: 9999;
+        }
+        .glow-logo {
+          font-family: system-ui, -apple-system, sans-serif;
+          font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;
+          color: #fff; text-transform: uppercase;
+          text-shadow: 0 0 10px rgba(0, 240, 255, 0.8), 0 0 20px rgba(0, 240, 255, 0.4);
+          animation: pulseGlow 1.5s infinite alternate ease-in-out; margin-bottom: 2rem;
+        }
+        .spinner {
+          width: 40px; height: 40px; border: 3px solid rgba(0, 240, 255, 0.1);
+          border-radius: 50%; border-top-color: #00f0ff; animation: spin 0.8s ease-in-out infinite;
+          box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+        }
+        @keyframes pulseGlow { 
+          0% { text-shadow: 0 0 10px rgba(0, 240, 255, 0.8), 0 0 20px rgba(0, 240, 255, 0.4); transform: scale(1); } 
+          100% { text-shadow: 0 0 20px rgba(0, 240, 255, 1), 0 0 35px rgba(0, 240, 255, 0.8); transform: scale(1.03); } 
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      </style>
+      <div class="startup-loader">
+        <div class="glow-logo">CaisterPlayz</div>
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </body>
+</html>

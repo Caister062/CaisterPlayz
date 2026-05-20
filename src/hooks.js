@@ -57,17 +57,29 @@ export function useAuth() {
 export function useUserProfile(userId) {
   const [profile, setProfile] = useState(null);
 
+  const fetchProfile = useCallback(() => {
+    if (!userId) return;
+    pb.collection('cplayz_users').getOne(userId).then(setProfile).catch(() => {});
+  }, [userId]);
+
   useEffect(() => {
     if (!userId) return;
     
-    const fetchProfile = () => {
-      pb.collection('cplayz_users').getOne(userId).then(setProfile).catch(() => {});
-    };
-
     fetchProfile();
-    const interval = setInterval(fetchProfile, 30000);
-    return () => clearInterval(interval);
-  }, [userId]);
+    
+    let unsubscribeFn = null;
+    pb.collection('cplayz_users').subscribe(userId, () => {
+      fetchProfile();
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useUserProfile subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [userId, fetchProfile]);
 
   return profile;
 }
@@ -244,8 +256,19 @@ export function useFollows(userId) {
   useEffect(() => {
     if (!userId) return;
     fetchFollows();
-    const interval = setInterval(fetchFollows, 30000);
-    return () => clearInterval(interval);
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_follows').subscribe('*', () => {
+      fetchFollows();
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useFollows subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
   }, [userId, fetchFollows]);
 
   return { following, followers };
@@ -266,8 +289,19 @@ export function useAllUsers() {
 
   useEffect(() => {
     fetchUsers();
-    const interval = setInterval(fetchUsers, 30000);
-    return () => clearInterval(interval);
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_users').subscribe('*', () => {
+      fetchUsers();
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useAllUsers subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
   }, [fetchUsers]);
 
   return users;
@@ -318,8 +352,19 @@ export function useAllFollows() {
 
   useEffect(() => {
     fetchAllFollows();
-    const interval = setInterval(fetchAllFollows, 30000);
-    return () => clearInterval(interval);
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_follows').subscribe('*', () => {
+      fetchAllFollows();
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useAllFollows subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
   }, [fetchAllFollows]);
 
   return allFollows;

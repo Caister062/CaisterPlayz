@@ -2,7 +2,7 @@ import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { ArrowLeft, LinkIcon, Calendar, X, Loader2, Camera } from 'lucide-react';
 import PostCard from './PostCard';
 import { Avatar, FollowButton } from './Shared';
-import { followUser, unfollowUser, updateProfile } from '../hooks';
+import { followUser, unfollowUser, updateProfile, useUserProfile } from '../hooks';
 import { compressAvatar, formatCount, formatTime } from '../utils';
 
 export default function ProfileTab({
@@ -11,7 +11,10 @@ export default function ProfileTab({
 }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const isOwnProfile = viewingUserId === currentUserId;
-  const viewingUser = users.find(u => u.id === viewingUserId);
+  
+  // Real-time hook for the viewed profile
+  const realTimeProfile = useUserProfile(viewingUserId);
+  const viewingUser = realTimeProfile || users.find(u => u.id === viewingUserId);
   
   // Use a local state fallback to allow immediate/optimistic toggle feedback
   const [localIsFollowing, setLocalIsFollowing] = useState(false);
@@ -329,7 +332,7 @@ function EditProfileModal({ profile, uid, onClose, onSaved }) {
           <div>
             <label className="block text-xs text-dark-muted mb-1.5">Website</label>
             <input
-              type="url"
+              type="text"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://caisterplayz.com"

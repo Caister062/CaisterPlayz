@@ -1,12 +1,12 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { ArrowLeft, LinkIcon, Calendar, X, Loader2, Camera } from 'lucide-react';
 import PostCard from './PostCard';
-import { Avatar, FollowButton } from './Shared';
+import { Avatar, FollowButton, Spinner } from './Shared';
 import { followUser, unfollowUser, updateProfile, useUserProfile } from '../hooks';
 import { compressAvatar, formatCount, formatTime } from '../utils';
 
 export default function ProfileTab({
-  viewingUserId, currentUserId, users, posts,
+  viewingUserId, currentUserId, users, posts, hasMore, loadingMore,
   followingIds, allFollows, onProfileClick, onBack, onProfileUpdate
 }) {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -165,15 +165,23 @@ export default function ProfileTab({
 
       {/* User Posts */}
       {userPosts.length > 0 ? (
-        userPosts.map(post => (
-          <PostCard
-            key={post.id}
-            post={post}
-            currentUserId={currentUserId}
-            users={users}
-            onProfileClick={onProfileClick}
-          />
-        ))
+        <>
+          {userPosts.map(post => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUserId={currentUserId}
+              users={users}
+              onProfileClick={onProfileClick}
+            />
+          ))}
+          {loadingMore && <Spinner />}
+          {!hasMore && (
+            <p className="text-center py-6 text-xs text-dark-muted font-semibold">
+              You've caught up! 🎉
+            </p>
+          )}
+        </>
       ) : (
         <div className="text-center py-12">
           <p className="text-dark-muted">No posts yet</p>

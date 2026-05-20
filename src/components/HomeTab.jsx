@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 import { Users, Flame } from 'lucide-react';
 import PostCard from './PostCard';
 import Composer from './Composer';
-import { EmptyState, PostSkeleton } from './Shared';
+import { EmptyState, PostSkeleton, Spinner } from './Shared';
 
 export default function HomeTab({
-  subTab, setSubTab, posts, postsLoading, currentUserId,
+  subTab, setSubTab, posts, postsLoading, hasMore, loadingMore, currentUserId,
   profile, users, followingIds, onProfileClick, onNavigate
 }) {
   // For You: all posts, sorted chronologically
@@ -92,15 +92,23 @@ export default function HomeTab({
           <PostSkeleton />
         </>
       ) : displayPosts.length > 0 ? (
-        displayPosts.map(post => (
-          <PostCard
-            key={post.id}
-            post={post}
-            currentUserId={currentUserId}
-            users={users}
-            onProfileClick={onProfileClick}
-          />
-        ))
+        <>
+          {displayPosts.map(post => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUserId={currentUserId}
+              users={users}
+              onProfileClick={onProfileClick}
+            />
+          ))}
+          {loadingMore && <Spinner />}
+          {!hasMore && (
+            <p className="text-center py-6 text-xs text-dark-muted font-semibold">
+              You've caught up! 🎉
+            </p>
+          )}
+        </>
       ) : subTab === 'following' && followingIds.length === 0 ? (
         <EmptyState
           icon={Users}

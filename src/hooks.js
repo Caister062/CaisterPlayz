@@ -87,37 +87,82 @@ export function useUserProfile(userId) {
   return profile;
 }
 
-/* ─── All Posts Hook (real-time) ─── */
+/* ─── All Posts Hook (paginated & real-time) ─── */
 export function usePosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const pageRef = useRef(1);
 
-  const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(async (pageNum = 1, append = false) => {
     try {
-      const result = await pb.collection('cplayz_posts').getList(1, 100, {
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+
+      const pageSize = 15;
+      const result = await pb.collection('cplayz_posts').getList(pageNum, pageSize, {
         sort: '-id',
       });
-      setPosts(result.items);
+
+      if (append) {
+        setPosts(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const newItems = result.items.filter(p => !existingIds.has(p.id));
+          return [...prev, ...newItems];
+        });
+      } else {
+        setPosts(result.items);
+      }
+
+      setHasMore(result.items.length === pageSize);
+      pageRef.current = pageNum;
     } catch (err) {
       console.error('Fetch posts error:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
+  const loadMore = useCallback(() => {
+    if (loading || loadingMore || !hasMore) return;
+    fetchPosts(pageRef.current + 1, true);
+  }, [fetchPosts, loading, loadingMore, hasMore]);
+
   useEffect(() => {
-    fetchPosts();
-    const interval = setInterval(fetchPosts, 30000);
-    
-    window.addEventListener('refreshPosts', fetchPosts);
-    
+    fetchPosts(1, false);
+
+    // Poll for new posts and prepend them to the list without resetting the scroll list
+    const pollInterval = setInterval(async () => {
+      try {
+        const pageSize = 15;
+        const result = await pb.collection('cplayz_posts').getList(1, pageSize, {
+          sort: '-id',
+        });
+        setPosts(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const newItems = result.items.filter(item => !existingIds.has(item.id));
+          if (newItems.length > 0) {
+            return [...newItems, ...prev];
+          }
+          return prev;
+        });
+      } catch (err) {
+        console.error('Polling posts error:', err);
+      }
+    }, 30000);
+
+    const handleRefresh = () => fetchPosts(1, false);
+    window.addEventListener('refreshPosts', handleRefresh);
+
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('refreshPosts', fetchPosts);
+      clearInterval(pollInterval);
+      window.removeEventListener('refreshPosts', handleRefresh);
     };
   }, [fetchPosts]);
 
-  return { posts, loading, refresh: fetchPosts };
+  return { posts, loading, hasMore, loadingMore, loadMore, refresh: () => fetchPosts(1, false) };
 }
 
 /* ─── Comments Hook (real-time) ─── */

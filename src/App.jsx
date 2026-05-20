@@ -11,7 +11,7 @@ import ProfileTab from './components/ProfileTab';
 export default function App() {
   const { user, loading: authLoading, error: authError, retry: authRetry } = useAuth();
   const profile = useUserProfile(user?.id);
-  const { posts, loading: postsLoading } = usePosts();
+  const { posts, loading: postsLoading, hasMore, loadingMore, loadMore } = usePosts();
   const allUsers = useAllUsers();
   const { following, followers } = useFollows(user?.id);
   const { notifications, unreadCount, newNotification } = useNotifications(user?.id);
@@ -39,6 +39,22 @@ export default function App() {
     posts.map(p => ({ ...p, _commentCount: commentCounts[p.id] || 0 })),
     [posts, commentCounts]
   );
+
+  // Infinite scroll window listener
+  useEffect(() => {
+    const handleScroll = () => {
+      // Trigger when user is within 300px of bottom
+      if (
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 300
+      ) {
+        loadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMore]);
 
   const handleProfileClick = (userId) => {
     if (userId === user?.id && activeTab === 'profile' && !viewingProfileId) return;
@@ -146,6 +162,8 @@ export default function App() {
               setSubTab={setHomeSubTab}
               posts={enrichedPosts}
               postsLoading={postsLoading}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
               currentUserId={user.id}
               profile={profile}
               users={allUsers}
@@ -158,6 +176,8 @@ export default function App() {
           {activeTab === 'explore' && (
             <ExploreTab
               posts={enrichedPosts}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
               currentUserId={user.id}
               users={allUsers}
               followingIds={followingIds}
@@ -192,6 +212,8 @@ export default function App() {
               profile={profile}
               users={allUsers}
               posts={enrichedPosts}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
               followingIds={followingIds}
               followerIds={followerIds}
               allFollows={allFollows}

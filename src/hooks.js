@@ -575,6 +575,17 @@ export async function deletePost(postId, userId) {
   await pb.collection('cplayz_posts').delete(postId);
 }
 
+export async function deleteComment(commentId, userId) {
+  // Verify ownership first
+  const comment = await pb.collection('cplayz_comments').getOne(commentId, {
+    fields: 'id,userId'
+  });
+  if (comment.userId !== userId) {
+    throw new Error('Not authorized to delete this comment');
+  }
+  await pb.collection('cplayz_comments').delete(commentId);
+}
+
 export async function toggleLike(postId, userId, isLiked, postOwnerId) {
   const post = await pb.collection('cplayz_posts').getOne(postId, { fields: 'id,likedBy,userId' });
   let likedBy = post.likedBy || [];

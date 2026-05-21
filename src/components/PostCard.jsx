@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Heart, Repeat2, MessageCircle, Bookmark, Eye, Share, Trash2, Loader2 } from 'lucide-react';
 import { Avatar, AnimatedNumber, ImageLightbox, RichText } from './Shared';
 import { formatTime, parsePostText, getGamerBadge } from '../utils';
-import { toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, useComments } from '../hooks';
+import { toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, useComments, deleteComment } from '../hooks';
 import { playLikeSound, playRepostSound } from '../sounds';
 
 export default function PostCard({ post, currentUserId, users, onProfileClick }) {
@@ -18,6 +18,11 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   const [localLikedBy, setLocalLikedBy] = useState(null);
   const [localRepostedBy, setLocalRepostedBy] = useState(null);
   const [localFavoritedBy, setLocalFavoritedBy] = useState(null);
+  const [localCommentCount, setLocalCommentCount] = useState(post._commentCount || 0);
+
+  useEffect(() => {
+    setLocalCommentCount(post._commentCount || 0);
+  }, [post._commentCount]);
   
   const postRef = useRef(null);
   const viewedRef = useRef(false);
@@ -172,11 +177,23 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
     try {
       await addComment(post.id, currentUserId, commentText.trim(), post.userId);
       setCommentText('');
+      setLocalCommentCount(prev => prev + 1);
       refreshComments();
     } catch (err) { 
       console.error(err); 
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      await deleteComment(commentId, currentUserId);
+      setLocalCommentCount(prev => Math.max(0, prev - 1));
+      refreshComments();
+    } catch (err) {
+      console.error('Failed to delete comment:', err);
+      alert(err.message || 'Failed to delete comment');
     }
   };
 
@@ -329,7 +346,7 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
               >
                 <MessageCircle className="w-[18px] h-[18px] text-dark-muted group-hover:text-brand-primary transition-colors" />
                 <span className="text-xs text-dark-muted group-hover:text-brand-primary">
-                  <AnimatedNumber value={post._commentCount || 0} />
+                  <AnimatedNumber value={localCommentCount} />
                 </span>
               </button>
 
@@ -418,6 +435,7 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
                 {comments.map(comment => {
                   const commenter = users.find(u => u.id === comment.userId);
                   if (!commenter) return null;
+                  const isCommentOwner = comment.userId === currentUserId;
                   return (
                     <div key={comment.id} className="flex gap-2.5 py-2 animate-fade-slide">
                       <Avatar
@@ -427,9 +445,20 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
                         onClick={() => onProfileClick(commenter.id)}
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-sm text-dark-text">{commenter.displayName}</span>
-                          <span className="text-dark-muted text-xs">{formatTime(comment.created)}</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-sm text-dark-text">{commenter.displayName}</span>
+                            <span className="text-dark-muted text-xs">{formatTime(comment.created)}</span>
+                          </div>
+                          {isCommentOwner && (
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-dark-muted hover:text-brand-danger transition-colors p-1 cursor-pointer"
+                              title="Delete reply"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                         <p className="text-sm text-dark-text mt-0.5">{comment.text}</p>
                       </div>

@@ -7,9 +7,11 @@ import ExploreTab from './components/ExploreTab';
 import ReelsTab from './components/ReelsTab';
 import NotificationsTab from './components/NotificationsTab';
 import ProfileTab from './components/ProfileTab';
+import Auth from './components/Auth';
 
 export default function App() {
-  const { user, loading: authLoading, error: authError, retry: authRetry } = useAuth();
+  const auth = useAuth();
+  const { user, loading: authLoading, error: authError, retry: authRetry, logout } = auth;
   const profile = useUserProfile(user?.id);
   const { posts, loading: postsLoading, hasMore, loadingMore, loadMore } = usePosts();
   const allUsers = useAllUsers();
@@ -23,6 +25,7 @@ export default function App() {
   const [exploreSearchQuery, setExploreSearchQuery] = useState('');
   const [viewingProfileId, setViewingProfileId] = useState(null);
   const [prevTab, setPrevTab] = useState(null);
+  const [tabTransitioning, setTabTransitioning] = useState(false);
   const mainRef = useRef(null);
 
   const followingIds = useMemo(() => following.map(f => f.followingId), [following]);
@@ -81,15 +84,21 @@ export default function App() {
       if (tab === 'explore') setExploreSearchQuery('');
       return;
     }
-    setActiveTab(tab);
-    if (tab === 'profile') {
-      setViewingProfileId(null);
-      setPrevTab(null);
-    } else {
-      setViewingProfileId(null);
-    }
-    // Scroll to top on tab change
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    setTabTransitioning(true);
+    setTimeout(() => {
+      setActiveTab(tab);
+      if (tab === 'profile') {
+        setViewingProfileId(null);
+        setPrevTab(null);
+      } else {
+        setViewingProfileId(null);
+      }
+      // Scroll to top on tab change
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      setTimeout(() => {
+        setTabTransitioning(false);
+      }, 150);
+    }, 350);
   };
 
   const handleProfileBack = () => {
@@ -117,26 +126,7 @@ export default function App() {
   }
 
   if (authError || !user) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-dark-bg gap-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Zap className="w-10 h-10 text-brand-primary" fill="currentColor" />
-          <span className="text-2xl font-black text-dark-text tracking-tight">CaisterPlayz</span>
-        </div>
-        <p className="text-dark-muted text-sm">
-          {authError ? 'Could not connect to server' : 'Connecting...'}
-        </p>
-        {authError && (
-          <button
-            onClick={authRetry}
-            className="flex items-center gap-2 px-5 py-2.5 bg-brand-primary text-white font-bold rounded-full hover:bg-brand-primary/90 transition-colors active:scale-95"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Retry
-          </button>
-        )}
-      </div>
-    );
+    return <Auth auth={auth} />;
   }
 
   const effectiveProfileId = viewingProfileId || user.id;
@@ -144,6 +134,23 @@ export default function App() {
   return (
     <div className="w-full min-h-screen bg-dark-bg flex justify-center">
       <div className="w-full max-w-lg flex flex-col min-h-screen relative border-x border-dark-border">
+        {/* Sleek Glassmorphic Tab Transition Loading Overlay */}
+        {tabTransitioning && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-dark-bg/85 backdrop-blur-md animate-fade-in">
+            {/* Top glowing progress bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 animate-tab-progress" />
+            
+            {/* Center pulsing icon & spinner */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 border border-brand-primary/30 flex items-center justify-center relative glow-box-primary">
+                <Zap className="w-8 h-8 text-brand-primary animate-pulse" />
+              </div>
+              <p className="text-[10px] font-black text-brand-primary tracking-widest uppercase animate-pulse">
+                Syncing Grid...
+              </p>
+            </div>
+          </div>
+        )}
         {/* ─── Top Header (Hidden on Reels Tab for a clean, immersive look) ─── */}
         {activeTab !== 'reels' && (
           <header className="sticky top-0 z-40 bg-dark-bg/95 backdrop-blur-xl border-b border-dark-border h-[53px] flex flex-col justify-center">
@@ -226,6 +233,7 @@ export default function App() {
               onProfileClick={handleProfileClick}
               onBack={handleProfileBack}
               onProfileUpdate={authRetry}
+              onLogout={logout}
             />
           )}
         </main>

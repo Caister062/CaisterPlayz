@@ -203,6 +203,12 @@ html, body, #root {
   animation: double-tap-heart 0.9s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
+.animate-tab-progress {
+  background: linear-gradient(90deg, var(--color-brand-primary) 0%, var(--color-brand-secondary) 50%, var(--color-brand-primary) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
 /* ===== Number Slide Container ===== */
 .number-slide-container {
   position: relative;

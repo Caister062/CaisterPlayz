@@ -7,7 +7,7 @@ import { compressAvatar, formatCount, formatTime } from '../utils';
 
 export default function ProfileTab({
   viewingUserId, currentUserId, users, posts, hasMore, loadingMore,
-  followingIds, allFollows, onProfileClick, onBack, onProfileUpdate
+  followingIds, allFollows, onProfileClick, onBack, onProfileUpdate, onLogout
 }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const isOwnProfile = viewingUserId === currentUserId;
@@ -70,22 +70,22 @@ export default function ProfileTab({
   if (!viewingUser) return null;
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center gap-4 px-4 h-[53px] border-b border-dark-border sticky top-[53px] z-30 bg-dark-bg/95 backdrop-blur-xl">
+    <div className="flex-1 bg-dark-bg min-h-screen text-dark-text pb-24">
+      {/* Header Profile Title */}
+      <div className="flex items-center gap-6 px-4 py-3 border-b border-dark-border sticky top-0 bg-dark-bg/85 backdrop-blur z-20">
         {!isOwnProfile && (
-          <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-dark-hover transition-colors">
-            <ArrowLeft className="w-5 h-5 text-dark-text" />
+          <button onClick={onBack} className="p-1 hover:bg-dark-hover rounded-full transition-colors">
+            <ArrowLeft className="w-5 h-5" />
           </button>
         )}
-        <div className="flex-1 overflow-hidden">
-          <h2 className="font-bold text-lg text-dark-text truncate">{viewingUser.displayName}</h2>
-          <p className="text-xs text-dark-muted truncate">{userPosts.length} posts</p>
+        <div>
+          <h2 className="font-extrabold text-lg text-dark-text leading-tight">{viewingUser?.displayName}</h2>
+          <p className="text-xs text-dark-muted font-bold tracking-tight">{userPosts.length} posts</p>
         </div>
       </div>
 
       {/* Banner */}
-      <div className="h-32 bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent" />
+      <div className="h-32 bg-gradient-to-r from-brand-primary/20 via-brand-secondary/20 to-brand-primary/10 relative" />
 
       {/* Action Button & Avatar */}
       <div className="flex justify-between items-start px-4 relative -mt-10 mb-2">
@@ -94,12 +94,22 @@ export default function ProfileTab({
         </div>
         <div className="pt-12">
           {isOwnProfile ? (
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="px-5 py-1.5 text-sm font-bold rounded-full border border-dark-border text-dark-text hover:bg-dark-hover transition-colors"
-            >
-              Edit profile
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="px-5 py-1.5 text-sm font-bold rounded-full border border-dark-border text-dark-text hover:bg-dark-hover transition-colors cursor-pointer"
+              >
+                Edit profile
+              </button>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="px-5 py-1.5 text-sm font-bold rounded-full border border-brand-danger/30 text-brand-danger hover:bg-brand-danger/10 transition-colors cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              )}
+            </div>
           ) : (
             <FollowButton
               isFollowing={localIsFollowing}

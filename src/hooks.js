@@ -19,20 +19,54 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const init = useCallback(async () => {
-    const deviceId = getDeviceId();
+  const syncUserProfile = useCallback(async (authRecord) => {
+    let profileRecord = null;
+    try {
+      profileRecord = await pb.collection('cplayz_users').getOne(authRecord.id);
+    } catch (err) {
+      try {
+        profileRecord = await pb.collection('cplayz_users').create({
+          id: authRecord.id,
+          displayName: authRecord.name || authRecord.username || `User_${authRecord.id.slice(0, 6)}`,
+          bio: '',
+          website: '',
+          avatarUrl: authRecord.avatar ? pb.files.getUrl(authRecord, authRecord.avatar) : '',
+          deviceId: 'pb_' + authRecord.id,
+        });
+      } catch (createErr) {
+        console.error('Failed to create synced user profile:', createErr);
+        throw createErr;
+      }
+    }
+    localStorage.setItem('cplayz_user_id', profileRecord.id);
+    setUser(profileRecord);
+    return profileRecord;
+  }, []);
+
+  const loginAsGuest = useCallback(async () => {
     try {
       setError(null);
-      const existing = await pb.collection('cplayz_users').getList(1, 1, {
-        filter: `deviceId="${deviceId}"`
-      });
-      if (existing.items.length > 0) {
-        const u = existing.items[0];
-        localStorage.setItem('cplayz_user_id', u.id);
-        setUser(u);
+      setLoading(true);
+      localStorage.setItem('cplayz_is_guest', 'true');
+      const deviceId = getDeviceId();
+      let existing = null;
+      try {
+        const list = await pb.collection('cplayz_users').getList(1, 1, {
+          filter: `deviceId="${deviceId}"`
+        });
+        if (list.items.length > 0) {
+          existing = list.items[0];
+        }
+      } catch (err) {
+        console.error('Guest query error:', err);
+      }
+
+      if (existing) {
+        localStorage.setItem('cplayz_user_id', existing.id);
+        setUser(existing);
       } else {
         const newUser = await pb.collection('cplayz_users').create({
-          displayName: `User_${deviceId.slice(4, 10)}`,
+          displayName: `Guest_${deviceId.slice(4, 10)}`,
           bio: '',
           website: '',
           avatarUrl: '',
@@ -42,18 +76,112 @@ export function useAuth() {
         setUser(newUser);
       }
     } catch (err) {
-      console.error('Auth init error:', err);
-      setError(err);
+      setError(err.message || 'Guest login failed');
+      throw err;
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const loginWithEmail = async (email, password) => {
+    try {
+      setError(null);
+      setLoading(true);
+      localStorage.removeItem('cplayz_is_guest');
+      const authData = await pb.collection('users').authWithPassword(email, password);
+      return await syncUserProfile(authData.record);
+    } catch (err) {
+      setError(err.message || 'Login failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signupWithEmail = async (email, password, username) => {
+    try {
+      setError(null);
+      setLoading(true);
+      localStorage.removeItem('cplayz_is_guest');
+      await pb.collection('users').create({
+        email,
+        password,
+        passwordConfirm: password,
+        name: username,
+      });
+      const authData = await pb.collection('users').authWithPassword(email, password);
+      return await syncUserProfile(authData.record);
+    } catch (err) {
+      setError(err.message || 'Sign up failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      localStorage.removeItem('cplayz_is_guest');
+      const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
+      return await syncUserProfile(authData.record);
+    } catch (err) {
+      setError(err.message || 'Google login failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = useCallback(() => {
+    pb.authStore.clear();
+    localStorage.removeItem('cplayz_is_guest');
+    localStorage.removeItem('cplayz_user_id');
+    setUser(null);
+  }, []);
+
+  const init = useCallback(async () => {
+    try {
+      setError(null);
+      if (pb.authStore.isValid && pb.authStore.model) {
+        await syncUserProfile(pb.authStore.model);
+      } else if (localStorage.getItem('cplayz_is_guest') === 'true') {
+        await loginAsGuest();
+      } else {
+        setUser(null);
+      }
+    } catch (err) {
+      console.error('Auth init error:', err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [syncUserProfile, loginAsGuest]);
+
   useEffect(() => {
     init();
-  }, [init]);
+    const unsubscribe = pb.authStore.onChange((token, model) => {
+      if (model) {
+        syncUserProfile(model);
+      } else if (localStorage.getItem('cplayz_is_guest') !== 'true') {
+        setUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [init, syncUserProfile]);
 
-  return { user, loading, error, retry: init };
+  return {
+    user,
+    loading,
+    error,
+    loginWithEmail,
+    signupWithEmail,
+    loginWithGoogle,
+    loginAsGuest,
+    logout,
+    retry: init
+  };
 }
 
 /* ─── User Profile Hook (real-time) ─── */

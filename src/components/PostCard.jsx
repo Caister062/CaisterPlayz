@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Heart, Repeat2, MessageCircle, Bookmark, Eye, Share, Trash2, Loader2 } from 'lucide-react';
-import { Avatar, AnimatedNumber, ImageLightbox, RichText } from './Shared';
+import { Heart, Repeat2, MessageCircle, Bookmark, Eye, Share, Trash2, Loader2, X } from 'lucide-react';
+import { Avatar, AnimatedNumber, ImageLightbox, RichText, FollowButton } from './Shared';
 import { formatTime, parsePostText, getGamerBadge } from '../utils';
-import { toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, useComments, deleteComment } from '../hooks';
+import { toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, useComments, deleteComment, followUser, unfollowUser, useFollows } from '../hooks';
 import { playLikeSound, playRepostSound } from '../sounds';
 
-export default function PostCard({ post, currentUserId, users, onProfileClick }) {
+export default function PostCard({ post, currentUserId, users, onProfileClick, onHashtagClick, onQuote, posts }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [likeAnim, setLikeAnim] = useState(false);
@@ -19,6 +19,15 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   const [localRepostedBy, setLocalRepostedBy] = useState(null);
   const [localFavoritedBy, setLocalFavoritedBy] = useState(null);
   const [localCommentCount, setLocalCommentCount] = useState(post._commentCount || 0);
+  const [detailModal, setDetailModal] = useState(null); // 'likes' | 'reposts' | null
+  const [showRepostDropdown, setShowRepostDropdown] = useState(false);
+
+  const originalPost = useMemo(() => {
+    if (post.type === 'quote' && post.originalPostId) {
+      return posts?.find(p => p.id === post.originalPostId);
+    }
+    return null;
+  }, [post.type, post.originalPostId, posts]);
 
   useEffect(() => {
     setLocalCommentCount(post._commentCount || 0);
@@ -27,6 +36,11 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   const postRef = useRef(null);
   const viewedRef = useRef(false);
   const commentInputRef = useRef(null);
+
+  const { following } = useFollows(currentUserId);
+  const followingIds = useMemo(() => following.map(f => f.followingId), [following]);
+
+
   
   // Safely fallback to an empty array if comments are still loading or undefined
   const { comments = [], refreshComments } = useComments(showComments ? post.id : null);
@@ -67,6 +81,16 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
   const actualLikedBy = useMemo(() => localLikedBy !== null ? [...localLikedBy] : (stableLiked !== null ? [...stableLiked] : [...(post.likedBy || [])]), [localLikedBy, stableLiked, post.likedBy]);
   const actualRepostedBy = useMemo(() => localRepostedBy !== null ? [...localRepostedBy] : (stableRep !== null ? [...stableRep] : [...(post.repostedBy || [])]), [localRepostedBy, stableRep, post.repostedBy]);
   const actualFavoritedBy = useMemo(() => localFavoritedBy !== null ? [...localFavoritedBy] : (stableFav !== null ? [...stableFav] : [...(post.favoritedBy || [])]), [localFavoritedBy, stableFav, post.favoritedBy]);
+
+  const detailUsers = useMemo(() => {
+    if (detailModal === 'likes') {
+      return users.filter(u => actualLikedBy.includes(u.id));
+    }
+    if (detailModal === 'reposts') {
+      return users.filter(u => actualRepostedBy.includes(u.id));
+    }
+    return [];
+  }, [detailModal, users, actualLikedBy, actualRepostedBy]);
 
   const author = users.find(u => u.id === post.userId);
   const gamerBadge = getGamerBadge(post.userId);
@@ -267,6 +291,11 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
                 >
                   {author.displayName}
                 </span>
+                {author.verified && (
+                  <svg className="w-4 h-4 text-brand-primary fill-current flex-shrink-0 inline-block ml-0.5" viewBox="0 0 24 24" title="Verified Creator">
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                )}
                 {gamerBadge && (
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-dark-border bg-dark-bg ${gamerBadge.color}`}>
                     {gamerBadge.text}
@@ -303,6 +332,9 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
               {post.text && (
                 <RichText
                   parts={textParts}
+                  onHashtagClick={onHashtagClick}
+                  onMentionClick={onProfileClick}
+                  users={users}
                   className="text-dark-text text-[15px] leading-relaxed whitespace-pre-wrap break-words mb-2"
                 />
               )}
@@ -337,6 +369,53 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
               </div>
             )}
 
+            {/* Quote Post Preview */}
+            {originalPost && (
+              <div 
+                className="mt-2 mb-3 bg-dark-surface/30 hover:bg-dark-surface/50 border border-dark-border/50 rounded-2xl p-3.5 transition-all cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onProfileClick(originalPost.userId);
+                }}
+              >
+                {/* Original author details */}
+                {(() => {
+                  const origAuthor = users.find(u => u.id === originalPost.userId);
+                  if (!origAuthor) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <div className="w-5 h-5 rounded-full overflow-hidden bg-brand-primary/10 border border-dark-border flex items-center justify-center text-xs font-bold text-brand-primary">
+                        {origAuthor.avatarUrl ? (
+                          <img src={origAuthor.avatarUrl} alt={origAuthor.displayName} className="w-full h-full object-cover" />
+                        ) : (
+                          origAuthor.displayName[0].toUpperCase()
+                        )}
+                      </div>
+                      <span className="font-bold text-xs text-dark-text">{origAuthor.displayName}</span>
+                      {origAuthor.verified && (
+                        <svg className="w-3.5 h-3.5 text-brand-primary fill-current flex-shrink-0" viewBox="0 0 24 24">
+                          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                      )}
+                      <span className="text-[10px] text-dark-muted">@{origAuthor.displayName?.toLowerCase().replace(/\s+/g, '')}</span>
+                    </div>
+                  );
+                })()}
+                
+                {/* Original post text */}
+                <p className="text-xs text-dark-text leading-relaxed line-clamp-3 whitespace-pre-wrap break-words">
+                  {originalPost.text}
+                </p>
+
+                {/* Original post image */}
+                {originalPost.imageUrl && (
+                  <div className="mt-2 rounded-xl overflow-hidden max-h-[220px] border border-dark-border/40">
+                    <img src={originalPost.imageUrl} alt="Quoted content" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex items-center justify-between mt-1 -ml-2 max-w-md">
               {/* Comment */}
@@ -350,35 +429,93 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
                 </span>
               </button>
 
-              {/* Repost */}
-              <button
-                onClick={handleRepost}
-                className="flex items-center gap-1.5 group px-2 py-1.5 rounded-full hover:bg-brand-success/10 transition-colors"
-              >
-                <Repeat2
-                  className={`w-[18px] h-[18px] transition-colors ${
-                    isReposted ? 'text-brand-success' : 'text-dark-muted group-hover:text-brand-success'
-                  } ${repostAnim ? 'animate-repost-burst' : ''}`}
-                />
-                <span className={`text-xs ${isReposted ? 'text-brand-success' : 'text-dark-muted group-hover:text-brand-success'}`}>
-                  <AnimatedNumber value={repostCount} />
-                </span>
-              </button>
+              {/* Repost & Quote */}
+              <div className="flex items-center gap-1 group relative">
+                <button
+                  onClick={() => setShowRepostDropdown(!showRepostDropdown)}
+                  className="p-1.5 rounded-full hover:bg-brand-success/10 transition-colors text-dark-muted hover:text-brand-success cursor-pointer"
+                >
+                  <Repeat2
+                    className={`w-[18px] h-[18px] transition-colors ${
+                      isReposted ? 'text-brand-success' : 'text-dark-muted group-hover:text-brand-success'
+                    } ${repostAnim ? 'animate-repost-burst' : ''}`}
+                  />
+                </button>
+                {repostCount > 0 ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDetailModal('reposts');
+                    }}
+                    className={`text-xs font-semibold cursor-pointer hover:underline ${
+                      isReposted ? 'text-brand-success' : 'text-dark-muted hover:text-brand-success'
+                    }`}
+                  >
+                    <AnimatedNumber value={repostCount} />
+                  </button>
+                ) : (
+                  <span className="text-xs text-dark-muted">0</span>
+                )}
+
+                {showRepostDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowRepostDropdown(false)} />
+                    <div className="absolute left-0 bottom-full mb-1 z-50 bg-dark-card border border-dark-border rounded-xl shadow-xl p-1.5 min-w-[120px] animate-fade-in flex flex-col text-left">
+                      <button
+                        onClick={() => {
+                          setShowRepostDropdown(false);
+                          handleRepost();
+                        }}
+                        className="px-3 py-1.5 text-xs text-dark-text hover:bg-dark-hover rounded-lg transition-colors font-bold flex items-center gap-1.5 text-left w-full cursor-pointer"
+                      >
+                        <Repeat2 className="w-3.5 h-3.5 text-brand-success" />
+                        Repost
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowRepostDropdown(false);
+                          if (onQuote) onQuote(post);
+                        }}
+                        className="px-3 py-1.5 text-xs text-dark-text hover:bg-dark-hover rounded-lg transition-colors font-bold flex items-center gap-1.5 text-left w-full cursor-pointer"
+                      >
+                        <svg className="w-3.5 h-3.5 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        Quote Post
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* Like */}
-              <button
-                onClick={handleLike}
-                className="flex items-center gap-1.5 group px-2 py-1.5 rounded-full hover:bg-red-500/10 transition-colors"
-              >
-                <Heart
-                  className={`w-[18px] h-[18px] transition-colors ${
-                    isLiked ? 'text-red-500 fill-red-500' : 'text-dark-muted group-hover:text-red-500'
-                  } ${likeAnim ? 'animate-heart-burst' : ''}`}
-                />
-                <span className={`text-xs ${isLiked ? 'text-red-500' : 'text-dark-muted group-hover:text-red-500'}`}>
-                  <AnimatedNumber value={likeCount} />
-                </span>
-              </button>
+              <div className="flex items-center gap-1 group">
+                <button
+                  onClick={handleLike}
+                  className="p-1.5 rounded-full hover:bg-red-500/10 transition-colors text-dark-muted hover:text-red-500"
+                >
+                  <Heart
+                    className={`w-[18px] h-[18px] transition-colors ${
+                      isLiked ? 'text-red-500 fill-red-500' : 'text-dark-muted group-hover:text-red-500'
+                    } ${likeAnim ? 'animate-heart-burst' : ''}`}
+                  />
+                </button>
+                {likeCount > 0 ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDetailModal('likes');
+                    }}
+                    className={`text-xs font-semibold cursor-pointer hover:underline ${
+                      isLiked ? 'text-red-500' : 'text-dark-muted hover:text-red-500'
+                    }`}
+                  >
+                    <AnimatedNumber value={likeCount} />
+                  </button>
+                ) : (
+                  <span className="text-xs text-dark-muted">0</span>
+                )}
+              </div>
 
               {/* Views */}
               <div className="flex items-center gap-1.5 px-2 py-1.5">
@@ -481,6 +618,71 @@ export default function PostCard({ post, currentUserId, users, onProfileClick })
           alt="Post image"
           onClose={() => setShowLightbox(false)}
         />
+      )}
+
+      {/* Detail list modal */}
+      {detailModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center animate-modal-overlay"
+          onClick={() => setDetailModal(null)}
+        >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div 
+            className="relative bg-dark-card border border-dark-border rounded-2xl w-full max-w-xs p-4 mx-4 shadow-2xl animate-modal-enter flex flex-col max-h-[70vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center pb-3 border-b border-dark-border mb-3">
+              <h3 className="font-bold text-dark-text capitalize">
+                {detailModal === 'likes' ? 'Liked by' : 'Reposted by'}
+              </h3>
+              <button 
+                onClick={() => setDetailModal(null)}
+                className="p-1 rounded-full hover:bg-dark-hover text-dark-muted hover:text-dark-text cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto space-y-3 flex-1 pr-1">
+              {detailUsers.length === 0 ? (
+                <p className="text-sm text-dark-muted text-center py-4">No records found</p>
+              ) : (
+                detailUsers.map(u => {
+                  const isUserFollowing = followingIds.includes(u.id);
+                  return (
+                    <div key={u.id} className="flex items-center justify-between gap-3">
+                      <div 
+                        className="flex items-center gap-2 cursor-pointer min-w-0"
+                        onClick={() => {
+                          setDetailModal(null);
+                          onProfileClick(u.id);
+                        }}
+                      >
+                        <Avatar src={u.avatarUrl} name={u.displayName} size="sm" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-dark-text truncate">{u.displayName}</p>
+                          <p className="text-xs text-dark-muted truncate">@{u.displayName?.toLowerCase().replace(/\s+/g, '')}</p>
+                        </div>
+                      </div>
+                      {u.id !== currentUserId && (
+                        <FollowButton
+                          isFollowing={isUserFollowing}
+                          size="sm"
+                          onClick={async () => {
+                            if (isUserFollowing) {
+                              await unfollowUser(currentUserId, u.id);
+                            } else {
+                              await followUser(currentUserId, u.id);
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

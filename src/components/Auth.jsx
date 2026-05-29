@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, Eye, EyeOff, Loader2, Sparkles, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Gamepad2, Eye, EyeOff, Loader2, Sparkles, Mail, Lock, User, ArrowRight } from 'lucide-react';
 
 export default function Auth({ auth }) {
   const { loginWithEmail, signupWithEmail, loginWithGoogle, loginAsGuest } = auth;
@@ -42,7 +42,12 @@ export default function Auth({ auth }) {
       await loginWithGoogle();
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Google Authentication failed.');
+      const errMsg = err.message || '';
+      if (errMsg.includes('provider "google"') || err.toString().includes('provider "google"')) {
+        setError('Google Login is not enabled on the server. Please enable Google in your PocketBase Dashboard Settings -> Auth Providers -> Google.');
+      } else {
+        setError(err.message || 'Google Authentication failed.');
+      }
     } finally {
       setLoading(false);
     }
@@ -63,34 +68,31 @@ export default function Auth({ auth }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#07070a] px-4 relative overflow-hidden select-none">
-      {/* Dynamic Ambient Neon Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-brand-primary/10 rounded-full blur-[120px] animate-pulse pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-brand-secondary/10 rounded-full blur-[120px] animate-pulse pointer-events-none" />
-
-      {/* Cyber Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+    <div className="min-h-screen flex items-center justify-center bg-[#0b0c0f] px-4 relative overflow-hidden select-none">
+      {/* Ambient Gradients (No neon, just soft high-end blur) */}
+      <div className="absolute top-[-20%] left-[-20%] w-[600px] h-[600px] bg-brand-primary/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-20%] w-[600px] h-[600px] bg-brand-secondary/5 rounded-full blur-[150px] pointer-events-none" />
 
       {/* Login Card */}
       <div className="w-full max-w-md bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-2xl rounded-[32px] p-8 flex flex-col items-center relative z-10 shadow-2xl transition-all duration-300">
         
-        {/* Glow Line Indicator */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-primary to-transparent" />
+        {/* Subtle Top Border */}
+        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-brand-primary/20 to-transparent" />
 
         {/* Floating Pulsing App Logo */}
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-primary/20 to-brand-secondary/20 border border-brand-primary/40 flex items-center justify-center mb-6 relative group glow-box-primary">
-          <Zap className="w-8 h-8 text-brand-primary group-hover:scale-110 transition-transform duration-300 fill-brand-primary/10" />
-          <div className="absolute inset-0 rounded-2xl bg-brand-primary/10 animate-ping opacity-70 pointer-events-none" />
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-primary/10 to-brand-secondary/10 border border-dark-border flex items-center justify-center mb-6 relative group">
+          <Gamepad2 className="w-8 h-8 text-brand-primary group-hover:scale-110 transition-transform duration-300 fill-brand-primary/5" />
+          <div className="absolute inset-0 rounded-2xl bg-brand-primary/5 animate-ping opacity-30 pointer-events-none" />
         </div>
 
         {/* Headlines */}
-        <h2 className="text-2xl font-black text-dark-text tracking-wide uppercase text-center mb-1">
-          {mode === 'login' ? 'System Login' : 'Initial Registration'}
+        <h2 className="text-2xl font-bold text-dark-text tracking-tight text-center mb-1">
+          {mode === 'login' ? 'Sign In' : 'Create Account'}
         </h2>
-        <p className="text-xs text-dark-muted mb-8 tracking-wider text-center">
+        <p className="text-xs text-dark-muted mb-8 tracking-normal text-center">
           {mode === 'login' 
-            ? 'Identify yourself to connect to the network' 
-            : 'Register a new unique handle on the grid'}
+            ? 'Welcome back! Sign in to connect with other players.' 
+            : 'Join CaisterPlayz today to share your gaming moments.'}
         </p>
 
         {/* Google Authentication Button */}
@@ -180,7 +182,7 @@ export default function Auth({ auth }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-brand-primary to-brand-secondary text-black font-black text-sm py-4 rounded-2xl mt-2 hover:opacity-90 active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:pointer-events-none glow-box-primary"
+            className="w-full flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-primary/95 text-white font-bold text-sm py-4 rounded-2xl mt-2 active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:pointer-events-none shadow-md"
           >
             {loading ? (
               <>
@@ -189,7 +191,7 @@ export default function Auth({ auth }) {
               </>
             ) : (
               <>
-                {mode === 'login' ? 'Initialize Connection' : 'Generate Identity'}
+                {mode === 'login' ? 'Sign In' : 'Create Account'}
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -208,7 +210,7 @@ export default function Auth({ auth }) {
                 }}
                 className="text-brand-primary hover:underline font-bold"
               >
-                Register
+                Sign Up
               </button>
             </>
           ) : (

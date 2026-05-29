@@ -1,24 +1,31 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Home, Search, Bell, User, Zap, RefreshCw, Film } from 'lucide-react';
-import { useAuth, useUserProfile, usePosts, useNotifications, useFollows, useAllUsers, useAllFollows, useNewUserAlert, getCommentCounts } from './hooks';
-import { Spinner, Toast, NewUserToast } from './components/Shared';
+import { Home, Search, Bell, User, Gamepad2, RefreshCw, Film, MessageSquare, Menu, X, Award, Users, List, Settings } from 'lucide-react';
+import { useAuth, useUserProfile, usePosts, useNotifications, useFollows, useAllUsers, useAllFollows, useNewUserAlert, getCommentCounts, useDMThreads, useCommunities } from './hooks';
+import { Spinner, Toast, NewUserToast, Avatar } from './components/Shared';
 import HomeTab from './components/HomeTab';
 import ExploreTab from './components/ExploreTab';
 import ReelsTab from './components/ReelsTab';
 import NotificationsTab from './components/NotificationsTab';
 import ProfileTab from './components/ProfileTab';
 import Auth from './components/Auth';
+import DirectMessages from './components/DirectMessages';
+
+import SettingsModal from './components/SettingsModal';
+import CreatorStudio from './components/CreatorStudio';
+import ListsModal from './components/ListsModal';
+import CommunitiesTab from './components/CommunitiesTab';
 
 export default function App() {
   const auth = useAuth();
   const { user, loading: authLoading, error: authError, retry: authRetry, logout } = auth;
   const profile = useUserProfile(user?.id);
-  const { posts, loading: postsLoading, hasMore, loadingMore, loadMore } = usePosts();
+  const { posts, loading: postsLoading, hasMore, loadingMore, loadMore, refresh: refreshPosts } = usePosts();
   const allUsers = useAllUsers();
   const { following, followers } = useFollows(user?.id);
   const { notifications, unreadCount, newNotification } = useNotifications(user?.id);
   const allFollows = useAllFollows();
   const newUserAlert = useNewUserAlert(allUsers, user?.id);
+  const { communities } = useCommunities();
 
   const [activeTab, setActiveTab] = useState('home');
   const [homeSubTab, setHomeSubTab] = useState('foryou');
@@ -26,10 +33,33 @@ export default function App() {
   const [viewingProfileId, setViewingProfileId] = useState(null);
   const [prevTab, setPrevTab] = useState(null);
   const [tabTransitioning, setTabTransitioning] = useState(false);
+  
+  // Advanced features state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCreatorStudioOpen, setIsCreatorStudioOpen] = useState(false);
+  const [isListsOpen, setIsListsOpen] = useState(false);
+  const [isCommunitiesOpen, setIsCommunitiesOpen] = useState(false);
+  const [quotedPost, setQuotedPost] = useState(null);
+  const [dmRecipientId, setDmRecipientId] = useState(null);
+
+  const [isDmOpen, setIsDmOpen] = useState(false);
   const mainRef = useRef(null);
 
   const followingIds = useMemo(() => following.map(f => f.followingId), [following]);
   const followerIds = useMemo(() => followers.map(f => f.followerId), [followers]);
+
+  // DM threads and unread calculation
+  const { threads: dmThreads } = useDMThreads(user?.id);
+  const hasUnreadDms = useMemo(() => {
+    return dmThreads.some(t => t.lastMessage && t.lastMessage.senderId !== user?.id && !t.lastMessage.read);
+  }, [dmThreads, user?.id]);
+
+  // Dynamic hashtag search routing
+  const handleHashtagClick = useCallback((tag) => {
+    setExploreSearchQuery(tag);
+    setActiveTab('explore');
+  }, []);
 
   // Comment counts per post
   const [commentCounts, setCommentCounts] = useState({});
@@ -70,6 +100,11 @@ export default function App() {
     if (activeTab !== 'profile') setPrevTab(activeTab);
     setViewingProfileId(userId);
     setActiveTab('profile');
+  };
+
+  const handleMessageClick = (recipientId) => {
+    setDmRecipientId(recipientId);
+    setIsDmOpen(true);
   };
 
   // Scroll to top when re-tapping active tab
@@ -117,7 +152,7 @@ export default function App() {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-dark-bg">
         <div className="flex items-center gap-2 mb-6">
-          <Zap className="w-10 h-10 text-brand-primary" fill="currentColor" />
+          <Gamepad2 className="w-10 h-10 text-brand-primary" fill="currentColor" />
           <span className="text-2xl font-black text-dark-text tracking-tight">CaisterPlayz</span>
         </div>
         <Spinner />
@@ -133,7 +168,7 @@ export default function App() {
 
   return (
     <div className="w-full min-h-screen bg-dark-bg flex justify-center">
-      <div className="w-full max-w-lg flex flex-col min-h-screen relative border-x border-dark-border">
+      <div className="w-full max-w-lg flex flex-col min-h-screen relative border-x border-dark-border overflow-x-hidden">
         {/* Sleek Glassmorphic Tab Transition Loading Overlay */}
         {tabTransitioning && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-dark-bg/85 backdrop-blur-md animate-fade-in">
@@ -142,11 +177,11 @@ export default function App() {
             
             {/* Center pulsing icon & spinner */}
             <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 border border-brand-primary/30 flex items-center justify-center relative glow-box-primary">
-                <Zap className="w-8 h-8 text-brand-primary animate-pulse" />
+              <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 border border-brand-primary/25 flex items-center justify-center relative">
+                <Gamepad2 className="w-8 h-8 text-brand-primary animate-pulse" />
               </div>
-              <p className="text-[10px] font-black text-brand-primary tracking-widest uppercase animate-pulse">
-                Syncing Grid...
+              <p className="text-[10px] font-bold text-brand-primary tracking-widest uppercase animate-pulse">
+                Loading...
               </p>
             </div>
           </div>
@@ -155,13 +190,33 @@ export default function App() {
         {activeTab !== 'reels' && (
           <header className="sticky top-0 z-40 bg-dark-bg/95 backdrop-blur-xl border-b border-dark-border h-[53px] flex flex-col justify-center">
             <div className="flex items-center justify-between px-4">
-              <div className="flex items-center gap-2">
-                <Zap className="w-6 h-6 text-brand-primary" fill="currentColor" />
-                <span className="text-lg font-black text-dark-text tracking-tight">CaisterPlayz</span>
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="p-1.5 rounded-full text-dark-muted hover:text-brand-primary hover:bg-dark-hover transition-all duration-200 active:scale-95 cursor-pointer"
+                  title="Main Menu"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <Gamepad2 className="w-6 h-6 text-brand-primary" fill="currentColor" />
+                  <span className="text-lg font-black text-dark-text tracking-tight">CaisterPlayz</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-brand-success animate-pulse-live" />
-                <span className="text-xs font-semibold text-brand-success">Live</span>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setIsDmOpen(true)}
+                  className="p-2 rounded-full text-dark-muted hover:text-brand-primary hover:bg-dark-hover transition-all duration-200 relative active:scale-95"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  {hasUnreadDms && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-brand-primary rounded-full ring-2 ring-dark-bg animate-pulse" />
+                  )}
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-brand-success animate-pulse-live" />
+                  <span className="text-xs font-semibold text-brand-success">Live</span>
+                </div>
               </div>
             </div>
           </header>
@@ -183,6 +238,11 @@ export default function App() {
               followingIds={followingIds}
               onProfileClick={handleProfileClick}
               onNavigate={handleTabChange}
+              onHashtagClick={handleHashtagClick}
+              onQuote={(post) => setQuotedPost(post)}
+              quotedPost={quotedPost}
+              onClearQuote={() => setQuotedPost(null)}
+              communities={communities}
             />
           )}
 
@@ -197,6 +257,8 @@ export default function App() {
               onProfileClick={handleProfileClick}
               searchQuery={exploreSearchQuery}
               setSearchQuery={setExploreSearchQuery}
+              onHashtagClick={handleHashtagClick}
+              onQuote={(post) => setQuotedPost(post)}
             />
           )}
 
@@ -234,6 +296,9 @@ export default function App() {
               onBack={handleProfileBack}
               onProfileUpdate={authRetry}
               onLogout={logout}
+              onHashtagClick={handleHashtagClick}
+              onMessageClick={handleMessageClick}
+              onQuote={(post) => setQuotedPost(post)}
             />
           )}
         </main>
@@ -251,6 +316,151 @@ export default function App() {
 
         {showToast && <Toast notification={newNotification} users={allUsers} />}
         {newUserAlert && !showToast && <NewUserToast user={newUserAlert} />}
+
+        {/* Direct Messages Drawer */}
+        <DirectMessages 
+          isOpen={isDmOpen} 
+          onClose={() => setIsDmOpen(false)} 
+          currentUserId={user.id} 
+          users={allUsers} 
+          initialRecipientId={dmRecipientId}
+        />
+
+        {/* Sliding Sidebar Drawer */}
+        {isSidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-modal-overlay"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+            {/* Sliding Panel */}
+            <div 
+              className="fixed top-0 left-0 h-full w-64 max-w-[80vw] bg-dark-surface border-r border-dark-border z-50 p-6 flex flex-col justify-between shadow-2xl animate-modal-enter"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Gamepad2 className="w-6 h-6 text-brand-primary" fill="currentColor" />
+                    <span className="text-lg font-black text-dark-text">CaisterPlayz</span>
+                  </div>
+                  <button 
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="p-1 rounded-full text-dark-muted hover:text-dark-text hover:bg-dark-hover"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* User Profile Mini Card */}
+                <div 
+                  className="flex items-center gap-3 p-3 bg-dark-bg/40 border border-dark-border/60 rounded-2xl hover:bg-dark-bg/85 cursor-pointer transition-all"
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    handleProfileClick(user.id);
+                  }}
+                >
+                  <Avatar src={profile?.avatarUrl} name={profile?.displayName} size="md" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1">
+                      <h4 className="font-bold text-xs text-dark-text truncate">{profile?.displayName || user.displayName}</h4>
+                      {profile?.verified && (
+                        <svg className="w-3.5 h-3.5 text-brand-primary fill-current flex-shrink-0" viewBox="0 0 24 24">
+                          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-dark-muted truncate">@{profile?.displayName?.toLowerCase().replace(/\s+/g, '')}</p>
+                  </div>
+                </div>
+
+                {/* Navigation Menu */}
+                <div className="space-y-1.5">
+                  <button
+                    onClick={() => { setIsSidebarOpen(false); setIsCreatorStudioOpen(true); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-dark-hover text-dark-text font-bold text-xs transition-colors text-left cursor-pointer"
+                  >
+                    <Award className="w-4.5 h-4.5 text-brand-secondary" />
+                    <span>Creator Studio</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsSidebarOpen(false); setIsCommunitiesOpen(true); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-dark-hover text-dark-text font-bold text-xs transition-colors text-left cursor-pointer"
+                  >
+                    <Users className="w-4.5 h-4.5 text-brand-primary" />
+                    <span>Gaming Rooms</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsSidebarOpen(false); setIsListsOpen(true); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-dark-hover text-dark-text font-bold text-xs transition-colors text-left cursor-pointer"
+                  >
+                    <List className="w-4.5 h-4.5 text-brand-success" />
+                    <span>Custom Timelines</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsSidebarOpen(false); setIsSettingsOpen(true); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-dark-hover text-dark-text font-bold text-xs transition-colors text-left cursor-pointer"
+                  >
+                    <Settings className="w-4.5 h-4.5 text-dark-muted" />
+                    <span>Preferences & Settings</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Footer Profile actions */}
+              <div className="border-t border-dark-border/60 pt-4 flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    logout();
+                  }}
+                  className="w-full text-center py-2 border border-brand-danger/30 hover:bg-brand-danger/10 text-brand-danger rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Modular Overlays */}
+        <SettingsModal 
+          isOpen={isSettingsOpen} 
+          onClose={() => setIsSettingsOpen(false)} 
+          user={user} 
+          profile={profile} 
+          onProfileUpdate={authRetry} 
+        />
+
+        <CreatorStudio 
+          isOpen={isCreatorStudioOpen} 
+          onClose={() => setIsCreatorStudioOpen(false)} 
+          user={user} 
+          profile={profile} 
+          posts={enrichedPosts} 
+          followersCount={followerIds.length} 
+        />
+
+        <ListsModal 
+          isOpen={isListsOpen} 
+          onClose={() => setIsListsOpen(false)} 
+          user={user} 
+          allUsers={allUsers} 
+          posts={enrichedPosts} 
+          onProfileClick={handleProfileClick} 
+        />
+
+        <CommunitiesTab 
+          isOpen={isCommunitiesOpen} 
+          onClose={() => setIsCommunitiesOpen(false)} 
+          user={user} 
+          allUsers={allUsers} 
+          posts={enrichedPosts} 
+          onProfileClick={handleProfileClick} 
+          refreshAllPosts={refreshPosts}
+        />
       </div>
     </div>
   );

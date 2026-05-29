@@ -37,7 +37,7 @@ export function Avatar({ src, name, size = 'md', onClick }) {
     <div className="relative inline-block">
       <div
         onClick={onClick}
-        className={`${sizes[size]} rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center cursor-pointer ring-2 ring-dark-border hover:ring-brand-primary transition-all duration-200 shadow-[0_0_15px_rgba(0,240,255,0.2)]`}
+        className={`${sizes[size]} rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center cursor-pointer ring-2 ring-dark-border hover:ring-brand-primary transition-all duration-200 shadow-sm`}
       >
       {src ? (
         <img src={src} alt={name || 'avatar'} className="w-full h-full object-cover" />
@@ -49,7 +49,7 @@ export function Avatar({ src, name, size = 'md', onClick }) {
       </div>
       
       {/* Online presence indicator */}
-      <div className="absolute bottom-0 right-0 w-3 h-3 bg-brand-success rounded-full border-2 border-dark-bg shadow-[0_0_8px_rgba(57,255,20,0.8)] animate-pulse-live" />
+      <div className="absolute bottom-0 right-0 w-3 h-3 bg-brand-success rounded-full border-2 border-dark-bg shadow-sm animate-pulse-live" />
     </div>
   );
 }
@@ -219,7 +219,7 @@ export function FollowButton({ isFollowing, onClick, size = 'md' }) {
 }
 
 /* ─── Rich Text Renderer ─── */
-export function RichText({ parts, className = '' }) {
+export function RichText({ parts, onHashtagClick, onMentionClick, users, className = '' }) {
   return (
     <p className={className}>
       {parts.map((part, i) =>
@@ -238,8 +238,33 @@ export function RichText({ parts, className = '' }) {
         ) : part.type === 'game-tag' ? (
           <span 
             key={i} 
-            className="inline-flex items-center px-2 py-0.5 rounded border border-brand-primary/50 bg-brand-primary/10 text-brand-primary text-xs font-bold shadow-[0_0_8px_rgba(0,240,255,0.4)] cursor-pointer hover:bg-brand-primary/20 mx-0.5"
-            onClick={(e) => { e.stopPropagation(); /* Optional: handle tag click */ }}
+            className="inline-flex items-center px-2.5 py-0.5 rounded-full border border-brand-primary/20 bg-brand-primary/10 text-brand-primary text-xs font-semibold cursor-pointer hover:bg-brand-primary/25 mx-0.5 transition-colors"
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              if (onHashtagClick) {
+                onHashtagClick(part.content);
+              }
+            }}
+          >
+            {part.content}
+          </span>
+        ) : part.type === 'mention' ? (
+          <span
+            key={i}
+            className="text-brand-primary font-bold hover:underline cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onMentionClick && users) {
+                const cleanName = part.content.slice(1).toLowerCase();
+                const found = users.find(u => 
+                  u.displayName?.toLowerCase().replace(/\s+/g, '') === cleanName || 
+                  u.displayName?.toLowerCase() === cleanName
+                );
+                if (found) {
+                  onMentionClick(found.id);
+                }
+              }
+            }}
           >
             {part.content}
           </span>

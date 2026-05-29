@@ -41,3 +41,4 @@ deploy_ec2.cjs
 
 *hf*.js
 test_free_tier.cjs
+scratch/

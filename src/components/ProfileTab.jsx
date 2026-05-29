@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
-import { ArrowLeft, LinkIcon, Calendar, X, Loader2, Camera } from 'lucide-react';
+import { ArrowLeft, LinkIcon, Calendar, X, Loader2, Camera, MessageCircle } from 'lucide-react';
 import PostCard from './PostCard';
 import { Avatar, FollowButton, Spinner } from './Shared';
 import { followUser, unfollowUser, updateProfile, useUserProfile } from '../hooks';
@@ -7,7 +7,8 @@ import { compressAvatar, formatCount, formatTime } from '../utils';
 
 export default function ProfileTab({
   viewingUserId, currentUserId, users, posts, hasMore, loadingMore,
-  followingIds, allFollows, onProfileClick, onBack, onProfileUpdate, onLogout
+  followingIds, allFollows, onProfileClick, onBack, onProfileUpdate, onLogout,
+  onHashtagClick, onMessageClick, onQuote
 }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const isOwnProfile = viewingUserId === currentUserId;
@@ -24,6 +25,9 @@ export default function ProfileTab({
     setLocalIsFollowing(followingIds.includes(viewingUserId));
   }, [followingIds, viewingUserId]);
 
+  const [profileTab, setProfileTab] = useState('posts'); // 'posts' | 'likes' | 'bookmarks'
+  const [listModal, setListModal] = useState(null); // 'followers' | 'following' | null
+
   // Counts for the viewing user
   const userPosts = useMemo(() =>
     posts.filter(p => p.userId === viewingUserId).sort((a, b) => {
@@ -33,6 +37,40 @@ export default function ProfileTab({
     }),
     [posts, viewingUserId]
   );
+
+  const likedPosts = useMemo(() =>
+    posts.filter(p => (p.likedBy || []).includes(viewingUserId)).sort((a, b) => {
+      const aTime = new Date(a.created || 0);
+      const bTime = new Date(b.created || 0);
+      return bTime - aTime;
+    }),
+    [posts, viewingUserId]
+  );
+
+  const bookmarkedPosts = useMemo(() =>
+    posts.filter(p => (p.favoritedBy || []).includes(viewingUserId)).sort((a, b) => {
+      const aTime = new Date(a.created || 0);
+      const bTime = new Date(b.created || 0);
+      return bTime - aTime;
+    }),
+    [posts, viewingUserId]
+  );
+
+  const followingUsers = useMemo(() => {
+    const ids = allFollows.filter(f => f.followerId === viewingUserId).map(f => f.followingId);
+    return users.filter(u => ids.includes(u.id));
+  }, [allFollows, users, viewingUserId]);
+
+  const followerUsers = useMemo(() => {
+    const ids = allFollows.filter(f => f.followingId === viewingUserId).map(f => f.followerId);
+    return users.filter(u => ids.includes(u.id));
+  }, [allFollows, users, viewingUserId]);
+
+  const activeFeedPosts = useMemo(() => {
+    if (profileTab === 'likes') return likedPosts;
+    if (profileTab === 'bookmarks') return bookmarkedPosts;
+    return userPosts;
+  }, [profileTab, userPosts, likedPosts, bookmarkedPosts]);
 
   const viewingFollowing = useMemo(() =>
     allFollows.filter(f => f.followerId === viewingUserId).length,
@@ -79,7 +117,14 @@ export default function ProfileTab({
           </button>
         )}
         <div>
-          <h2 className="font-extrabold text-lg text-dark-text leading-tight">{viewingUser?.displayName}</h2>
+          <div className="flex items-center gap-1">
+            <h2 className="font-extrabold text-lg text-dark-text leading-tight">{viewingUser?.displayName}</h2>
+            {viewingUser?.verified && (
+              <svg className="w-4 h-4 text-brand-primary fill-current flex-shrink-0" viewBox="0 0 24 24">
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+            )}
+          </div>
           <p className="text-xs text-dark-muted font-bold tracking-tight">{userPosts.length} posts</p>
         </div>
       </div>
@@ -111,17 +156,35 @@ export default function ProfileTab({
               )}
             </div>
           ) : (
-            <FollowButton
-              isFollowing={localIsFollowing}
-              onClick={handleFollow}
-            />
+            <div className="flex items-center gap-2">
+              {onMessageClick && (
+                <button
+                  onClick={() => onMessageClick(viewingUser.id)}
+                  className="p-2 rounded-full border border-dark-border text-dark-text hover:bg-dark-hover transition-colors cursor-pointer"
+                  title="Message"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </button>
+              )}
+              <FollowButton
+                isFollowing={localIsFollowing}
+                onClick={handleFollow}
+              />
+            </div>
           )}
         </div>
       </div>
 
       {/* Profile Info */}
       <div className="px-4 mb-3">
-        <h3 className="text-xl font-bold text-dark-text">{viewingUser.displayName}</h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-xl font-bold text-dark-text">{viewingUser.displayName}</h3>
+          {viewingUser?.verified && (
+            <svg className="w-5 h-5 text-brand-primary fill-current flex-shrink-0" viewBox="0 0 24 24">
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+          )}
+        </div>
         <p className="text-sm text-dark-muted">@{viewingUser.displayName?.toLowerCase().replace(/\s+/g, '')}</p>
 
         {viewingUser.bio && (
@@ -148,14 +211,20 @@ export default function ProfileTab({
 
         {/* Stats */}
         <div className="flex items-center gap-5 mt-3">
-          <span className="text-sm">
+          <button
+            onClick={() => setListModal('following')}
+            className="text-sm cursor-pointer hover:underline text-left focus:outline-none"
+          >
             <span className="font-bold text-dark-text">{formatCount(viewingFollowing)}</span>{' '}
             <span className="text-dark-muted">Following</span>
-          </span>
-          <span className="text-sm">
+          </button>
+          <button
+            onClick={() => setListModal('followers')}
+            className="text-sm cursor-pointer hover:underline text-left focus:outline-none"
+          >
             <span className="font-bold text-dark-text">{formatCount(viewingFollowers)}</span>{' '}
             <span className="text-dark-muted">Followers</span>
-          </span>
+          </button>
           <span className="text-sm">
             <span className="font-bold text-dark-text">{formatCount(totalLikes)}</span>{' '}
             <span className="text-dark-muted">Likes</span>
@@ -163,26 +232,49 @@ export default function ProfileTab({
         </div>
       </div>
 
-      {/* Posts Tab */}
-      <div className="border-b border-dark-border">
-        <div className="px-4 py-3">
-          <span className="font-bold text-sm text-dark-text relative pb-3">
-            Posts
-            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-brand-primary rounded-full" />
-          </span>
-        </div>
+      {/* Profile Sub-Tabs */}
+      <div className="border-b border-dark-border flex">
+        <button
+          onClick={() => setProfileTab('posts')}
+          className={`flex-1 py-3 text-center text-sm font-bold border-b-2 transition-all cursor-pointer ${
+            profileTab === 'posts' ? 'border-brand-primary text-dark-text' : 'border-transparent text-dark-muted hover:text-dark-text'
+          }`}
+        >
+          Posts
+        </button>
+        <button
+          onClick={() => setProfileTab('likes')}
+          className={`flex-1 py-3 text-center text-sm font-bold border-b-2 transition-all cursor-pointer ${
+            profileTab === 'likes' ? 'border-brand-primary text-dark-text' : 'border-transparent text-dark-muted hover:text-dark-text'
+          }`}
+        >
+          Likes
+        </button>
+        {isOwnProfile && (
+          <button
+            onClick={() => setProfileTab('bookmarks')}
+            className={`flex-1 py-3 text-center text-sm font-bold border-b-2 transition-all cursor-pointer ${
+              profileTab === 'bookmarks' ? 'border-brand-primary text-dark-text' : 'border-transparent text-dark-muted hover:text-dark-text'
+            }`}
+          >
+            Bookmarks
+          </button>
+        )}
       </div>
 
-      {/* User Posts */}
-      {userPosts.length > 0 ? (
+      {/* User Posts Feed */}
+      {activeFeedPosts.length > 0 ? (
         <>
-          {userPosts.map(post => (
+          {activeFeedPosts.map(post => (
             <PostCard
               key={post.id}
               post={post}
               currentUserId={currentUserId}
               users={users}
               onProfileClick={onProfileClick}
+              onHashtagClick={onHashtagClick}
+              onQuote={onQuote}
+              posts={posts}
             />
           ))}
           {loadingMore && <Spinner />}
@@ -208,6 +300,72 @@ export default function ProfileTab({
             onProfileUpdate?.();
           }}
         />
+      )}
+
+      {/* Followers/Following Modal */}
+      {listModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center animate-modal-overlay"
+          onClick={() => setListModal(null)}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-sm bg-dark-card border border-dark-border rounded-2xl flex flex-col max-h-[70vh] p-4 mx-4 shadow-2xl animate-modal-enter"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-dark-border mb-3">
+              <h3 className="font-bold text-dark-text capitalize">
+                {listModal}
+              </h3>
+              <button 
+                onClick={() => setListModal(null)}
+                className="p-1 rounded-full hover:bg-dark-hover text-dark-muted hover:text-dark-text cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto space-y-3 flex-1 pr-1">
+              {(listModal === 'following' ? followingUsers : followerUsers).length === 0 ? (
+                <p className="text-sm text-dark-muted text-center py-6">No users listed</p>
+              ) : (
+                (listModal === 'following' ? followingUsers : followerUsers).map(u => {
+                  const isUserFollowing = followingIds.includes(u.id);
+                  return (
+                    <div key={u.id} className="flex items-center justify-between gap-3">
+                      <div
+                        onClick={() => {
+                          setListModal(null);
+                          onProfileClick(u.id);
+                        }}
+                        className="flex items-center gap-2 cursor-pointer min-w-0"
+                      >
+                        <Avatar src={u.avatarUrl} name={u.displayName} size="sm" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-dark-text truncate">{u.displayName}</p>
+                          <p className="text-xs text-dark-muted truncate">@{u.displayName?.toLowerCase().replace(/\s+/g, '')}</p>
+                        </div>
+                      </div>
+                      {u.id !== currentUserId && (
+                        <FollowButton
+                          isFollowing={isUserFollowing}
+                          size="sm"
+                          onClick={async () => {
+                            if (isUserFollowing) {
+                              await unfollowUser(currentUserId, u.id);
+                            } else {
+                              await followUser(currentUserId, u.id);
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

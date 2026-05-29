@@ -6,7 +6,8 @@ import { EmptyState, PostSkeleton, Spinner } from './Shared';
 
 export default function HomeTab({
   subTab, setSubTab, posts, postsLoading, hasMore, loadingMore, currentUserId,
-  profile, users, followingIds, onProfileClick, onNavigate
+  profile, users, followingIds, onProfileClick, onNavigate, onHashtagClick,
+  onQuote, quotedPost, onClearQuote, communities
 }) {
   // For You: all posts, sorted chronologically
   const forYouPosts = useMemo(() => posts, [posts]);
@@ -82,7 +83,14 @@ export default function HomeTab({
       </div>
 
       {/* Composer */}
-      <Composer currentUserId={currentUserId} profile={profile} />
+      <Composer 
+        currentUserId={currentUserId} 
+        profile={profile} 
+        quotedPost={quotedPost}
+        onClearQuote={onClearQuote}
+        communities={communities}
+        users={users}
+      />
 
       {/* Posts Feed */}
       {postsLoading ? (
@@ -100,6 +108,9 @@ export default function HomeTab({
               currentUserId={currentUserId}
               users={users}
               onProfileClick={onProfileClick}
+              onHashtagClick={onHashtagClick}
+              onQuote={onQuote}
+              posts={posts}
             />
           ))}
           {loadingMore && <Spinner />}

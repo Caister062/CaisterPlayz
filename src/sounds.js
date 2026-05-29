@@ -39,3 +39,19 @@ export function playRepostSound() {
   playTone(800, 'square', 0.05, 0.1);
   setTimeout(() => playTone(1200, 'square', 0.1, 0.1), 50);
 }
+
+export function playCashOutSound() {
+  // Synthesized coin burst: a series of bright, happy coin tones
+  const playCoin = (delay, freq1, freq2) => {
+    setTimeout(() => {
+      playTone(freq1, 'sine', 0.08, 0.15);
+      setTimeout(() => playTone(freq2, 'sine', 0.15, 0.15), 60);
+    }, delay);
+  };
+
+  playCoin(0, 987.77, 1318.51); // B5 -> E6
+  playCoin(120, 1046.50, 1396.91); // C6 -> F6
+  playCoin(240, 1174.66, 1567.98); // D6 -> G6
+  playCoin(360, 1318.51, 1760.00); // E6 -> A6
+  playCoin(480, 1567.98, 2093.00); // G6 -> C7
+}

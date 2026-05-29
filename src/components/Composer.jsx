@@ -6,7 +6,7 @@ import { createPost } from '../hooks';
 import { MUSIC_TRACKS, previewTrack, stopTrack } from '../musicLibrary';
 import { playPostSound } from '../sounds';
 
-export default function Composer({ currentUserId, profile }) {
+export default function Composer({ currentUserId, profile, quotedPost, onClearQuote, communities, initialCommunityId, users }) {
   const [text, setText] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [compressedImage, setCompressedImage] = useState('');
@@ -16,8 +16,13 @@ export default function Composer({ currentUserId, profile }) {
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [previewingId, setPreviewingId] = useState(null);
   const [selectedTag, setSelectedTag] = useState('');
+  const [activeCommunityId, setActiveCommunityId] = useState(initialCommunityId || '');
   const fileRef = useRef(null);
   const textareaRef = useRef(null);
+
+  useEffect(() => {
+    setActiveCommunityId(initialCommunityId || '');
+  }, [initialCommunityId]);
 
   // Auto-expand textarea
   useEffect(() => {
@@ -104,7 +109,7 @@ export default function Composer({ currentUserId, profile }) {
 
   const handlePost = async () => {
     const finalContent = selectedTag ? `${selectedTag} ${text.trim()}` : text.trim();
-    if ((!finalContent && !compressedImage) || posting) return;
+    if ((!finalContent && !compressedImage && !quotedPost) || posting) return;
     setPosting(true);
     try {
       await createPost(
@@ -112,13 +117,17 @@ export default function Composer({ currentUserId, profile }) {
         finalContent,
         compressedImage,
         selectedTrack?.id || '',
-        selectedTrack?.name || ''
+        selectedTrack?.name || '',
+        quotedPost?.id || '',
+        quotedPost ? 'quote' : 'post',
+        activeCommunityId || ''
       );
       setText('');
       setImagePreview('');
       setCompressedImage('');
       setSelectedTrack(null);
       setSelectedTag('');
+      if (onClearQuote) onClearQuote();
       playPostSound();
       window.dispatchEvent(new Event('refreshPosts'));
     } catch (err) {
@@ -137,6 +146,40 @@ export default function Composer({ currentUserId, profile }) {
       <div className="flex gap-3">
         <Avatar src={profile?.avatarUrl} name={profile?.displayName} size="md" />
         <div className="flex-1">
+          {/* Community Selector */}
+          {communities && communities.length > 0 && (
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] text-dark-muted font-bold uppercase">Post to:</span>
+              <select
+                value={activeCommunityId}
+                onChange={(e) => setActiveCommunityId(e.target.value)}
+                className="bg-dark-surface border border-dark-border rounded-lg px-2 py-0.5 text-xs text-dark-text focus:outline-none focus:border-brand-primary cursor-pointer font-semibold"
+              >
+                <option value="">Public Timeline</option>
+                {communities.map(comm => (
+                  <option key={comm.id} value={comm.id}>{comm.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Quote Preview */}
+          {quotedPost && (
+            <div className="relative mt-1 mb-3 bg-dark-surface/40 border border-dark-border/60 rounded-xl p-3 animate-fade-slide">
+              <button
+                onClick={onClearQuote}
+                className="absolute top-2 right-2 p-1 rounded-full bg-dark-bg/60 text-dark-muted hover:text-dark-text transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <div className="flex items-center gap-1.5 mb-1 text-[10px]">
+                <span className="font-bold text-dark-text">Quoting post from</span>
+                <span className="text-brand-primary">@{users?.find(u => u.id === quotedPost.userId)?.displayName?.toLowerCase().replace(/\s+/g, '') || 'user'}</span>
+              </div>
+              <p className="text-xs text-dark-muted line-clamp-2">{quotedPost.text}</p>
+            </div>
+          )}
+
           <textarea
             ref={textareaRef}
             value={text}
@@ -154,7 +197,7 @@ export default function Composer({ currentUserId, profile }) {
                 <>
                   <video src={imagePreview} controls className="w-full max-h-[300px] bg-black" />
                   <p className="text-xs text-brand-warning p-2 bg-brand-warning/10 border-t border-brand-warning/20">
-                    By uploading, you agree that this video is appropriate. No AI content, nudes, or deepfakes allowed.
+                    By uploading, you agree that this video is appropriate and complies with our community guidelines.
                   </p>
                 </>
               ) : (
@@ -232,7 +275,7 @@ export default function Composer({ currentUserId, profile }) {
                   onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
                   className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold transition-all ${
                     selectedTag === tag 
-                      ? 'bg-brand-primary text-black shadow-[0_0_8px_rgba(0,240,255,0.6)]' 
+                      ? 'bg-brand-primary text-white shadow-sm' 
                       : 'bg-dark-surface text-dark-muted border border-dark-border hover:text-brand-primary'
                   }`}
                 >
@@ -269,7 +312,7 @@ export default function Composer({ currentUserId, profile }) {
               <button
                 onClick={handlePost}
                 disabled={(!text.trim() && !compressedImage && !selectedTag) || posting || compressing}
-                className="px-5 py-2 bg-brand-primary text-black font-bold rounded-full text-sm disabled:opacity-40 hover:bg-brand-primary/90 transition-all active:scale-95 shadow-[0_0_10px_rgba(0,240,255,0.4)]"
+                className="px-5 py-2 bg-brand-primary text-white font-bold rounded-full text-sm disabled:opacity-40 hover:bg-brand-primary/95 transition-all active:scale-95 shadow-sm"
               >
                 {posting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

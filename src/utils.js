@@ -87,7 +87,7 @@ export function engagementScore(post) {
 }
 
 /* ─── Rich Text Parsing ─── */
-const URL_REGEX = /(https?:\/\/[^\s<]+[^\s<.,;:!?\])'">-]|#(?:Fortnite|RobloxGhosts|LFG)\b)/gi;
+const URL_REGEX = /(https?:\/\/[^\s<]+[^\s<.,;:!?\])'">-]|#[a-zA-Z0-9_]+|@[a-zA-Z0-9_]+)/gi;
 
 export function parsePostText(text) {
   if (!text) return [];
@@ -104,6 +104,8 @@ export function parsePostText(text) {
     const token = match[0];
     if (token.startsWith('#')) {
       parts.push({ type: 'game-tag', content: token });
+    } else if (token.startsWith('@')) {
+      parts.push({ type: 'mention', content: token });
     } else {
       parts.push({ type: 'link', content: token });
     }
@@ -116,6 +118,25 @@ export function parsePostText(text) {
   }
   
   return parts.length > 0 ? parts : [{ type: 'text', content: text }];
+}
+
+export function getTrendingHashtags(posts) {
+  if (!posts || posts.length === 0) return [];
+  const counts = {};
+  posts.forEach(p => {
+    if (!p.text) return;
+    const tags = p.text.match(/#[a-zA-Z0-9_]+/g);
+    if (tags) {
+      // Unique tags per post to prevent spam
+      const uniqueTags = [...new Set(tags.map(t => t.toLowerCase()))];
+      uniqueTags.forEach(tag => {
+        counts[tag] = (counts[tag] || 0) + 1;
+      });
+    }
+  });
+  return Object.entries(counts)
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 /* ─── Gamification ─── */

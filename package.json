@@ -30,6 +30,7 @@
   "devDependencies": {
     "@capacitor/cli": "^8.3.1",
     "@eslint/js": "^10.0.1",
+    "@huggingface/hub": "^2.13.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-basic-ssl": "^2.3.0",

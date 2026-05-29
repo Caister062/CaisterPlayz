@@ -546,22 +546,202 @@ export function useAllFollows() {
   return allFollows;
 }
 
+/* ─── Direct Messages Hooks ─── */
+export function useDirectMessages(currentUserId, recipientId) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMessages = useCallback(async () => {
+    if (!currentUserId || !recipientId) return;
+    setLoading(true);
+    try {
+      const result = await pb.collection('cplayz_messages').getList(1, 200, {
+        filter: `(senderId="${currentUserId}" && recipientId="${recipientId}") || (senderId="${recipientId}" && recipientId="${currentUserId}")`,
+        sort: 'created',
+      });
+      setMessages(result.items);
+    } catch (err) {
+      console.error('Fetch messages error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUserId, recipientId]);
+
+  useEffect(() => {
+    if (!currentUserId || !recipientId) {
+      setMessages([]);
+      return;
+    }
+
+    fetchMessages();
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_messages').subscribe('*', (e) => {
+      const msg = e.record;
+      if (
+        (msg.senderId === currentUserId && msg.recipientId === recipientId) ||
+        (msg.senderId === recipientId && msg.recipientId === currentUserId)
+      ) {
+        if (e.action === 'create') {
+          setMessages(prev => {
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+        } else if (e.action === 'delete') {
+          setMessages(prev => prev.filter(m => m.id !== msg.id));
+        } else if (e.action === 'update') {
+          setMessages(prev => prev.map(m => m.id === msg.id ? msg : m));
+        }
+      }
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useDirectMessages subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [currentUserId, recipientId, fetchMessages]);
+
+  return { messages, loading, refreshMessages: fetchMessages };
+}
+
+export async function sendMessage(senderId, recipientId, text, imageUrl = '') {
+  return await pb.collection('cplayz_messages').create({
+    senderId,
+    recipientId,
+    text,
+    imageUrl,
+    read: false,
+  });
+}
+
+export function useDMThreads(currentUserId) {
+  const [threads, setThreads] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchThreads = useCallback(async () => {
+    if (!currentUserId) return;
+    setLoading(true);
+    try {
+      const result = await pb.collection('cplayz_messages').getList(1, 500, {
+        filter: `senderId="${currentUserId}" || recipientId="${currentUserId}"`,
+        sort: '-created',
+      });
+      
+      const userMap = {};
+      result.items.forEach(msg => {
+        const otherId = msg.senderId === currentUserId ? msg.recipientId : msg.senderId;
+        if (!userMap[otherId] || new Date(msg.created) > new Date(userMap[otherId].lastMessage.created)) {
+          userMap[otherId] = {
+            userId: otherId,
+            lastMessage: msg,
+          };
+        }
+      });
+      
+      setThreads(Object.values(userMap).sort((a, b) => new Date(b.lastMessage.created) - new Date(a.lastMessage.created)));
+    } catch (err) {
+      console.error('Fetch threads error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setThreads([]);
+      return;
+    }
+
+    fetchThreads();
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_messages').subscribe('*', (e) => {
+      const msg = e.record;
+      if (msg.senderId === currentUserId || msg.recipientId === currentUserId) {
+        fetchThreads();
+      }
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useDMThreads subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [currentUserId, fetchThreads]);
+
+  return { threads, loading, refreshThreads: fetchThreads };
+}
+
 /* ═══════════════════════════════════════════
     PocketBase Engine Write Actions
    ═══════════════════════════════════════════ */
 
-export async function createPost(userId, text, imageUrl = '', musicId = '', musicName = '') {
-  await pb.collection('cplayz_posts').create({
+export async function createPost(userId, text, imageUrl = '', musicId = '', musicName = '', originalPostId = '', type = '', communityId = '') {
+  const post = await pb.collection('cplayz_posts').create({
     userId,
     text,
     imageUrl,
     musicId,
     musicName,
+    originalPostId,
+    type,
+    communityId,
     likedBy: [],
     viewedBy: [],
     repostedBy: [],
     favoritedBy: [],
   }, { fields: 'id' });
+
+  // 1. Mentions detection: Scan text for @username pattern
+  const mentions = text.match(/@([a-zA-Z0-9_]+)/g);
+  if (mentions) {
+    const uniqueMentions = [...new Set(mentions.map(m => m.slice(1).toLowerCase()))];
+    for (const username of uniqueMentions) {
+      try {
+        // Find user by displayName
+        const usersList = await pb.collection('cplayz_users').getList(1, 1, {
+          filter: `displayName.toLowerCase()="${username}"`
+        });
+        if (usersList.items.length > 0) {
+          const mentionedUser = usersList.items[0];
+          if (mentionedUser.userId !== userId) {
+            await pb.collection('cplayz_notifications').create({
+              recipientId: mentionedUser.userId,
+              senderId: userId,
+              type: 'mention',
+              postId: post.id,
+              read: false,
+            }).catch(() => {});
+          }
+        }
+      } catch (err) {
+        console.error('Mention processing error:', err);
+      }
+    }
+  }
+
+  // 2. Post Alerts: Find followers and create 'post' notifications
+  try {
+    const followsResult = await pb.collection('cplayz_follows').getList(1, 1000, {
+      filter: `followingId="${userId}"`
+    });
+    for (const follow of followsResult.items) {
+      await pb.collection('cplayz_notifications').create({
+        recipientId: follow.followerId,
+        senderId: userId,
+        type: 'post',
+        postId: post.id,
+        read: false,
+      }).catch(() => {});
+    }
+  } catch (err) {
+    console.error('Post alert notifications error:', err);
+  }
 }
 
 export async function deletePost(postId, userId) {
@@ -728,4 +908,63 @@ export async function getCommentCounts(posts) {
     for (const post of posts) counts[post.id] = 0;
   }
   return counts;
+}
+
+/* ─── Communities Hooks ─── */
+export function useCommunities() {
+  const [communities, setCommunities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCommunities = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await pb.collection('cplayz_communities').getList(1, 100, {
+        sort: '-created',
+      });
+      setCommunities(result.items);
+    } catch (err) {
+      console.error('useCommunities error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCommunities();
+    
+    // Subscribe to communities changes
+    let unsubscribeFn = null;
+    pb.collection('cplayz_communities').subscribe('*', () => {
+      fetchCommunities();
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => console.error('useCommunities subscribe error:', err));
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [fetchCommunities]);
+
+  return { communities, loading, refreshCommunities: fetchCommunities };
+}
+
+export async function createCommunity(name, description, avatarUrl, userId) {
+  return await pb.collection('cplayz_communities').create({
+    name,
+    description,
+    avatarUrl,
+    createdBy: userId,
+    members: [userId],
+  });
+}
+
+export async function joinCommunity(communityId, userId) {
+  const comm = await pb.collection('cplayz_communities').getOne(communityId);
+  let members = comm.members || [];
+  if (members.includes(userId)) {
+    members = members.filter(id => id !== userId);
+  } else {
+    members = [...members, userId];
+  }
+  return await pb.collection('cplayz_communities').update(communityId, { members });
 }

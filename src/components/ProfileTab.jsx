@@ -63,13 +63,23 @@ export default function ProfileTab({
   );
 
   const followingUsers = useMemo(() => {
-    const ids = allFollows.filter(f => f.followerId === viewingUserId).map(f => f.followingId);
-    return users.filter(u => ids.includes(u.id));
+    const ids = (allFollows || [])
+      .filter(f => f.followerId === viewingUserId)
+      .map(f => f.followingId);
+  
+    return (users || []).filter(
+      u => ids.includes(u.id)
+    );
   }, [allFollows, users, viewingUserId]);
 
   const followerUsers = useMemo(() => {
-    const ids = allFollows.filter(f => f.followingId === viewingUserId).map(f => f.followerId);
-    return users.filter(u => ids.includes(u.id));
+    const ids = (allFollows || [])
+      .filter(f => f.followingId === viewingUserId)
+      .map(f => f.followerId);
+  
+    return (users || []).filter(
+      u => ids.includes(u.id)
+    );
   }, [allFollows, users, viewingUserId]);
 
   const activeFeedPosts = useMemo(() => {
@@ -79,12 +89,16 @@ export default function ProfileTab({
   }, [profileTab, userPosts, likedPosts, bookmarkedPosts]);
 
   const viewingFollowing = useMemo(() =>
-    allFollows.filter(f => f.followerId === viewingUserId).length,
+    (allFollows || []).filter(
+      f => f.followerId === viewingUserId
+    ).length,
     [allFollows, viewingUserId]
   );
 
   const viewingFollowers = useMemo(() =>
-    allFollows.filter(f => f.followingId === viewingUserId).length,
+    (allFollows || []).filter(
+      f => f.followingId === viewingUserId
+    ).length,
     [allFollows, viewingUserId]
   );
 

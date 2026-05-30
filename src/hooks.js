@@ -142,16 +142,19 @@ export function useAuth() {
   
       return await syncUserProfile(authData.record);
   
-    catch (err) {
+    } catch (err) {
       console.log("FULL RESPONSE", err?.response);
-    
+  
       alert(
         err?.response?.data?.email?.message ||
         err?.response?.message ||
         JSON.stringify(err?.response, null, 2)
       );
-    
+  
       throw err;
+  
+    } finally {
+      setLoading(false);
     }
   };
 

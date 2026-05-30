@@ -84,7 +84,7 @@ export default function PostCard({ post, currentUserId, users, onProfileClick, o
 
   const detailUsers = useMemo(() => {
     if (detailModal === 'likes') {
-      return users.filter(u => actualLikedBy.includes(u.id));
+      return users.filter(...)
     }
     if (detailModal === 'reposts') {
       return users.filter(u => actualRepostedBy.includes(u.id));

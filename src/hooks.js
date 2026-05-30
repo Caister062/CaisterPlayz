@@ -95,14 +95,24 @@ export function useAuth() {
     }
   }, []);
 
-  const loginWithEmail = async (email, password) => {
+   const loginWithEmail = async (email, password) => {
     try {
       setError(null);
       setLoading(true);
       localStorage.removeItem('cplayz_is_guest');
-      const authData = await pb.collection('users').authWithPassword(email, password);
+  
+      const authData = await pb.collection('users').authWithPassword(
+        email,
+        password
+      );
+  
       return await syncUserProfile(authData.record);
     } catch (err) {
+      console.error("LOGIN ERROR:", err);
+      console.error("LOGIN RESPONSE:", err?.response);
+  
+      alert(JSON.stringify(err?.response, null, 2));
+  
       setError(err.message || 'Login failed');
       throw err;
     } finally {
@@ -115,21 +125,32 @@ export function useAuth() {
       setError(null);
       setLoading(true);
       localStorage.removeItem('cplayz_is_guest');
+  
       await pb.collection('users').create({
         email,
         password,
         passwordConfirm: password,
         name: username,
       });
-      const authData = await pb.collection('users').authWithPassword(email, password);
+  
+      const authData = await pb.collection('users').authWithPassword(
+        email,
+        password
+      );
+  
       return await syncUserProfile(authData.record);
+  
     } catch (err) {
       console.error("SIGNUP ERROR:", err);
-      console.error("SIGNUP RESPONSE:", err.response);
-    
-      alert(JSON.stringify(err.response, null, 2));
-    
+      console.error("SIGNUP RESPONSE:", err?.response);
+  
+      alert(JSON.stringify(err?.response, null, 2));
+  
+      setError(err.message || 'Sign up failed');
       throw err;
+  
+    } finally {
+      setLoading(false);
     }
   };
 

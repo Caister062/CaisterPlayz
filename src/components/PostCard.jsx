@@ -390,7 +390,9 @@ export default function PostCard({ post, currentUserId, users, onProfileClick, o
               >
                 {/* Original author details */}
                 {(() => {
-                  const origAuthor = users.find(u => u.id === originalPost.userId);
+                  const origAuthor = (users || []).find(
+                    u => u.id === originalPost.userId
+                  );
                   if (!origAuthor) return null;
                   return (
                     <div className="flex items-center gap-1.5 mb-1.5">

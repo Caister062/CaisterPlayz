@@ -332,8 +332,8 @@ export default function CommunitiesTab({ isOpen, onClose, user, allUsers, posts,
                     <div className="flex-1 flex justify-center items-center py-10">
                       <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
                     </div>
-                  ) : communities.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 border border-dashed border-dark-border rounded-2xl text-dark-muted">
+                  ) : (communities || []).length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8 border border-dashed border-dark-border rounded-2xl text-dark-muted">
                       <Users className="w-10 h-10 mb-2 text-dark-muted/40" />
                       <h4 className="text-sm font-bold text-dark-text mb-1">No rooms formed</h4>
                       <p className="text-xs max-w-[200px]">Be the first to build a gaming hub community room on CaisterPlayz!</p>

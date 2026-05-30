@@ -58,10 +58,9 @@ export default function CommunitiesTab({ isOpen, onClose, user, allUsers, posts,
       await refreshCommunities();
   
       if (activeCommunity?.id === communityId) {
-        const updated = communities.find(c => c.id === communityId);
-        if (updated) {
-          setActiveCommunity(updated);
-        }
+       const updated = (communities || []).find(
+          c => c.id === communityId
+        );
       }
     } catch (err) {
       console.error("Failed to join community:", err);

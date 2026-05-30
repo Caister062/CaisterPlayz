@@ -83,12 +83,20 @@ export default function PostCard({ post, currentUserId, users, onProfileClick, o
   const actualFavoritedBy = useMemo(() => localFavoritedBy !== null ? [...localFavoritedBy] : (stableFav !== null ? [...stableFav] : [...(post.favoritedBy || [])]), [localFavoritedBy, stableFav, post.favoritedBy]);
 
   const detailUsers = useMemo(() => {
+    const safeUsers = users || [];
+  
     if (detailModal === 'likes') {
-      return users.filter(...)
+      return safeUsers.filter(
+        u => actualLikedBy.includes(u.id)
+      );
     }
+  
     if (detailModal === 'reposts') {
-      return users.filter(u => actualRepostedBy.includes(u.id));
+      return safeUsers.filter(
+        u => actualRepostedBy.includes(u.id)
+      );
     }
+  
     return [];
   }, [detailModal, users, actualLikedBy, actualRepostedBy]);
 

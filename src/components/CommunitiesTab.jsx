@@ -98,7 +98,13 @@ export default function CommunitiesTab({ isOpen, onClose, user, allUsers, posts,
   };
 
   const isUserMember = (comm) => {
-    return (comm?.members || []).includes(user?.id);
+    if (!user?.id) return false;
+  
+    const members = Array.isArray(comm?.members)
+      ? comm.members
+      : [];
+  
+    return members.includes(user.id);
   };
 
   if (!isOpen) return null;

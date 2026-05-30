@@ -21,27 +21,37 @@ export function useAuth() {
 
   const syncUserProfile = useCallback(async (authRecord) => {
     let profileRecord = null;
+  
     try {
-      profileRecord = await pb.collection('cplayz_users').getOne(authRecord.id);
-    } catch (err) {
-      try {
+      const existing = await pb.collection('cplayz_users').getList(1, 1, {
+        filter: `deviceId="pb_${authRecord.id}"`
+      });
+  
+      if (existing.items.length > 0) {
+        profileRecord = existing.items[0];
+      } else {
         profileRecord = await pb.collection('cplayz_users').create({
-          id: authRecord.id,
-          displayName: authRecord.name || authRecord.username || `User_${authRecord.id.slice(0, 6)}`,
+          displayName:
+            authRecord.name ||
+            authRecord.username ||
+            `User_${authRecord.id.slice(0, 6)}`,
           bio: '',
           website: '',
-          avatarUrl: authRecord.avatar ? pb.files.getUrl(authRecord, authRecord.avatar) : '',
-          deviceId: 'pb_' + authRecord.id,
+          avatarUrl: authRecord.avatar
+            ? pb.files.getURL(authRecord, authRecord.avatar)
+            : '',
+          deviceId: `pb_${authRecord.id}`,
         });
-      } catch (createErr) {
-        console.error('Failed to create synced user profile:', createErr);
-        throw createErr;
       }
+    } catch (err) {
+      console.error('Failed to sync user profile:', err);
+      throw err;
     }
-    localStorage.setItem('cplayz_user_id', profileRecord.id);
-    setUser(profileRecord);
-    return profileRecord;
-  }, []);
+
+  localStorage.setItem('cplayz_user_id', profileRecord.id);
+  setUser(profileRecord);
+  return profileRecord;
+}, []);
 
   const loginAsGuest = useCallback(async () => {
     try {

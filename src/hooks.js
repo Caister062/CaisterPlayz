@@ -977,50 +977,35 @@ export async function createCommunity(name, description, avatarUrl, userId) {
 }
 
 export async function joinCommunity(communityId, userId) {
+  console.log("communityId =", communityId);
+
+  const comm = await pb.collection('cplayz_communities').getOne(communityId);
+  console.log("Found community:", comm);
+
+  let members = Array.isArray(comm.members) ? [...comm.members] : [];
+
+  if (members.includes(userId)) {
+    members = members.filter(id => id !== userId);
+  } else {
+    members.push(userId);
+  }
+
+  console.log("Updating members:", members);
+
   try {
-    if (!communityId) {
-      throw new Error("Missing communityId");
-    }
-
-    if (!userId) {
-      throw new Error("Missing userId");
-    }
-
-    const comm = await pb.collection('cplayz_communities').getOne(communityId);
-
-    if (!comm) {
-      throw new Error("Community not found");
-    }
-
-    let members = Array.isArray(comm.members) ? [...comm.members] : [];
-
-    const isMember = members.includes(userId);
-
-    if (isMember) {
-      members = members.filter(id => id !== userId);
-    } else {
-      members.push(userId);
-    }
-
-    const updated = await pb.collection('cplayz_communities').update(
+    const result = await pb.collection('cplayz_communities').update(
       communityId,
       { members }
     );
 
-    return updated;
+    console.log("Update success:", result);
+    return result;
   } catch (err) {
-    console.error("joinCommunity error:", err);
-    console.error("communityId:", communityId);
-    console.error("userId:", userId);
-    console.error("response:", err?.response);
+    console.error("UPDATE FAILED");
+    console.error(err);
+    console.error(err?.response);
 
-    alert(
-      JSON.stringify(
-        err?.response || err?.data || err.message,
-        null,
-        2
-      )
-    );
+    alert(JSON.stringify(err?.response, null, 2));
 
     throw err;
   }

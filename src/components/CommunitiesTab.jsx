@@ -340,7 +340,7 @@ export default function CommunitiesTab({ isOpen, onClose, user, allUsers, posts,
                     </div>
                   ) : (
                     <div className="space-y-3 overflow-y-auto max-h-[450px]">
-                      {communities.map(comm => (
+                      {(communities || []).map(comm => (
                         <div 
                           key={comm.id} 
                           onClick={() => setActiveCommunity(comm)}

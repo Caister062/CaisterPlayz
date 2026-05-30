@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Gamepad2, Eye, EyeOff, Loader2, Sparkles, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Gamepad2 } from 'lucide-react';
 
 export default function Auth({ auth }) {
-  const { loginWithGoogle, loginAsGuest } = auth;  
+  const { loginWithGoogle, loginAsGuest } = auth;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleGoogleLogin = async () => {
     if (loading) return;
@@ -59,10 +61,12 @@ export default function Auth({ auth }) {
           Welcome to CaisterPlayz
         </h2>
         
-        <p className="text-xs text-dark-muted mb-8 tracking-normal text-center">
-          Continue with Google to access CaisterPlayz.
-        </p>
-
+        {/* Headlines */}
+      <h2 className="text-2xl font-bold text-dark-text tracking-tight text-center mb-1">
+        Welcome to CaisterPlayz
+      </h2>
+      
+      <p className="text-xs text-dark-muted mb-8 tracking-normal text-center">
         {/* Google Authentication Button */}
         <button
           onClick={handleGoogleLogin}
@@ -78,38 +82,7 @@ export default function Auth({ auth }) {
           </svg>
           Continue with Google
         </button>
-      
-        {/* Tab Toggle Links */}
-        <div className="text-xs text-dark-muted mt-6 flex flex-row items-center gap-1.5 justify-center">
-          {mode === 'login' ? (
-            <>
-              New to CaisterPlayz?
-              <button
-                onClick={() => {
-                  setMode('signup');
-                  setError('');
-                }}
-                className="text-brand-primary hover:underline font-bold"
-              >
-                Sign Up
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?
-              <button
-                onClick={() => {
-                  setMode('login');
-                  setError('');
-                }}
-                className="text-brand-primary hover:underline font-bold"
-              >
-                Sign In
-              </button>
-            </>
-          )}
-        </div>
-
+        
         {/* Continue as Guest Button */}
         <button
           onClick={handleGuestLogin}

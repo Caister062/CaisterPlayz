@@ -45,6 +45,8 @@ export function useAuth() {
       }
     } catch (err) {
       console.error('Failed to sync user profile:', err);
+      console.error('Error data:', err?.data);
+      alert(JSON.stringify(err?.data, null, 2));
       throw err;
     }
 

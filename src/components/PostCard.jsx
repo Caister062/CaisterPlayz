@@ -580,7 +580,9 @@ export default function PostCard({ post, currentUserId, users, onProfileClick, o
 
                 {/* Comment List */}
                 {comments.map(comment => {
-                  const commenter = users.find(u => u.id === comment.userId);
+                  const commenter = (users || []).find(
+                    u => u.id === comment.userId
+                  );
                   if (!commenter) return null;
                   const isCommentOwner = comment.userId === currentUserId;
                   return (

@@ -177,7 +177,9 @@ export default function CommunitiesTab({ isOpen, onClose, user, allUsers, posts,
                       {getMemberCount(activeCommunity)} Members
                     </span>
                     <span className="text-[10px] text-dark-muted bg-dark-border px-2 py-0.5 rounded font-bold">
-                      Created by: {allUsers.find(u => u.id === activeCommunity.createdBy)?.displayName || 'Unknown'}
+                      Created by: {(allUsers || []).find(
+                        u => u.id === activeCommunity.createdBy
+                      )?.displayName || 'Unknown'}
                     </span>
                   </div>
                 </div>

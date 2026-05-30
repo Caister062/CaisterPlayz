@@ -124,10 +124,12 @@ export function useAuth() {
       const authData = await pb.collection('users').authWithPassword(email, password);
       return await syncUserProfile(authData.record);
     } catch (err) {
-      setError(err.message || 'Sign up failed');
+      console.error("SIGNUP ERROR:", err);
+      console.error("SIGNUP RESPONSE:", err.response);
+    
+      alert(JSON.stringify(err.response, null, 2));
+    
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -139,10 +141,12 @@ export function useAuth() {
       const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
       return await syncUserProfile(authData.record);
     } catch (err) {
-      setError(err.message || 'Google login failed');
+      console.error("LOGIN ERROR:", err);
+      console.error("LOGIN RESPONSE:", err.response);
+    
+      alert(JSON.stringify(err.response, null, 2));
+    
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 

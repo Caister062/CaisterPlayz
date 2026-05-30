@@ -2,37 +2,7 @@ import { useState } from 'react';
 import { Gamepad2, Eye, EyeOff, Loader2, Sparkles, Mail, Lock, User, ArrowRight } from 'lucide-react';
 
 export default function Auth({ auth }) {
-  const { loginWithEmail, signupWithEmail, loginWithGoogle, loginAsGuest } = auth;
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (loading) return;
-    setLoading(true);
-    setError('');
-
-    try {
-      if (mode === 'login') {
-        await loginWithEmail(email, password);
-      } else {
-        if (!username.trim()) {
-          throw new Error('Please choose a display name.');
-        }
-        await signupWithEmail(email, password, username);
-      }
-    } catch (err) {
-      console.error(err);
-      setError(err.message || 'Authentication failed. Please verify your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { loginWithGoogle, loginAsGuest } = auth;  
 
   const handleGoogleLogin = async () => {
     if (loading) return;
@@ -86,13 +56,11 @@ export default function Auth({ auth }) {
         </div>
 
         {/* Headlines */}
-        <h2 className="text-2xl font-bold text-dark-text tracking-tight text-center mb-1">
-          {mode === 'login' ? 'Sign In' : 'Create Account'}
+          Welcome to CaisterPlayz
         </h2>
+        
         <p className="text-xs text-dark-muted mb-8 tracking-normal text-center">
-          {mode === 'login' 
-            ? 'Welcome back! Sign in to connect with other players.' 
-            : 'Join CaisterPlayz today to share your gaming moments.'}
+          Continue with Google to access CaisterPlayz.
         </p>
 
         {/* Google Authentication Button */}
@@ -110,94 +78,7 @@ export default function Auth({ auth }) {
           </svg>
           Continue with Google
         </button>
-
-        {/* Divider */}
-        <div className="flex items-center w-full my-6">
-          <div className="flex-1 h-[1px] bg-zinc-800/80" />
-          <span className="px-4 text-[10px] font-black text-dark-muted tracking-widest uppercase">
-            OR
-          </span>
-          <div className="flex-1 h-[1px] bg-zinc-800/80" />
-        </div>
-
-        {/* Main Email Form */}
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
-          
-          {mode === 'signup' && (
-            <div className="relative flex items-center bg-[#0c0c0e] rounded-2xl px-4 py-3.5 border border-zinc-800/80 focus-within:border-brand-primary/50 transition-all duration-200">
-              <User className="w-4 h-4 text-dark-muted mr-3 flex-shrink-0" />
-              <input
-                type="text"
-                required
-                disabled={loading}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Display Name"
-                className="flex-1 bg-transparent text-sm text-dark-text placeholder-dark-muted focus:outline-none"
-              />
-            </div>
-          )}
-
-          <div className="relative flex items-center bg-[#0c0c0e] rounded-2xl px-4 py-3.5 border border-zinc-800/80 focus-within:border-brand-primary/50 transition-all duration-200">
-            <Mail className="w-4 h-4 text-dark-muted mr-3 flex-shrink-0" />
-            <input
-              type="email"
-              required
-              disabled={loading}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email Address"
-              className="flex-1 bg-transparent text-sm text-dark-text placeholder-dark-muted focus:outline-none"
-            />
-          </div>
-
-          <div className="relative flex items-center bg-[#0c0c0e] rounded-2xl px-4 py-3.5 border border-zinc-800/80 focus-within:border-brand-primary/50 transition-all duration-200">
-            <Lock className="w-4 h-4 text-dark-muted mr-3 flex-shrink-0" />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              disabled={loading}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="flex-1 bg-transparent text-sm text-dark-text placeholder-dark-muted focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="text-dark-muted hover:text-dark-text transition-colors flex-shrink-0"
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="text-xs text-brand-danger font-semibold bg-brand-danger/10 border border-brand-danger/20 rounded-xl px-4 py-2.5 mt-1 animate-pulse">
-              {error}
-            </div>
-          )}
-
-          {/* Form Action Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-primary/95 text-white font-bold text-sm py-4 rounded-2xl mt-2 active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:pointer-events-none shadow-md"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Processing
-              </>
-            ) : (
-              <>
-                {mode === 'login' ? 'Sign In' : 'Create Account'}
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-        </form>
-
+      
         {/* Tab Toggle Links */}
         <div className="text-xs text-dark-muted mt-6 flex flex-row items-center gap-1.5 justify-center">
           {mode === 'login' ? (

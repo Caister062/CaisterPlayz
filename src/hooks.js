@@ -127,10 +127,12 @@ export function useAuth() {
       localStorage.removeItem('cplayz_is_guest');
   
       await pb.collection('users').create({
+        username: username.toLowerCase().replace(/\s+/g, "_"),
         email,
         password,
         passwordConfirm: password,
         name: username,
+        emailVisibility: true,
       });
   
       const authData = await pb.collection('users').authWithPassword(

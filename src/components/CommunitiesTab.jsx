@@ -317,7 +317,9 @@ export default function CommunitiesTab({ isOpen, onClose, user, allUsers, posts,
                 /* ALL LISTINGS */
                 <div className="space-y-4 flex-1 flex flex-col">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-dark-muted font-bold uppercase tracking-wider">Active Rooms ({communities.length})</span>
+                    <span className="text-xs text-dark-muted font-bold uppercase tracking-wider">
+                      Active Rooms ({(communities || []).length})
+                    </span>
                     <button
                       onClick={() => setShowCreate(true)}
                       className="flex items-center gap-1 text-xs text-brand-primary font-bold hover:underline"

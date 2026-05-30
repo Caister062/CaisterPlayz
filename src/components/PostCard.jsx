@@ -92,7 +92,9 @@ export default function PostCard({ post, currentUserId, users, onProfileClick, o
     return [];
   }, [detailModal, users, actualLikedBy, actualRepostedBy]);
 
-  const author = users.find(u => u.id === post.userId);
+  const author = (users || []).find(
+    u => u.id === post.userId
+  );
   const gamerBadge = getGamerBadge(post.userId);
   const isLiked = actualLikedBy.includes(currentUserId);
   const isReposted = actualRepostedBy.includes(currentUserId);

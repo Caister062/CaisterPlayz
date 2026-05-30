@@ -134,7 +134,13 @@ export function useAuth() {
     }
   };
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await pb.realtime.unsubscribe();
+    } catch (e) {
+      console.log(e);
+    }
+  
     pb.authStore.clear();
     localStorage.removeItem('cplayz_is_guest');
     localStorage.removeItem('cplayz_user_id');

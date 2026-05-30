@@ -142,7 +142,10 @@ export function useAuth() {
   
     } catch (err) {
       console.error("SIGNUP ERROR:", err);
-      console.error("SIGNUP RESPONSE:", err?.response);
+      alert(
+        err?.response?.data?.email?.message ||
+        JSON.stringify(err?.response, null, 2)
+      );
   
       alert(JSON.stringify(err?.response, null, 2));
   

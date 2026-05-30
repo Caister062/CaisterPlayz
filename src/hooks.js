@@ -140,20 +140,16 @@ export function useAuth() {
   
       return await syncUserProfile(authData.record);
   
-    } catch (err) {
-      console.error("SIGNUP ERROR:", err);
+    catch (err) {
+      console.log("FULL RESPONSE", err?.response);
+    
       alert(
         err?.response?.data?.email?.message ||
+        err?.response?.message ||
         JSON.stringify(err?.response, null, 2)
       );
-  
-      alert(JSON.stringify(err?.response, null, 2));
-  
-      setError(err.message || 'Sign up failed');
+    
       throw err;
-  
-    } finally {
-      setLoading(false);
     }
   };
 

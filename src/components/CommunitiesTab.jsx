@@ -42,22 +42,37 @@ export default function CommunitiesTab({ isOpen, onClose, user, allUsers, posts,
 
   const handleJoinToggle = async (communityId, e) => {
     if (e) e.stopPropagation();
+  
+    if (!user?.id) {
+      alert("No user loaded.");
+      return;
+    }
+  
     try {
+      console.log("Joining community:", communityId);
+      console.log("Current user:", user.id);
+  
       await joinCommunity(communityId, user.id);
-      refreshCommunities();
-      // If we are currently viewing the community, sync the state
+  
+      await refreshCommunities();
+  
       if (activeCommunity?.id === communityId) {
-        const comm = communities.find(c => c.id === communityId);
-        if (comm) {
-          // Manually toggle membership locally to update active view immediately
-          let members = comm.members || [];
-          const isMember = members.includes(user.id);
-          const updatedMembers = isMember ? members.filter(id => id !== user.id) : [...members, user.id];
-          setActiveCommunity({ ...comm, members: updatedMembers });
+        const updated = communities.find(c => c.id === communityId);
+        if (updated) {
+          setActiveCommunity(updated);
         }
       }
     } catch (err) {
-      console.error('Failed to join community:', err);
+      console.error("Failed to join community:", err);
+      console.error("Response:", err?.response);
+  
+      alert(
+        JSON.stringify(
+          err?.response || err?.data || err,
+          null,
+          2
+        )
+      );
     }
   };
 

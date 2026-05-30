@@ -26,7 +26,9 @@ export default function ProfileTab({
 
   // Sync state whenever external dependencies update
   useEffect(() => {
-    setLocalIsFollowing(followingIds.includes(viewingUserId));
+    setLocalIsFollowing(
+      (followingIds || []).includes(viewingUserId)
+    );
   }, [followingIds, viewingUserId]);
 
   const [profileTab, setProfileTab] = useState('posts'); // 'posts' | 'likes' | 'bookmarks'

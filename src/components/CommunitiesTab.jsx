@@ -51,6 +51,7 @@ export default function CommunitiesTab({ isOpen, onClose, user, allUsers, posts,
     try {
       console.log("Joining community:", communityId);
       console.log("Current user:", user.id);
+      console.log("communityId =", communityId);
   
       await joinCommunity(communityId, user.id);
   

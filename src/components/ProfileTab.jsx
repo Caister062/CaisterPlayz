@@ -15,7 +15,11 @@ export default function ProfileTab({
   
   // Real-time hook for the viewed profile
   const realTimeProfile = useUserProfile(viewingUserId);
-  const viewingUser = realTimeProfile || users.find(u => u.id === viewingUserId);
+  const viewingUser =
+  realTimeProfile ||
+  (users || []).find(
+    u => u.id === viewingUserId
+  );
   
   // Use a local state fallback to allow immediate/optimistic toggle feedback
   const [localIsFollowing, setLocalIsFollowing] = useState(false);

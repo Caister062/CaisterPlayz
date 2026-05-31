@@ -1,5 +1,5 @@
-import { Radio, Video } from 'lucide-react';
 import { useState } from 'react';
+import { Radio, Video } from 'lucide-react';
 
 export default function LiveTab() {
   const [showHost, setShowHost] = useState(false);
@@ -7,7 +7,20 @@ export default function LiveTab() {
   if (showHost) {
     return (
       <div className="p-4 text-white">
-        Host Page Test
+        <h1 className="text-2xl font-bold mb-4">
+          🔴 Host Page Test
+        </h1>
+
+        <p>
+          Live Stream Host Loading...
+        </p>
+
+        <button
+          onClick={() => setShowHost(false)}
+          className="mt-4 bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-xl"
+        >
+          Back
+        </button>
       </div>
     );
   }
@@ -35,7 +48,10 @@ export default function LiveTab() {
       </div>
 
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
-        <Radio className="mx-auto mb-4 text-red-500" size={40} />
+        <Radio
+          className="mx-auto mb-4 text-red-500"
+          size={40}
+        />
 
         <h2 className="text-lg font-bold text-white mb-2">
           No Live Streams Yet

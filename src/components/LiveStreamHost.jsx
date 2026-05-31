@@ -1,33 +1,49 @@
-const pc = new RTCPeerConnection({
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
-  ]
-});
+import { useRef, useState } from 'react';
 
-const stream = await navigator.mediaDevices.getUserMedia({
-  video: true,
-  audio: true
-});
+export default function LiveStreamHost({ user }) {
+  const videoRef = useRef(null);
+  const [isLive, setIsLive] = useState(false);
 
-stream.getTracks().forEach(track => {
-  pc.addTrack(track, stream);
-});
+  const startStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
 
-const streamRecord = await pb.collection('cplayz_streams').create({
-  title: `${user.displayName}'s Stream`,
-  hostid: user.id,
-  isLive: true,
-  viewerCount: 0
-});
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
 
-const offer = await pc.createOffer();
+      setIsLive(true);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to access camera or microphone');
+    }
+  };
 
-await pc.setLocalDescription(offer);
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold text-white mb-4">
+        🔴 Go Live
+      </h1>
 
-await pb.collection('cplayz_signals').create({
-  streamId: streamRecord.id,
-  senderId: user.id,
-  receiverId: '',
-  type: 'offer',
-  payload: JSON.stringify(offer)
-});
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        playsInline
+        className="w-full rounded-xl bg-black"
+      />
+
+      {!isLive && (
+        <button
+          onClick={startStream}
+          className="mt-4 bg-red-600 hover:bg-red-500 px-6 py-3 rounded-xl font-bold text-white"
+        >
+          Start Stream
+        </button>
+      )}
+    </div>
+  );
+}

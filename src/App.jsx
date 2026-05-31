@@ -264,6 +264,12 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'live' && (
+            <LiveTab
+              user={user}
+            />
+          )}
+
           {activeTab === 'reels' && (
             <ReelsTab
               posts={enrichedPosts}

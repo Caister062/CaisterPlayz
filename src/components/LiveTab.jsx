@@ -1,102 +1,37 @@
-import { useEffect, useState } from 'react';
-import pb from '../pocketbase';
+import { Radio, Video } from 'lucide-react';
 
-export default function LiveTab({ currentUser }) {
-  const [streams, setStreams] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchStreams = async () => {
-    try {
-      const result = await pb.collection('cplayz_streams').getList(1, 100, {
-        filter: 'isLive=true',
-        sort: '-created'
-      });
-
-      setStreams(result.items);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStreams();
-
-    let unsubscribe;
-
-    pb.collection('cplayz_streams')
-      .subscribe('*', () => {
-        fetchStreams();
-      })
-      .then(fn => {
-        unsubscribe = fn;
-      });
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="p-6 text-center">
-        Loading streams...
-      </div>
-    );
-  }
-
+export default function LiveTab() {
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">
-          🔴 Live
-        </h1>
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-black text-white">
+            🔴 Live
+          </h1>
+          <p className="text-zinc-400 text-sm">
+            Watch live streams from creators
+          </p>
+        </div>
 
         <button
-          className="bg-red-600 px-4 py-2 rounded-xl font-bold"
+          className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-xl font-bold text-white flex items-center gap-2"
         >
+          <Video size={18} />
           Go Live
         </button>
       </div>
 
-      {streams.length === 0 ? (
-        <div className="text-center text-zinc-400 mt-20">
-          Nobody is live right now.
-        </div>
-      ) : (
-        streams.map(stream => (
-          <div
-            key={stream.id}
-            className="bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer"
-          >
-            <img
-              src={
-                stream.thumbnailUrl ||
-                'https://placehold.co/800x450'
-              }
-              alt=""
-              className="w-full aspect-video object-cover"
-            />
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
+        <Radio className="mx-auto mb-4 text-red-500" size={40} />
 
-            <div className="p-4">
-              <div className="flex items-center gap-2">
-                <span className="bg-red-600 px-2 py-1 rounded text-xs font-bold">
-                  LIVE
-                </span>
+        <h2 className="text-lg font-bold text-white mb-2">
+          No Live Streams Yet
+        </h2>
 
-                <span className="text-sm">
-                  👁 {stream.viewerCount || 0}
-                </span>
-              </div>
-
-              <h2 className="font-bold mt-2">
-                {stream.title}
-              </h2>
-            </div>
-          </div>
-        ))
-      )}
+        <p className="text-zinc-400">
+          Be the first creator to go live.
+        </p>
+      </div>
     </div>
   );
 }

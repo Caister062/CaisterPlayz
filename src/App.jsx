@@ -9,6 +9,8 @@ import NotificationsTab from './components/NotificationsTab';
 import ProfileTab from './components/ProfileTab';
 import Auth from './components/Auth';
 import DirectMessages from './components/DirectMessages';
+import { Radio } from 'lucide-react';
+import LiveTab from './components/LiveTab';
 
 import SettingsModal from './components/SettingsModal';
 import CreatorStudio from './components/CreatorStudio';

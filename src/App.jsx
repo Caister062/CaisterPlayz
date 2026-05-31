@@ -205,6 +205,12 @@ export default function App() {
                   <span className="text-lg font-black text-dark-text tracking-tight">CaisterPlayz</span>
                 </div>
               </div>
+              {activeTab === 'live' && (
+                <LiveTab
+                  user={user}
+                  communities={communities}
+                />
+              )}
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setIsDmOpen(true)}

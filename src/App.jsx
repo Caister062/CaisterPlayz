@@ -10,7 +10,6 @@ import ProfileTab from './components/ProfileTab';
 import Auth from './components/Auth';
 import DirectMessages from './components/DirectMessages';
 import { Radio } from 'lucide-react';
-import LiveTab from './components/LiveTab';
 
 import SettingsModal from './components/SettingsModal';
 import CreatorStudio from './components/CreatorStudio';
@@ -264,12 +263,6 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'live' && (
-            <LiveTab
-              user={user}
-            />
-          )}
-
           {activeTab === 'reels' && (
             <ReelsTab
               posts={enrichedPosts}
@@ -317,7 +310,6 @@ export default function App() {
             <NavItem icon={Home} active={activeTab === 'home'} onClick={() => handleTabChange('home')} />
             <NavItem icon={Search} active={activeTab === 'explore'} onClick={() => handleTabChange('explore')} />
             <NavItem icon={Film} active={activeTab === 'reels'} onClick={() => handleTabChange('reels')} />
-            <NavItem icon={Radio} active={activeTab === 'live'} onClick={() => handleTabChange('live')} />
             <NavItem icon={Bell} active={activeTab === 'notifications'} onClick={() => handleTabChange('notifications')} badge={unreadCount} />
             <NavItem icon={User} active={activeTab === 'profile'} onClick={() => handleTabChange('profile')} />
           </div>

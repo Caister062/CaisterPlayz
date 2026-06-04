@@ -1,12 +1,12 @@
 import { useState } from "react";
 import {
-  Gamepad2,
-  Trophy,
+  Home,
+  Compass,
   Users,
-  Radio,
-  User,
+  Headphones,
+  Shield,
   Menu,
-  Headphones
+  Gamepad2
 } from "lucide-react";
 
 import {
@@ -14,18 +14,16 @@ import {
   useUserProfile,
   usePosts,
   useCommunities,
-  useAllUsers,
-  useDMThreads
+  useAllUsers
 } from "./hooks";
 
 import Auth from "./components/Auth";
 import DirectMessages from "./components/DirectMessages";
 
-import HubTab from "./components/HubTab";
-import EventsTab from "./components/EventsTab";
-import RoomsTab from "./components/RoomsTab";
+import HomeTab from "./components/HomeTab";
+import DiscoverTab from "./components/DiscoverTab";
 import SquadsTab from "./components/SquadsTab";
-import ProfileTab from "./components/ProfileTab";
+import LockerTab from "./components/LockerTab";
 
 export default function App() {
   const auth = useAuth();
@@ -37,24 +35,14 @@ export default function App() {
   const { communities } = useCommunities();
   const users = useAllUsers();
 
-  const [activeTab, setActiveTab] = useState("pulse");
-  const [isDmOpen, setIsDmOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const { threads } = useDMThreads(user?.id);
-
-  const hasUnreadDms =
-    threads?.some(
-      (t) =>
-        t.lastMessage &&
-        t.lastMessage.senderId !== user?.id &&
-        !t.lastMessage.read
-    ) || false;
+  const [isCommsOpen, setIsCommsOpen] = useState(false);
 
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-dark-bg">
-        <Gamepad2 className="w-12 h-12 text-brand-primary animate-pulse" />
+        <Gamepad2 className="w-10 h-10 animate-pulse text-brand-primary" />
       </div>
     );
   }
@@ -65,81 +53,65 @@ export default function App() {
 
   return (
     <div className="w-full min-h-screen bg-dark-bg flex justify-center">
-      <div className="w-full max-w-lg flex flex-col min-h-screen">
+      <div className="w-full max-w-lg min-h-screen flex flex-col">
 
         {/* HEADER */}
-        <header className="sticky top-0 z-40 border-b border-dark-border bg-dark-bg/95 backdrop-blur-xl">
-          <div className="h-16 flex items-center justify-between px-4">
+        <header className="sticky top-0 z-50 border-b border-dark-border bg-dark-bg/95 backdrop-blur-xl">
+          <div className="h-16 px-4 flex items-center justify-between">
 
             <div className="flex items-center gap-3">
-              <button onClick={() => setIsSidebarOpen(true)}>
-                <Menu className="w-5 h-5 text-white" />
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <Menu className="w-5 h-5" />
               </button>
 
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-brand-primary/10">
-                  <Gamepad2
-                    className="w-6 h-6 text-brand-primary"
-                    fill="currentColor"
-                  />
-                </div>
+              <div className="flex items-center gap-2">
+                <Gamepad2 className="w-6 h-6 text-brand-primary" />
 
                 <div>
-                  <h1 className="font-black tracking-wider text-white">
+                  <h1 className="font-black tracking-wider">
                     CAISTERPLAYZ
                   </h1>
 
                   <p className="text-xs text-dark-muted">
-                    Gaming Network
+                    Gaming Social Network
                   </p>
                 </div>
               </div>
             </div>
 
             <button
-              onClick={() => setIsDmOpen(true)}
-              className="relative"
+              onClick={() => setIsCommsOpen(true)}
+              className="px-3 py-1 rounded-lg bg-brand-primary/10 text-brand-primary text-sm"
             >
-              <Headphones className="w-5 h-5 text-white" />
-
-              {hasUnreadDms && (
-                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand-primary animate-pulse" />
-              )}
+              Comms
             </button>
-          </div>
 
-          {/* ONLINE STATUS BAR */}
-          <div className="px-4 py-2 border-t border-dark-border">
-            <div className="flex items-center gap-2 text-xs text-dark-muted">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              Players Online
-            </div>
           </div>
         </header>
 
-        {/* MAIN CONTENT */}
-        <main className="flex-1 pb-28">
+        {/* MAIN */}
+        <main className="flex-1 pb-24">
 
-          {activeTab === "pulse" && (
-            <HubTab
+          {activeTab === "home" && (
+            <HomeTab
+              user={user}
+              users={users}
               posts={posts}
-              users={users}
               communities={communities}
             />
           )}
 
-          {activeTab === "tournaments" && (
-            <EventsTab posts={posts} />
-          )}
-
-          {activeTab === "communities" && (
-            <RoomsTab
+          {activeTab === "discover" && (
+            <DiscoverTab
+              posts={posts}
               communities={communities}
               users={users}
             />
           )}
 
-          {activeTab === "lfg" && (
+          {activeTab === "squads" && (
             <SquadsTab
               posts={posts}
               users={users}
@@ -147,7 +119,7 @@ export default function App() {
           )}
 
           {activeTab === "locker" && (
-            <ProfileTab
+            <LockerTab
               viewingUserId={user.id}
               currentUserId={user.id}
               profile={profile}
@@ -156,50 +128,53 @@ export default function App() {
               onLogout={logout}
             />
           )}
+
         </main>
 
-        {/* FLOATING GAMING DOCK */}
-        <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50">
-          <div className="flex gap-2 px-3 py-2 rounded-3xl border border-dark-border bg-dark-bg/95 backdrop-blur-xl shadow-2xl">
+        {/* NAVIGATION */}
+        <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4">
+          <div className="bg-dark-card border border-dark-border rounded-2xl backdrop-blur-xl flex justify-around py-2 shadow-xl">
 
             <TabButton
-              icon={Gamepad2}
-              active={activeTab === "pulse"}
-              onClick={() => setActiveTab("pulse")}
+              icon={Home}
+              active={activeTab === "home"}
+              onClick={() => setActiveTab("home")}
             />
 
             <TabButton
-              icon={Trophy}
-              active={activeTab === "tournaments"}
-              onClick={() => setActiveTab("tournaments")}
+              icon={Compass}
+              active={activeTab === "discover"}
+              onClick={() => setActiveTab("discover")}
             />
 
             <TabButton
               icon={Users}
-              active={activeTab === "communities"}
-              onClick={() => setActiveTab("communities")}
+              active={activeTab === "squads"}
+              onClick={() => setActiveTab("squads")}
             />
 
             <TabButton
-              icon={Radio}
-              active={activeTab === "lfg"}
-              onClick={() => setActiveTab("lfg")}
+              icon={Headphones}
+              active={false}
+              onClick={() => setIsCommsOpen(true)}
             />
 
             <TabButton
-              icon={User}
+              icon={Shield}
               active={activeTab === "locker"}
               onClick={() => setActiveTab("locker")}
             />
+
           </div>
         </nav>
 
         <DirectMessages
-          isOpen={isDmOpen}
-          onClose={() => setIsDmOpen(false)}
+          isOpen={isCommsOpen}
+          onClose={() => setIsCommsOpen(false)}
           currentUserId={user.id}
           users={users}
         />
+
       </div>
     </div>
   );
@@ -213,20 +188,13 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`relative p-3 rounded-2xl transition-all duration-300 ${
+      className={`p-3 rounded-xl transition-all duration-300 ${
         active
           ? "bg-brand-primary/15 text-brand-primary scale-110"
           : "text-dark-muted hover:text-white"
       }`}
     >
-      <Icon
-        className="w-6 h-6"
-        strokeWidth={active ? 2.75 : 1.75}
-      />
-
-      {active && (
-        <div className="absolute inset-0 rounded-2xl border border-brand-primary/30" />
-      )}
+      <Icon className="w-6 h-6" />
     </button>
   );
 }

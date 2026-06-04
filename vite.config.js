@@ -16,11 +16,11 @@ export default defineConfig({
       },
       includeAssets: ['favicon.svg', 'icons.svg'],
       manifest: {
-        name: 'CaisterPlayz',
+        name: 'CaisterPlayz Gaming Platform',
         short_name: 'CaisterPlayz',
-        description: 'CaisterPlayz — A real-time social media platform',
-        theme_color: '#000000',
-        background_color: '#000000',
+        description: 'CaisterPlayz — The ultimate gaming community platform with challenges, squads, and achievements',
+        theme_color: '#0a0e27',
+        background_color: '#0a0e27',
         display: 'standalone',
         icons: [
           {
@@ -69,4 +69,18 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'pocketbase-vendor': ['pocketbase'],
+          'ui-vendor': ['lucide-react']
+        }
+      }
+    }
+  }
 })

@@ -5,23 +5,33 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   base: process.env.VITE_BASE || '/',
+
   plugins: [
-    react(), 
-    tailwindcss(), 
+    react(),
+    tailwindcss(),
+
     VitePWA({
       registerType: 'autoUpdate',
+
       devOptions: {
         enabled: true,
-        type: 'module',
+        type: 'module'
       },
-      includeAssets: ['favicon.svg', 'icons.svg'],
+
+      includeAssets: [
+        'favicon.svg',
+        'icons.svg'
+      ],
+
       manifest: {
         name: 'CaisterPlayz Gaming Platform',
         short_name: 'CaisterPlayz',
-        description: 'CaisterPlayz — The ultimate gaming community platform with challenges, squads, and achievements',
+        description:
+          'CaisterPlayz — The ultimate gaming community platform with challenges, squads, and achievements',
         theme_color: '#0a0e27',
         background_color: '#0a0e27',
         display: 'standalone',
+
         icons: [
           {
             src: 'favicon.svg',
@@ -31,20 +41,27 @@ export default defineConfig({
           }
         ]
       },
+
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,ttf}'],
+        globPatterns: [
+          '**/*.{js,css,html,ico,png,svg,woff2,ttf}'
+        ],
+
         navigateFallback: 'index.html',
+
         runtimeCaching: [
           {
-            // Cache all API requests EXCEPT realtime (which is a continuous stream and breaks if cached)
             urlPattern: /^\/api\/(?!realtime).*/i,
             handler: 'NetworkFirst',
+
             options: {
               cacheName: 'pocketbase-api-cache',
+
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+                maxAgeSeconds: 60 * 60 * 24 * 7
               },
+
               cacheableResponse: {
                 statuses: [0, 200]
               }
@@ -54,33 +71,28 @@ export default defineConfig({
       }
     })
   ],
+
   server: {
-    host: '0.0.0.0',  // Expose to LAN — accessible from iPhone on same WiFi
+    host: '0.0.0.0',
     port: 5173,
     allowedHosts: true,
+
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8090',
         changeOrigin: true
       },
+
       '/_': {
         target: 'http://127.0.0.1:8090',
         changeOrigin: true
       }
     }
   },
+
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'terser',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'pocketbase-vendor': ['pocketbase'],
-          'ui-vendor': ['lucide-react']
-        }
-      }
-    }
+    minify: 'terser'
   }
 })

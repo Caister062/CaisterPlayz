@@ -1,27 +1,24 @@
-name: Deploy to GitHub Pages
+name: Build & Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow one concurrent deployment
 concurrency:
-  group: 'pages'
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
+    name: Build CaisterPlayz Gaming Platform
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,28 +26,71 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+        run: npm ci
 
-      - name: Build web app
-        run: npm run build
+      - name: Lint check
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Build for production
+        run: cross-env VITE_BASE=/CaisterPlayz/ npm run build
         env:
-          VITE_BASE: /CaisterPlayz/
-          VITE_PB_URL: https://caisterplayz-caisterplayz-backend.hf.space
+          VITE_PB_URL: ${{ secrets.VITE_PB_URL || 'https://caisterplayz-caisterplayz-backend.hf.space' }}
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed: dist directory not found"
+            exit 1
+          fi
+          if [ ! -f "dist/index.html" ]; then
+            echo "❌ Build failed: index.html not found in dist"
+            exit 1
+          fi
+          echo "✅ Build verification passed!"
+          echo ""
+          echo "📊 Build artifacts:"
+          du -sh dist/
+          echo ""
+          echo "📁 Main files:"
+          ls -lh dist/*.html dist/*.js 2>/dev/null | head -10 || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+        uses: actions/configure-pages@v4
 
-      - name: Upload artifact
+      - name: Upload dist to Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: 'dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: 🎉 Deployment Success
+        run: |
+          echo "🎮 CaisterPlayz Gaming Platform Deployed!"
+          echo ""
+          echo "📱 Live URL: https://Caister062.github.io/CaisterPlayz/"
+          echo "🔗 Repository: ${{ github.repository }}"
+          echo "📦 Commit: ${{ github.sha }}"
+          echo "⚙️  Base path: /CaisterPlayz/"
+          echo "⏰ Timestamp: $(date -u)"
+          echo ""
+          echo "✨ Features:"
+          echo "  🎯 Gaming-focused post types (Challenge, Squad LFG, Achievement)"
+          echo "  👤 Gamer stats dashboard (Reputation, Achievements, Challenges, Squad Posts)"
+          echo "  🔥 Engagement-based feed sorting (Hotness algorithm)"
+          echo "  🎨 Neon gaming theme with glass morphism"
+          echo "  📡 Real-time PocketBase integration"

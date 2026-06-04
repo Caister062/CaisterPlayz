@@ -1,484 +1,314 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* ===== CaisterPlayz Gaming Theme ===== */
-@theme {
-  --color-brand-primary: #00d9ff; /* Neon Cyan - Gaming Primary */
-  --color-brand-secondary: #ff006e; /* Neon Magenta */
-  --color-brand-accent: #ffbe0b; /* Neon Yellow - Highlights */
-  --color-brand-success: #00f5ff; /* Neon Aqua */
-  --color-brand-danger: #ff4757;
-  --color-brand-warning: #ffa502;
-  
-  /* Gaming Dark Palette */
-  --color-dark-bg: #0a0e27; /* Deep Gaming Black */
-  --color-dark-surface: #1a1f3a; /* Card Base */
-  --color-dark-card: #212839;
-  --color-dark-border: #2d3a5c; /* Neon-influenced Border */
-  --color-dark-hover: #2a3550;
-  --color-dark-text: #ecf0f1; /* Gaming White */
-  --color-dark-muted: #8892b0;
-  --color-dark-elevated: #252d47;
-  
-  /* Gaming Colors */
-  --color-gaming-purple: #7c3aed;
-  --color-gaming-green: #10b981;
-  --color-gaming-blue: #0ea5e9;
-  --color-gaming-red: #ef4444;
-  --color-gaming-orange: #f97316;
+/* =========================
+   CAISTERPLAYZ THEME
+========================= */
+
+:root {
+  --brand-primary: #3b82f6;
+  --brand-secondary: #60a5fa;
+
+  --dark-bg: #070b14;
+  --dark-card: #101827;
+  --dark-border: #1f2937;
+  --dark-muted: #8b98a5;
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 }
 
-/* ===== Root Styles ===== */
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
-html, body, #root {
-  min-height: 100%;
-  width: 100%;
-  background: var(--color-dark-bg);
-  color: var(--color-dark-text);
-  font-family: 'Inter', 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-  overscroll-behavior-y: none;
+html {
+  scroll-behavior: smooth;
 }
 
-/* ===== Scrollbar ===== */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-brand-primary);
-  border-radius: 999px;
-  opacity: 0.5;
-}
+body {
+  margin: 0;
+  min-height: 100vh;
 
-/* ===== Gaming Keyframes ===== */
-@keyframes pop {
-  0% { transform: scale(1); }
-  15% { transform: scale(1.3); }
-  30% { transform: scale(0.85); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(59, 130, 246, 0.08),
+      transparent 35%
+    ),
+    var(--dark-bg);
 
-@keyframes gamer-pulse {
-  0%, 100% { 
-    box-shadow: 0 0 20px rgba(0, 217, 255, 0.3), inset 0 0 20px rgba(0, 217, 255, 0.1);
-  }
-  50% { 
-    box-shadow: 0 0 40px rgba(0, 217, 255, 0.6), inset 0 0 30px rgba(0, 217, 255, 0.2);
-  }
-}
-
-@keyframes neon-glow {
-  0%, 100% { text-shadow: 0 0 10px rgba(0, 217, 255, 0.5); }
-  50% { text-shadow: 0 0 20px rgba(0, 217, 255, 1), 0 0 30px rgba(255, 0, 110, 0.5); }
-}
-
-@keyframes scanlines {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
-
-@keyframes flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.95; }
-}
-
-@keyframes float-up {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slide-down {
-  0% { opacity: 0; transform: translateY(-10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes scale-in {
-  0% { opacity: 0; transform: scale(0.95); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes fade-slide-down {
-  0% { opacity: 0; transform: translateY(-15px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes modal-enter {
-  0% { opacity: 0; transform: scale(0.95) translateY(10px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-@keyframes modal-overlay {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-@keyframes heart-burst {
-  0% { transform: scale(1); color: inherit; }
-  15% { transform: scale(1.35); color: #ff006e; }
-  30% { transform: scale(0.8); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); color: #ff006e; }
-}
-
-@keyframes repost-burst {
-  0% { transform: scale(1); }
-  15% { transform: scale(1.3); color: #00f5ff; }
-  30% { transform: scale(0.85); }
-  100% { transform: scale(1); color: #00f5ff; }
-}
-
-@keyframes bookmark-burst {
-  0% { transform: scale(1); }
-  15% { transform: scale(1.3); color: #00d9ff; }
-  30% { transform: scale(0.85); }
-  100% { transform: scale(1); color: #00d9ff; }
-}
-
-/* ===== Animation Classes ===== */
-.animate-pop {
-  animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.animate-gamer-pulse {
-  animation: gamer-pulse 2s ease-in-out infinite;
-}
-
-.animate-neon-glow {
-  animation: neon-glow 3s ease-in-out infinite;
-}
-
-.animate-scanlines {
-  animation: scanlines 8s linear infinite;
-}
-
-.animate-flicker {
-  animation: flicker 0.15s infinite;
-}
-
-.animate-float-up {
-  animation: float-up 0.4s ease-out forwards;
-}
-
-.animate-slide-down {
-  animation: slide-down 0.3s ease-out forwards;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.3s ease-out forwards;
-}
-
-.animate-fade-slide {
-  animation: fade-slide-down 0.35s ease-out forwards;
-}
-
-.animate-heart-burst {
-  animation: heart-burst 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.animate-repost-burst {
-  animation: repost-burst 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.animate-bookmark-burst {
-  animation: bookmark-burst 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.animate-modal-enter {
-  animation: modal-enter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-.animate-modal-overlay {
-  animation: modal-overlay 0.2s ease-out forwards;
-}
-
-/* ===== Gaming Glass Morphism ===== */
-.gaming-glass {
-  background: rgba(26, 31, 58, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 217, 255, 0.2);
-}
-
-.gaming-glass-hover {
-  transition: all 0.3s ease;
-}
-
-.gaming-glass-hover:hover {
-  background: rgba(26, 31, 58, 0.8);
-  border-color: rgba(0, 217, 255, 0.4);
-  box-shadow: 0 0 20px rgba(0, 217, 255, 0.15);
-}
-
-/* ===== Neon Border ===== */
-.neon-border {
-  border-color: var(--color-brand-primary);
-  box-shadow: 0 0 10px rgba(0, 217, 255, 0.3), inset 0 0 10px rgba(0, 217, 255, 0.05);
-}
-
-.neon-border-magenta {
-  border-color: var(--color-brand-secondary);
-  box-shadow: 0 0 10px rgba(255, 0, 110, 0.3), inset 0 0 10px rgba(255, 0, 110, 0.05);
-}
-
-.neon-border-yellow {
-  border-color: var(--color-brand-accent);
-  box-shadow: 0 0 10px rgba(255, 190, 11, 0.3), inset 0 0 10px rgba(255, 190, 11, 0.05);
-}
-
-/* ===== Card Styles ===== */
-.gaming-card {
-  background: var(--color-dark-surface);
-  border: 1px solid var(--color-dark-border);
-  border-radius: 12px;
-  padding: 16px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.gaming-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, transparent 0%, rgba(0, 217, 255, 0.05) 50%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.gaming-card:hover {
-  background: var(--color-dark-card);
-  border-color: var(--color-brand-primary);
-  box-shadow: 0 8px 32px rgba(0, 217, 255, 0.1);
-}
-
-.gaming-card:hover::before {
-  opacity: 1;
-}
-
-/* ===== Button Styles ===== */
-.btn-gaming-primary {
-  background: linear-gradient(135deg, #00d9ff 0%, #00f5ff 100%);
-  color: var(--color-dark-bg);
-  font-weight: 700;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-}
-
-.btn-gaming-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(0, 217, 255, 0.6);
-}
-
-.btn-gaming-secondary {
-  background: linear-gradient(135deg, #ff006e 0%, #ff4757 100%);
   color: white;
-  font-weight: 700;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+
+  font-family:
+    Inter,
+    system-ui,
+    sans-serif;
+
+  overflow-x: hidden;
 }
 
-.btn-gaming-secondary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(255, 0, 110, 0.6);
+/* =========================
+   SCROLLBAR
+========================= */
+
+::-webkit-scrollbar {
+  width: 8px;
 }
 
-.btn-gaming-outline {
-  background: transparent;
-  color: var(--color-brand-primary);
-  font-weight: 700;
-  border: 2px solid var(--color-brand-primary);
-  border-radius: 8px;
-  padding: 8px 18px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+::-webkit-scrollbar-track {
+  background: var(--dark-bg);
 }
 
-.btn-gaming-outline:hover {
-  background: rgba(0, 217, 255, 0.1);
-  box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+::-webkit-scrollbar-thumb {
+  background: #1e3a8a;
+  border-radius: 999px;
 }
 
-/* ===== Text Effects ===== */
-.gaming-text-primary {
-  color: var(--color-brand-primary);
-  text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
 }
 
-.gaming-text-secondary {
-  color: var(--color-brand-secondary);
-  text-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
-}
+/* =========================
+   GAMING CARDS
+========================= */
 
-.gaming-text-accent {
-  color: var(--color-brand-accent);
-  text-shadow: 0 0 10px rgba(255, 190, 11, 0.5);
-}
+.card {
+  background: rgba(16, 24, 39, 0.9);
 
-/* ===== Badge Styles ===== */
-.gaming-badge {
-  display: inline-block;
-  padding: 4px 12px;
+  border: 1px solid var(--dark-border);
+
   border-radius: 20px;
-  font-size: 12px;
+
+  backdrop-filter: blur(20px);
+
+  transition: all 0.25s ease;
+}
+
+.card:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+
+  transform: translateY(-2px);
+}
+
+.glow-card {
+  box-shadow:
+    0 0 0 1px rgba(59,130,246,.2),
+    0 0 25px rgba(59,130,246,.15);
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.btn-primary {
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #3b82f6
+  );
+
+  color: white;
+
+  border: none;
+
+  border-radius: 14px;
+
+  padding: 12px 18px;
+
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border: 1px solid;
+
+  cursor: pointer;
+
+  transition: 0.25s;
 }
 
-.gaming-badge-event {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: #7c3aed;
-  color: #a78bfa;
+.btn-primary:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 10px 30px rgba(59,130,246,.35);
 }
 
-.gaming-badge-squad {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: #3b82f6;
-  color: #60a5fa;
+.btn-secondary {
+  background: rgba(255,255,255,.05);
+
+  border: 1px solid var(--dark-border);
+
+  color: white;
+
+  border-radius: 14px;
+
+  padding: 12px 18px;
+
+  cursor: pointer;
+
+  transition: 0.25s;
 }
 
-.gaming-badge-highlight {
-  background: rgba(249, 115, 22, 0.2);
-  border-color: #f97316;
-  color: #fb923c;
+.btn-secondary:hover {
+  border-color: rgba(59,130,246,.4);
 }
 
-.gaming-badge-achievement {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: #10b981;
-  color: #6ee7b7;
+/* =========================
+   PANELS
+========================= */
+
+.panel {
+  background: rgba(16,24,39,.75);
+
+  border: 1px solid var(--dark-border);
+
+  backdrop-filter: blur(20px);
+
+  border-radius: 24px;
 }
 
-.gaming-badge-mission {
-  background: rgba(255, 190, 11, 0.2);
-  border-color: #ffbe0b;
-  color: #fcd34d;
+/* =========================
+   GAMING STATUS
+========================= */
+
+.status-online {
+  width: 10px;
+  height: 10px;
+
+  border-radius: 999px;
+
+  background: var(--success);
+
+  box-shadow:
+    0 0 10px var(--success);
 }
 
-/* ===== Safe Area Padding ===== */
-.safe-bottom {
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+.status-busy {
+  width: 10px;
+  height: 10px;
+
+  border-radius: 999px;
+
+  background: var(--warning);
+
+  box-shadow:
+    0 0 10px var(--warning);
 }
 
-/* ===== Modal Lock ===== */
-.modal-open {
-  overflow: hidden !important;
+.status-offline {
+  width: 10px;
+  height: 10px;
+
+  border-radius: 999px;
+
+  background: #6b7280;
 }
 
-/* ===== Selection Color ===== */
-::selection {
-  background: rgba(0, 217, 255, 0.3);
-  color: var(--color-dark-text);
-}
+/* =========================
+   XP BAR
+========================= */
 
-/* ===== Tap Highlight (mobile) ===== */
-* {
-  -webkit-tap-highlight-color: transparent;
-}
+.xp-bar {
+  height: 10px;
 
-/* ===== Utility Classes ===== */
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+
+  border-radius: 999px;
+
+  background: rgba(255,255,255,.08);
 }
 
-.snap-container {
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+.xp-fill {
+  height: 100%;
+
+  background: linear-gradient(
+    90deg,
+    #2563eb,
+    #60a5fa
+  );
 }
 
-.snap-item {
-  scroll-snap-align: start;
+/* =========================
+   BADGES
+========================= */
+
+.badge {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 6px 10px;
+
+  border-radius: 999px;
+
+  background: rgba(59,130,246,.15);
+
+  border: 1px solid rgba(59,130,246,.25);
+
+  font-size: 12px;
+
+  font-weight: 700;
 }
 
-/* ===== Grid Layouts ===== */
-.gaming-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
+/* =========================
+   FLOATING NAV
+========================= */
+
+.floating-nav {
+  background: rgba(16,24,39,.9);
+
+  border: 1px solid var(--dark-border);
+
+  backdrop-filter: blur(20px);
+
+  border-radius: 24px;
+
+  box-shadow:
+    0 10px 40px rgba(0,0,0,.4);
 }
 
-.gaming-grid-2 {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+/* =========================
+   ANIMATIONS
+========================= */
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 rgba(59,130,246,.4);
+  }
+
+  50% {
+    box-shadow: 0 0 25px rgba(59,130,246,.5);
+  }
+
+  100% {
+    box-shadow: 0 0 0 rgba(59,130,246,.4);
+  }
 }
 
-.gaming-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+.animate-gaming {
+  animation: pulseGlow 2s infinite;
 }
 
-/* ===== Spacers ===== */
-.space-gaming-xs {
-  gap: 8px;
+/* =========================
+   UTILITIES
+========================= */
+
+.text-gradient {
+  background: linear-gradient(
+    90deg,
+    #60a5fa,
+    #3b82f6
+  );
+
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.space-gaming-sm {
-  gap: 12px;
-}
+.glass {
+  background: rgba(255,255,255,.03);
 
-.space-gaming-md {
-  gap: 16px;
-}
+  backdrop-filter: blur(20px);
 
-.space-gaming-lg {
-  gap: 24px;
-}
-
-/* ===== Borders & Shadows ===== */
-.gaming-shadow {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-.gaming-shadow-lg {
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
-}
-
-.gaming-shadow-neon {
-  box-shadow: 0 0 20px rgba(0, 217, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-/* ===== Transitions ===== */
-.gaming-transition {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.gaming-transition-fast {
-  transition: all 0.15s ease;
-}
-
-.gaming-transition-slow {
-  transition: all 0.5s ease;
+  border: 1px solid rgba(255,255,255,.05);
 }

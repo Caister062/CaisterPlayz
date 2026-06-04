@@ -19,7 +19,7 @@ build:
 runs-on: ubuntu-latest
 name: Build CaisterPlayz Gaming Platform
 
-```
+
 steps:
   - name: Checkout code
     uses: actions/checkout@v4
@@ -83,4 +83,3 @@ steps:
       echo "📱 https://Caister062.github.io/CaisterPlayz/"
       echo "📦 Commit: ${{ github.sha }}"
       echo "⏰ $(date -u)"
-```

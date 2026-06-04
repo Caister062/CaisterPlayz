@@ -197,6 +197,20 @@ export function useUserProfile(userId) {
   return profile;
 }
 
+/* ─── Helper: Fetch posts with filter ─── */
+const fetchPostsWithFilter = useCallback(async (filter, pageNum = 1, pageSize = 15) => {
+  try {
+    const result = await pb.collection('cplayz_posts').getList(pageNum, pageSize, {
+      filter,
+      sort: '-id',
+    });
+    return result;
+  } catch (err) {
+    console.error('Fetch posts error:', err);
+    return { items: [], totalPages: 0 };
+  }
+}, []);
+
 /* ─── All Posts Hook (paginated & real-time) ─── */
 export function usePosts() {
   const [posts, setPosts] = useState([]);
@@ -273,6 +287,257 @@ export function usePosts() {
   }, [fetchPosts]);
 
   return { posts, loading, hasMore, loadingMore, loadMore, refresh: () => fetchPosts(1, false) };
+}
+
+/* ─── Gaming: Events Hook ─── */
+export function useEvents() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchEvents = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await pb.collection('cplayz_posts').getList(1, 100, {
+        filter: `type="event"`,
+        sort: '-created',
+      });
+      setEvents(result.items);
+    } catch (err) {
+      console.error('Fetch events error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_posts').subscribe('*', (e) => {
+      if (e.record?.type === 'event') {
+        fetchEvents();
+      }
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useEvents subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [fetchEvents]);
+
+  return { events, loading, refreshEvents: fetchEvents };
+}
+
+/* ─── Gaming: Squads Hook ─── */
+export function useSquads() {
+  const [squads, setSquads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSquads = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await pb.collection('cplayz_posts').getList(1, 100, {
+        filter: `type="squad"`,
+        sort: '-created',
+      });
+      setSquads(result.items);
+    } catch (err) {
+      console.error('Fetch squads error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSquads();
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_posts').subscribe('*', (e) => {
+      if (e.record?.type === 'squad') {
+        fetchSquads();
+      }
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useSquads subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [fetchSquads]);
+
+  return { squads, loading, refreshSquads: fetchSquads };
+}
+
+/* ─── Gaming: Highlights Hook (videos/images + highlight type) ─── */
+export function useHighlights() {
+  const [highlights, setHighlights] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchHighlights = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Get posts that have imageUrl/video AND (type="highlight" OR has media)
+      const result = await pb.collection('cplayz_posts').getList(1, 100, {
+        filter: `(imageUrl != "" || type="highlight")`,
+        sort: '-created',
+      });
+      setHighlights(result.items);
+    } catch (err) {
+      console.error('Fetch highlights error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHighlights();
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_posts').subscribe('*', (e) => {
+      if (e.record?.imageUrl || e.record?.type === 'highlight') {
+        fetchHighlights();
+      }
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useHighlights subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [fetchHighlights]);
+
+  return { highlights, loading, refreshHighlights: fetchHighlights };
+}
+
+/* ─── Gaming: Rooms Hook (communities as gaming rooms) ─── */
+export function useRooms() {
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRooms = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await pb.collection('cplayz_communities').getList(1, 100, {
+        sort: '-created',
+      });
+      setRooms(result.items);
+    } catch (err) {
+      console.error('Fetch rooms error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRooms();
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_communities').subscribe('*', () => {
+      fetchRooms();
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useRooms subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [fetchRooms]);
+
+  return { rooms, loading, refreshRooms: fetchRooms };
+}
+
+/* ─── Gaming: Featured Event Hook ─── */
+export function useFeaturedEvent() {
+  const [featuredEvent, setFeaturedEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchFeaturedEvent = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await pb.collection('cplayz_posts').getList(1, 1, {
+        filter: `type="event"`,
+        sort: '-created',
+      });
+      setFeaturedEvent(result.items.length > 0 ? result.items[0] : null);
+    } catch (err) {
+      console.error('Fetch featured event error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFeaturedEvent();
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_posts').subscribe('*', (e) => {
+      if (e.record?.type === 'event') {
+        fetchFeaturedEvent();
+      }
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useFeaturedEvent subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [fetchFeaturedEvent]);
+
+  return { featuredEvent, loading, refreshFeaturedEvent: fetchFeaturedEvent };
+}
+
+/* ─── Gaming: Missions Hook (community challenges) ─── */
+export function useMissions() {
+  const [missions, setMissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchMissions = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Missions are posts with type="mission" (community challenges)
+      const result = await pb.collection('cplayz_posts').getList(1, 100, {
+        filter: `type="mission"`,
+        sort: '-created',
+      });
+      setMissions(result.items);
+    } catch (err) {
+      console.error('Fetch missions error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMissions();
+
+    let unsubscribeFn = null;
+    pb.collection('cplayz_posts').subscribe('*', (e) => {
+      if (e.record?.type === 'mission') {
+        fetchMissions();
+      }
+    }).then(unsub => {
+      unsubscribeFn = unsub;
+    }).catch(err => {
+      console.error('useMissions subscribe error:', err);
+    });
+
+    return () => {
+      if (unsubscribeFn) unsubscribeFn();
+    };
+  }, [fetchMissions]);
+
+  return { missions, loading, refreshMissions: fetchMissions };
 }
 
 /* ─── Comments Hook (real-time) ─── */
@@ -664,6 +929,12 @@ export function useDMThreads(currentUserId) {
    ═══════════════════════════════════════════ */
 
 export async function createPost(userId, text, imageUrl = '', musicId = '', musicName = '', originalPostId = '', type = '', communityId = '') {
+  // Validate gaming post types
+  const validTypes = ['event', 'squad', 'highlight', 'achievement', 'mission', ''];
+  if (!validTypes.includes(type)) {
+    throw new Error(`Invalid post type: ${type}. Must be one of: event, squad, highlight, achievement, mission`);
+  }
+
   const post = await pb.collection('cplayz_posts').create({
     userId,
     text,
@@ -724,6 +995,8 @@ export async function createPost(userId, text, imageUrl = '', musicId = '', musi
   } catch (err) {
     console.error('Post alert notifications error:', err);
   }
+
+  return post;
 }
 
 export async function deletePost(postId, userId) {
@@ -892,7 +1165,7 @@ export async function getCommentCounts(posts) {
   return counts;
 }
 
-/* ─── Communities Hooks ─── */
+/* ─── Communities/Rooms Hooks ─── */
 export function useCommunities() {
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);

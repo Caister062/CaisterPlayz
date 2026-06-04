@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+limport { useState } from "react";
 import {
   Gamepad2,
   Trophy,
@@ -45,7 +46,7 @@ export default function App() {
 
   const hasUnreadDms =
     threads?.some(
-      t =>
+      (t) =>
         t.lastMessage &&
         t.lastMessage.senderId !== user?.id &&
         !t.lastMessage.read
@@ -66,12 +67,8 @@ export default function App() {
   return (
     <div className="w-full min-h-screen bg-dark-bg flex justify-center">
       <div className="w-full max-w-lg flex flex-col min-h-screen">
-
-        {/* HEADER */}
-
         <header className="sticky top-0 z-40 h-14 border-b border-dark-border bg-dark-bg/95 backdrop-blur-xl">
           <div className="h-full flex items-center justify-between px-4">
-
             <div className="flex items-center gap-3">
               <button onClick={() => setIsSidebarOpen(true)}>
                 <Menu className="w-5 h-5" />
@@ -98,14 +95,10 @@ export default function App() {
                 <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand-primary" />
               )}
             </button>
-
           </div>
         </header>
 
-        {/* MAIN */}
-
         <main className="flex-1 pb-20">
-
           {activeTab === "hub" && (
             <HubTab
               posts={posts}
@@ -115,9 +108,7 @@ export default function App() {
           )}
 
           {activeTab === "events" && (
-            <EventsTab
-              posts={posts}
-            />
+            <EventsTab posts={posts} />
           )}
 
           {activeTab === "rooms" && (
@@ -144,15 +135,10 @@ export default function App() {
               onLogout={logout}
             />
           )}
-
         </main>
 
-        {/* BOTTOM NAV */}
-
         <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg border-t border-dark-border bg-dark-bg/95 backdrop-blur-xl">
-
           <div className="flex justify-around py-2">
-
             <TabButton
               icon={Gamepad2}
               active={activeTab === "hub"}
@@ -182,12 +168,8 @@ export default function App() {
               active={activeTab === "profile"}
               onClick={() => setActiveTab("profile")}
             />
-
           </div>
-
         </nav>
-
-        {/* DMS */}
 
         <DirectMessages
           isOpen={isDmOpen}
@@ -195,7 +177,6 @@ export default function App() {
           currentUserId={user.id}
           users={users}
         />
-
       </div>
     </div>
   );

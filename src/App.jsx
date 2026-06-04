@@ -1,5 +1,5 @@
 
-limport { useState } from "react";
+import { useState } from "react";
 import {
   Gamepad2,
   Trophy,

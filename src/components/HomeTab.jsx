@@ -14,22 +14,24 @@ import { EmptyState, PostSkeleton, Spinner } from './Shared';
 export default function HomeTab({
   subTab,
   setSubTab,
-  posts,
+  posts = [],
   postsLoading,
   hasMore,
   loadingMore,
   currentUserId,
   profile,
-  users,
-  followingIds,
+  users = [],
+  followingIds = [],
   onProfileClick,
-  onNavigate,
   onHashtagClick,
   onQuote,
   quotedPost,
   onClearQuote,
-  communities
+  communities = []
 }) {
+
+  /* ───────── Derived UI Data ───────── */
+
   const onlineUsers = useMemo(
     () => users.slice(0, 12),
     [users]
@@ -43,23 +45,17 @@ export default function HomeTab({
   const highlights = useMemo(
     () =>
       posts.filter(
-        p =>
-          p.type === 'highlight' ||
-          p.type === 'achievement'
+        p => p.type === 'highlight' || p.type === 'achievement'
       ),
     [posts]
   );
 
   const feedPosts = useMemo(() => {
-    if (subTab === 'live') {
-      return posts;
-    }
+    if (subTab === 'live') return posts;
 
     if (subTab === 'rooms') {
-      return posts.filter(
-        p =>
-          p.type === 'squad' ||
-          p.type === 'room'
+      return posts.filter(p =>
+        p.type === 'squad' || p.type === 'room'
       );
     }
 
@@ -67,10 +63,10 @@ export default function HomeTab({
       return highlights;
     }
 
-    return posts.filter(
-      p =>
-        followingIds.includes(p.userId) ||
-        p.userId === currentUserId
+    // following feed
+    return posts.filter(p =>
+      followingIds.includes(p.userId) ||
+      p.userId === currentUserId
     );
   }, [
     posts,
@@ -80,12 +76,13 @@ export default function HomeTab({
     currentUserId
   ]);
 
+  /* ───────── UI ───────── */
+
   return (
     <div>
 
       {/* NAV */}
       <div className="sticky top-[53px] z-30 bg-dark-bg/95 backdrop-blur-xl border-b border-dark-border">
-
         <div className="grid grid-cols-4">
 
           <NavTab
@@ -120,38 +117,11 @@ export default function HomeTab({
       </div>
 
       {/* LIVE DASHBOARD */}
-      <div className="p-4 border-b border-dark-border">
+      <div className="p-4 border-b border-dark-border grid grid-cols-3 gap-3">
 
-        <div className="grid grid-cols-3 gap-3">
-
-          <div className="bg-dark-card rounded-2xl p-4">
-            <div className="text-2xl font-black text-brand-primary">
-              {users.length}
-            </div>
-            <div className="text-xs text-dark-muted">
-              Players
-            </div>
-          </div>
-
-          <div className="bg-dark-card rounded-2xl p-4">
-            <div className="text-2xl font-black text-brand-primary">
-              {communities.length}
-            </div>
-            <div className="text-xs text-dark-muted">
-              Rooms
-            </div>
-          </div>
-
-          <div className="bg-dark-card rounded-2xl p-4">
-            <div className="text-2xl font-black text-brand-primary">
-              {highlights.length}
-            </div>
-            <div className="text-xs text-dark-muted">
-              Clips
-            </div>
-          </div>
-
-        </div>
+        <Stat label="Players" value={users.length} />
+        <Stat label="Rooms" value={communities.length} />
+        <Stat label="Clips" value={highlights.length} />
 
       </div>
 
@@ -160,13 +130,10 @@ export default function HomeTab({
 
         <div className="flex items-center gap-2 mb-3">
           <Zap className="w-4 h-4 text-green-500" />
-          <h3 className="font-bold">
-            Active Players
-          </h3>
+          <h3 className="font-bold">Active Players</h3>
         </div>
 
         <div className="flex gap-3 overflow-x-auto pb-1">
-
           {onlineUsers.map(user => (
             <button
               key={user.id}
@@ -174,52 +141,20 @@ export default function HomeTab({
               className="flex flex-col items-center min-w-[64px]"
             >
               <div className="relative">
-
                 <img
-                  src={
-                    user.avatarUrl ||
-                    '/default-avatar.png'
-                  }
+                  src={user.avatarUrl || '/default-avatar.png'}
+                  className="w-14 h-14 rounded-2xl object-cover border border-dark-border"
                   alt=""
-                  className="
-                    w-14 h-14
-                    rounded-2xl
-                    object-cover
-                    border
-                    border-dark-border
-                  "
                 />
 
-                <div
-                  className="
-                    absolute
-                    bottom-0
-                    right-0
-                    w-3 h-3
-                    bg-green-500
-                    rounded-full
-                    border-2
-                    border-dark-bg
-                  "
-                />
-
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-bg" />
               </div>
 
-              <span
-                className="
-                  text-[10px]
-                  text-dark-muted
-                  mt-1
-                  truncate
-                  w-full
-                "
-              >
+              <span className="text-[10px] text-dark-muted mt-1 truncate w-full">
                 {user.displayName}
               </span>
-
             </button>
           ))}
-
         </div>
 
       </div>
@@ -227,53 +162,30 @@ export default function HomeTab({
       {/* ROOMS */}
       <div className="p-4 border-b border-dark-border">
 
-        <h3 className="font-bold mb-3">
-          Active Rooms
-        </h3>
+        <h3 className="font-bold mb-3">Active Rooms</h3>
 
         <div className="space-y-2">
-
           {rooms.map(room => (
             <div
               key={room.id}
-              className="
-                bg-dark-card
-                rounded-2xl
-                p-4
-                border
-                border-dark-border
-              "
+              className="bg-dark-card rounded-2xl p-4 border border-dark-border"
             >
               <div className="flex items-center justify-between">
 
                 <div>
-                  <div className="font-bold">
-                    {room.name}
-                  </div>
-
+                  <div className="font-bold">{room.name}</div>
                   <div className="text-xs text-dark-muted">
-                    {(room.members || []).length}
-                    {' '}
-                    players inside
+                    {(room.members || []).length} players inside
                   </div>
                 </div>
 
-                <button
-                  className="
-                    px-3 py-2
-                    rounded-xl
-                    bg-brand-primary/10
-                    text-brand-primary
-                    text-sm
-                  "
-                >
+                <button className="px-3 py-2 rounded-xl bg-brand-primary/10 text-brand-primary text-sm">
                   Join
                 </button>
 
               </div>
             </div>
           ))}
-
         </div>
 
       </div>
@@ -295,7 +207,7 @@ export default function HomeTab({
           <PostSkeleton />
           <PostSkeleton />
         </>
-      ) : feedPosts.length > 0 ? (
+      ) : feedPosts.length ? (
         <>
           {feedPosts.map(post => (
             <PostCard
@@ -329,37 +241,33 @@ export default function HomeTab({
   );
 }
 
-function NavTab({
-  active,
-  onClick,
-  icon: Icon,
-  label
-}) {
+/* ───────── Small UI Components ───────── */
+
+function NavTab({ active, onClick, icon: Icon, label }) {
   return (
     <button
       onClick={onClick}
-      className={`
-        py-4
-        flex
-        flex-col
-        items-center
-        gap-1
-        text-xs
-        transition-all
-        ${
-          active
-            ? 'text-brand-primary'
-            : 'text-dark-muted'
-        }
-      `}
+      className={`py-4 flex flex-col items-center gap-1 text-xs transition-all ${
+        active ? 'text-brand-primary' : 'text-dark-muted'
+      }`}
     >
       <Icon className="w-4 h-4" />
-
       <span>{label}</span>
 
       {active && (
         <div className="w-8 h-1 rounded-full bg-brand-primary" />
       )}
     </button>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="bg-dark-card rounded-2xl p-4">
+      <div className="text-2xl font-black text-brand-primary">
+        {value}
+      </div>
+      <div className="text-xs text-dark-muted">{label}</div>
+    </div>
   );
 }

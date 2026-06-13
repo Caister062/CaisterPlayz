@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import PostCard from "./components/PostCard";
-import { fetchPosts, fetchUsers } from "./hooks";
+import { usePosts, useAllUsers } from "./hooks";
 
 export default function App() {
   const [posts, setPosts] = useState([]);

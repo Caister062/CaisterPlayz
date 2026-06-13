@@ -1,38 +1,68 @@
-import { useState, useRef, useEffect } from 'react';
-import { Image, X, Loader2, Music, Play, Square, Check, Gamepad2 } from 'lucide-react';
-import { Avatar } from './Shared';
-import { compressImage } from '../utils';
-import { createPost } from '../hooks';
-import { MUSIC_TRACKS, previewTrack, stopTrack } from '../musicLibrary';
-import { playPostSound } from '../sounds';
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import {
+  Image,
+  X,
+  Loader2,
+  Music,
+  Play,
+  Square,
+  Check,
+  Gamepad2,
+} from "lucide-react";
 
-export default function Composer({ currentUserId, profile, quotedPost, onClearQuote, communities, initialCommunityId, users }) {
-  const [text, setText] = useState('');
-  const [imagePreview, setImagePreview] = useState('');
-  const [compressedImage, setCompressedImage] = useState('');
+import { Avatar } from "./Shared";
+import { compressImage } from "../utils";
+import { createPost } from "../hooks";
+import { MUSIC_TRACKS, previewTrack, stopTrack } from "../musicLibrary";
+import { playPostSound } from "../sounds";
+
+export default function Composer({
+  currentUserId,
+  profile,
+  quotedPost,
+  onClearQuote,
+  communities = [],
+  initialCommunityId,
+  users = [],
+}) {
+  const [text, setText] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
+  const [compressedImage, setCompressedImage] = useState("");
   const [posting, setPosting] = useState(false);
   const [compressing, setCompressing] = useState(false);
+
   const [showMusicPicker, setShowMusicPicker] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [previewingId, setPreviewingId] = useState(null);
-  const [selectedTag, setSelectedTag] = useState('');
-  const [activeCommunityId, setActiveCommunityId] = useState(initialCommunityId || '');
+
+  const [selectedTag, setSelectedTag] = useState("");
+  const [activeCommunityId, setActiveCommunityId] = useState(
+    initialCommunityId || ""
+  );
+
   const fileRef = useRef(null);
   const textareaRef = useRef(null);
 
+  /* ─────────────────────────────
+     COMMUNITY SYNC
+  ───────────────────────────── */
   useEffect(() => {
-    setActiveCommunityId(initialCommunityId || '');
+    setActiveCommunityId(initialCommunityId || "");
   }, [initialCommunityId]);
 
-  // Auto-expand textarea
+  /* ─────────────────────────────
+     AUTO RESIZE TEXTAREA
+  ───────────────────────────── */
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
-    }
+    if (!textareaRef.current) return;
+    textareaRef.current.style.height = "auto";
+    textareaRef.current.style.height =
+      Math.min(textareaRef.current.scrollHeight, 200) + "px";
   }, [text]);
 
-  // Stop preview when picker closes
+  /* ─────────────────────────────
+     STOP MUSIC ON CLOSE
+  ───────────────────────────── */
   useEffect(() => {
     if (!showMusicPicker) {
       stopTrack();
@@ -40,52 +70,54 @@ export default function Composer({ currentUserId, profile, quotedPost, onClearQu
     }
   }, [showMusicPicker]);
 
+  /* ─────────────────────────────
+     IMAGE HANDLER
+  ───────────────────────────── */
   const handleImageSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type.startsWith('video/')) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert('Video must be less than 10MB.');
-        if (fileRef.current) fileRef.current.value = '';
-        return;
-      }
-      setCompressing(true);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target.result;
-        setImagePreview(base64);
-        setCompressedImage(base64);
-        setCompressing(false);
-      };
-      reader.onerror = () => {
-        alert('Failed to read video file.');
-        setCompressing(false);
-      };
-      reader.readAsDataURL(file);
-      if (fileRef.current) fileRef.current.value = '';
+    if (file.type.startsWith("video/") && file.size > 10 * 1024 * 1024) {
+      alert("Video must be under 10MB");
       return;
     }
 
     setCompressing(true);
+
     try {
-      const base64 = await compressImage(file, 800, 0.75);
-      setImagePreview(base64);
-      setCompressedImage(base64);
+      if (file.type.startsWith("video/")) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target.result;
+          setImagePreview(base64);
+          setCompressedImage(base64);
+          setCompressing(false);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const base64 = await compressImage(file, 800, 0.75);
+        setImagePreview(base64);
+        setCompressedImage(base64);
+        setCompressing(false);
+      }
     } catch (err) {
-      console.error('Image compression failed:', err);
-      alert('Failed to process image. Try a smaller file.');
+      console.error(err);
+      alert("Failed to process media");
+      setCompressing(false);
     }
-    setCompressing(false);
-    if (fileRef.current) fileRef.current.value = '';
+
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const removeImage = () => {
-    setImagePreview('');
-    setCompressedImage('');
+    setImagePreview("");
+    setCompressedImage("");
     setSelectedTrack(null);
   };
 
+  /* ─────────────────────────────
+     MUSIC
+  ───────────────────────────── */
   const handlePreview = (track) => {
     if (previewingId === track.id) {
       stopTrack();
@@ -99,41 +131,49 @@ export default function Composer({ currentUserId, profile, quotedPost, onClearQu
   const handleSelectTrack = (track) => {
     stopTrack();
     setPreviewingId(null);
-    setSelectedTrack(track);
+    setSelectedTrack(track || null);
     setShowMusicPicker(false);
   };
 
-  const handleRemoveTrack = () => {
-    setSelectedTrack(null);
-  };
-
+  /* ─────────────────────────────
+     POST
+  ───────────────────────────── */
   const handlePost = async () => {
-    const finalContent = selectedTag ? `${selectedTag} ${text.trim()}` : text.trim();
-    if ((!finalContent && !compressedImage && !quotedPost) || posting) return;
+    const finalText = selectedTag
+      ? `${selectedTag} ${text.trim()}`
+      : text.trim();
+
+    if ((!finalText && !compressedImage && !quotedPost) || posting) return;
+
     setPosting(true);
+
     try {
       await createPost(
         currentUserId,
-        finalContent,
+        finalText,
         compressedImage,
-        selectedTrack?.id || '',
-        selectedTrack?.name || '',
-        quotedPost?.id || '',
-        quotedPost ? 'quote' : 'post',
-        activeCommunityId || ''
+        selectedTrack?.id || "",
+        selectedTrack?.name || "",
+        quotedPost?.id || "",
+        quotedPost ? "quote" : "post",
+        activeCommunityId || ""
       );
-      setText('');
-      setImagePreview('');
-      setCompressedImage('');
+
+      setText("");
+      setImagePreview("");
+      setCompressedImage("");
       setSelectedTrack(null);
-      setSelectedTag('');
-      if (onClearQuote) onClearQuote();
+      setSelectedTag("");
+
+      onClearQuote?.();
+
       playPostSound();
-      window.dispatchEvent(new Event('refreshPosts'));
+      window.dispatchEvent(new Event("refreshPosts"));
     } catch (err) {
-      console.error('Post failed:', err);
-      alert('Failed to create post. Please try again.');
+      console.error(err);
+      alert("Failed to create post");
     }
+
     setPosting(false);
   };
 
@@ -141,193 +181,126 @@ export default function Composer({ currentUserId, profile, quotedPost, onClearQu
   const maxChars = 280;
   const charPerc = (charCount / maxChars) * 100;
 
+  /* ─────────────────────────────
+     UI
+  ───────────────────────────── */
   return (
     <div className="px-4 py-3 border-b border-dark-border">
       <div className="flex gap-3">
-        <Avatar src={profile?.avatarUrl} name={profile?.displayName} size="md" />
+        <Avatar src={profile?.avatarUrl} name={profile?.displayName} />
+
         <div className="flex-1">
-          {/* Community Selector */}
-          {communities && communities.length > 0 && (
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[10px] text-dark-muted font-bold uppercase">Post to:</span>
+          {/* Community */}
+          {communities.length > 0 && (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-[10px] text-dark-muted uppercase">
+                Post to
+              </span>
               <select
                 value={activeCommunityId}
                 onChange={(e) => setActiveCommunityId(e.target.value)}
-                className="bg-dark-surface border border-dark-border rounded-lg px-2 py-0.5 text-xs text-dark-text focus:outline-none focus:border-brand-primary cursor-pointer font-semibold"
+                className="bg-dark-surface border border-dark-border rounded-md text-xs px-2 py-1"
               >
-                <option value="">Public Timeline</option>
-                {communities.map(comm => (
-                  <option key={comm.id} value={comm.id}>{comm.name}</option>
+                <option value="">Public</option>
+                {communities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
             </div>
           )}
 
-          {/* Quote Preview */}
+          {/* Quote */}
           {quotedPost && (
-            <div className="relative mt-1 mb-3 bg-dark-surface/40 border border-dark-border/60 rounded-xl p-3 animate-fade-slide">
+            <div className="mb-3 p-3 bg-dark-surface border border-dark-border rounded-xl relative">
               <button
                 onClick={onClearQuote}
-                className="absolute top-2 right-2 p-1 rounded-full bg-dark-bg/60 text-dark-muted hover:text-dark-text transition-colors cursor-pointer"
+                className="absolute top-2 right-2"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
-              <div className="flex items-center gap-1.5 mb-1 text-[10px]">
-                <span className="font-bold text-dark-text">Quoting post from</span>
-                <span className="text-brand-primary">@{users?.find(u => u.id === quotedPost.userId)?.displayName?.toLowerCase().replace(/\s+/g, '') || 'user'}</span>
-              </div>
-              <p className="text-xs text-dark-muted line-clamp-2">{quotedPost.text}</p>
+
+              <p className="text-xs text-dark-muted line-clamp-2">
+                {quotedPost.text}
+              </p>
             </div>
           )}
 
+          {/* TEXT */}
           <textarea
             ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value.slice(0, maxChars))}
             placeholder="What's happening?"
-            rows={1}
-            style={{ minHeight: '44px', maxHeight: '200px' }}
-            className="w-full bg-transparent text-dark-text text-lg placeholder-dark-muted resize-none focus:outline-none py-2 overflow-hidden"
+            className="w-full bg-transparent text-dark-text text-lg outline-none resize-none"
           />
 
-          {/* Image/Video Preview */}
+          {/* MEDIA */}
           {imagePreview && (
-            <div className="relative mt-2 mb-3 rounded-2xl overflow-hidden border border-dark-border animate-fade-slide">
-              {imagePreview.startsWith('data:video/') ? (
-                <>
-                  <video src={imagePreview} controls className="w-full max-h-[300px] bg-black" />
-                  <p className="text-xs text-brand-warning p-2 bg-brand-warning/10 border-t border-brand-warning/20">
-                    By uploading, you agree that this video is appropriate and complies with our community guidelines.
-                  </p>
-                </>
+            <div className="relative mt-2 rounded-xl overflow-hidden">
+              {imagePreview.startsWith("data:video/") ? (
+                <video controls src={imagePreview} className="w-full" />
               ) : (
-                <img src={imagePreview} alt="Preview" className="w-full max-h-[300px] object-cover" />
+                <img src={imagePreview} className="w-full object-cover" />
               )}
+
               <button
                 onClick={removeImage}
-                className="absolute top-2 right-2 w-8 h-8 bg-dark-bg/70 backdrop-blur rounded-full flex items-center justify-center hover:bg-dark-bg/90 transition-colors z-10"
+                className="absolute top-2 right-2 bg-black/50 p-1 rounded-full"
               >
                 <X className="w-4 h-4 text-white" />
               </button>
             </div>
           )}
 
-          {/* Selected Music Track */}
+          {/* MUSIC */}
           {selectedTrack && (
-            <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-xl border border-dark-border bg-dark-surface animate-fade-slide">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: selectedTrack.color + '20' }}>
-                <Music className="w-4 h-4" style={{ color: selectedTrack.color }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-dark-text truncate">{selectedTrack.name}</p>
-                <p className="text-xs text-dark-muted">{selectedTrack.genre} • {selectedTrack.artist}</p>
-              </div>
-              <button onClick={handleRemoveTrack} className="p-1 rounded-full hover:bg-dark-hover">
-                <X className="w-4 h-4 text-dark-muted" />
+            <div className="mt-2 flex items-center gap-2 p-2 border border-dark-border rounded-xl">
+              <Music className="w-4 h-4" />
+              <p className="text-sm truncate">{selectedTrack.name}</p>
+              <button onClick={() => setSelectedTrack(null)}>
+                <X className="w-4 h-4" />
               </button>
             </div>
           )}
 
-          {/* Compressing indicator */}
-          {compressing && (
-            <div className="flex items-center gap-2 text-brand-primary text-sm mb-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Processing media...
-            </div>
-          )}
+          {/* TOOLBAR */}
+          <div className="flex justify-between items-center mt-3">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,video/*"
+              hidden
+              onChange={handleImageSelect}
+            />
 
-          {/* Bottom toolbar */}
-          <div className="flex items-center justify-between border-t border-dark-border pt-3 mt-1">
-            <div className="flex items-center gap-1">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*,video/*"
-                onChange={handleImageSelect}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={compressing}
-                className="p-2 rounded-full hover:bg-brand-primary/10 transition-colors"
-              >
-                <Image className="w-5 h-5 text-brand-primary" />
-              </button>
-              {/* Music button — only when image is attached (makes it a Reel) */}
-              {compressedImage && (
-                <button
-                  onClick={() => setShowMusicPicker(true)}
-                  className={`p-2 rounded-full hover:bg-brand-secondary/10 transition-colors ${
-                    selectedTrack ? 'text-brand-secondary' : 'text-brand-primary'
-                  }`}
-                  title="Add music (creates a Reel)"
-                >
-                  <Music className="w-5 h-5" />
-                </button>
-              )}
-            </div>
+            <button onClick={() => fileRef.current?.click()}>
+              <Image className="w-5 h-5" />
+            </button>
 
-            {/* Game Tag Selector */}
-            <div className="flex gap-2 overflow-x-auto flex-1 mx-2" style={{ scrollbarWidth: 'none' }}>
-              {['#Fortnite', '#RobloxGhosts', '#LFG'].map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
-                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                    selectedTag === tag 
-                      ? 'bg-brand-primary text-white shadow-sm' 
-                      : 'bg-dark-surface text-dark-muted border border-dark-border hover:text-brand-primary'
-                  }`}
-                >
-                  <Gamepad2 className="w-3 h-3" />
-                  {tag.replace('#', '')}
-                </button>
-              ))}
-            </div>
+            <button
+              onClick={() => setShowMusicPicker(true)}
+              disabled={!compressedImage}
+            >
+              <Music className="w-5 h-5" />
+            </button>
 
-            <div className="flex items-center gap-3">
-              {/* Char counter */}
-              {charCount > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className="relative w-6 h-6">
-                    <svg className="w-6 h-6 -rotate-90" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" className="text-dark-border" strokeWidth="2" />
-                      <circle
-                        cx="12" cy="12" r="10" fill="none"
-                        strokeWidth="2"
-                        strokeDasharray={`${charPerc * 0.628} 62.8`}
-                        className={charPerc > 90 ? 'text-brand-danger' : charPerc > 75 ? 'text-brand-warning' : 'text-brand-primary'}
-                        stroke="currentColor"
-                      />
-                    </svg>
-                  </div>
-                  {charPerc > 85 && (
-                    <span className={`text-xs font-mono ${charPerc > 95 ? 'text-brand-danger' : 'text-brand-warning'}`}>
-                      {maxChars - charCount}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              <button
-                onClick={handlePost}
-                disabled={(!text.trim() && !compressedImage && !selectedTag) || posting || compressing}
-                className="px-5 py-2 bg-brand-primary text-white font-bold rounded-full text-sm disabled:opacity-40 hover:bg-brand-primary/95 transition-all active:scale-95 shadow-sm"
-              >
-                {posting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  'Post'
-                )}
-              </button>
-            </div>
+            <button
+              disabled={posting}
+              onClick={handlePost}
+              className="bg-brand-primary px-4 py-2 rounded-full text-white"
+            >
+              {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Post"}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ─── Music Picker Modal ─── */}
+      {/* MUSIC MODAL */}
       {showMusicPicker && (
         <MusicPickerModal
+          tracks={MUSIC_TRACKS}
           selectedTrack={selectedTrack}
           previewingId={previewingId}
           onPreview={handlePreview}
@@ -339,132 +312,44 @@ export default function Composer({ currentUserId, profile, quotedPost, onClearQu
   );
 }
 
-/* ─── Music Picker Modal ─── */
-function MusicPickerModal({ selectedTrack, previewingId, onPreview, onSelect, onClose }) {
-  const [filter, setFilter] = useState('All');
-  const genres = ['All', ...new Set(MUSIC_TRACKS.map(t => t.genre))];
-  const filtered = filter === 'All' ? MUSIC_TRACKS : MUSIC_TRACKS.filter(t => t.genre === filter);
-
-  useEffect(() => {
-    document.body.classList.add('modal-open');
-    return () => document.body.classList.remove('modal-open');
-  }, []);
-
+/* ─────────────────────────────
+   MUSIC PICKER (clean version)
+──────────────────────────── */
+function MusicPickerModal({
+  tracks,
+  selectedTrack,
+  previewingId,
+  onPreview,
+  onSelect,
+  onClose,
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center animate-modal-overlay" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div
-        className="relative w-full max-w-lg bg-dark-bg border-t border-dark-border rounded-t-2xl animate-slide-up max-h-[75vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-dark-border flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Music className="w-5 h-5 text-brand-secondary" />
-            <h3 className="font-bold text-lg text-dark-text">Add Music</h3>
+    <div className="fixed inset-0 bg-black/60 flex items-end">
+      <div className="bg-dark-bg w-full rounded-t-2xl p-4 max-h-[70vh] overflow-y-auto">
+        <div className="flex justify-between mb-3">
+          <h2 className="font-bold">Music</h2>
+          <button onClick={onClose}>Close</button>
+        </div>
+
+        {tracks.map((t) => (
+          <div
+            key={t.id}
+            className="flex items-center justify-between p-2 border-b border-dark-border"
+          >
+            <div onClick={() => onSelect(t)}>
+              <p className="text-sm">{t.name}</p>
+              <p className="text-xs text-dark-muted">{t.artist}</p>
+            </div>
+
+            <button onClick={() => onPreview(t)}>
+              {previewingId === t.id ? (
+                <Square className="w-4 h-4" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+            </button>
           </div>
-          <button onClick={onClose} className="text-dark-muted text-sm font-bold hover:text-dark-text">Done</button>
-        </div>
-
-        {/* Info banner */}
-        <div className="px-4 py-2 bg-brand-success/10 border-b border-brand-success/20 flex-shrink-0">
-          <p className="text-xs text-brand-success">🎵 All tracks are royalty-free & safe for content creation</p>
-        </div>
-
-        {/* Genre Filter */}
-        <div className="flex gap-2 px-4 py-3 overflow-x-auto flex-shrink-0" style={{ scrollbarWidth: 'none' }}>
-          {genres.map(genre => (
-            <button
-              key={genre}
-              onClick={() => setFilter(genre)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
-                filter === genre
-                  ? 'bg-brand-primary text-white'
-                  : 'bg-dark-surface text-dark-muted border border-dark-border hover:bg-dark-hover'
-              }`}
-            >
-              {genre}
-            </button>
-          ))}
-        </div>
-
-        {/* No Music Option */}
-        <div className="px-4 flex-shrink-0">
-          {selectedTrack && (
-            <button
-              onClick={() => { onSelect(null); onClose(); }}
-              className="w-full flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-dark-hover/50 transition-colors text-dark-muted text-sm"
-            >
-              <X className="w-4 h-4" />
-              <span>Remove music</span>
-            </button>
-          )}
-        </div>
-
-        {/* Track List */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6">
-          {filtered.map(track => {
-            const isSelected = selectedTrack?.id === track.id;
-            const isPreviewing = previewingId === track.id;
-
-            return (
-              <div
-                key={track.id}
-                className={`flex items-center gap-3 py-3 px-3 rounded-xl transition-colors cursor-pointer ${
-                  isSelected ? 'bg-brand-primary/10 border border-brand-primary/30' : 'hover:bg-dark-hover/50'
-                }`}
-              >
-                {/* Play/Preview Button */}
-                <button
-                  onClick={() => onPreview(track)}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
-                  style={{ backgroundColor: track.color + '20' }}
-                >
-                  {isPreviewing ? (
-                    <Square className="w-4 h-4" style={{ color: track.color, fill: track.color }} />
-                  ) : (
-                    <Play className="w-4 h-4 ml-0.5" style={{ color: track.color, fill: track.color }} />
-                  )}
-                </button>
-
-                {/* Track Info */}
-                <div className="flex-1 min-w-0" onClick={() => onSelect(track)}>
-                  <p className="text-sm font-bold text-dark-text truncate">{track.name}</p>
-                  <p className="text-xs text-dark-muted">{track.artist} • {track.genre}</p>
-                </div>
-
-                {/* Waveform Animation (when previewing) */}
-                {isPreviewing && (
-                  <div className="flex items-end gap-0.5 h-5 mr-2">
-                    {[1,2,3,4].map(i => (
-                      <div
-                        key={i}
-                        className="w-1 rounded-full animate-waveform"
-                        style={{
-                          backgroundColor: track.color,
-                          animationDelay: `${i * 0.15}s`,
-                          height: '100%'
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Select Button */}
-                <button
-                  onClick={() => onSelect(track)}
-                  className={`p-2 rounded-full transition-colors ${
-                    isSelected
-                      ? 'bg-brand-primary text-white'
-                      : 'bg-dark-surface text-dark-muted hover:bg-dark-hover border border-dark-border'
-                  }`}
-                >
-                  {isSelected ? <Check className="w-4 h-4" /> : <Music className="w-4 h-4" />}
-                </button>
-              </div>
-            );
-          })}
-        </div>
+        ))}
       </div>
     </div>
   );

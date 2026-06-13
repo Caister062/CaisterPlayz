@@ -3,22 +3,35 @@
 @tailwind utilities;
 
 /* =========================
-   CAISTERPLAYZ THEME
+   CAISTERPLAYZ DESIGN SYSTEM
 ========================= */
 
 :root {
+  /* Brand */
   --brand-primary: #3b82f6;
   --brand-secondary: #60a5fa;
 
+  /* Dark system */
   --dark-bg: #070b14;
   --dark-card: #101827;
   --dark-border: #1f2937;
   --dark-muted: #8b98a5;
 
+  /* Semantic colors */
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
+
+  /* Surfaces (IMPORTANT for consistency) */
+  --surface-1: rgba(16, 24, 39, 0.92);
+  --surface-2: rgba(16, 24, 39, 0.75);
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-soft: rgba(255, 255, 255, 0.02);
 }
+
+/* =========================
+   BASE RESET
+========================= */
 
 * {
   box-sizing: border-box;
@@ -36,61 +49,53 @@ body {
     radial-gradient(
       circle at top,
       rgba(59, 130, 246, 0.08),
-      transparent 35%
+      transparent 40%
     ),
     var(--dark-bg);
 
   color: white;
 
-  font-family:
-    Inter,
-    system-ui,
-    sans-serif;
+  font-family: Inter, system-ui, sans-serif;
 
   overflow-x: hidden;
 }
 
 /* =========================
-   SCROLLBAR
+   SCROLLBAR (iOS-like)
 ========================= */
 
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--dark-bg);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e3a8a;
+  background: rgba(59, 130, 246, 0.35);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+  background: rgba(59, 130, 246, 0.6);
 }
 
 /* =========================
-   GAMING CARDS
+   CARD SYSTEM (CORE UI)
 ========================= */
 
 .card {
-  background: rgba(16, 24, 39, 0.9);
-
+  background: var(--surface-1);
   border: 1px solid var(--dark-border);
-
   border-radius: 20px;
-
   backdrop-filter: blur(20px);
-
   transition: all 0.25s ease;
 }
 
 .card:hover {
-  border-color: rgba(59, 130, 246, 0.4);
-
-  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
 }
 
 .glow-card {
@@ -100,7 +105,7 @@ body {
 }
 
 /* =========================
-   BUTTONS
+   BUTTON SYSTEM
 ========================= */
 
 .btn-primary {
@@ -122,109 +127,84 @@ body {
 
   cursor: pointer;
 
-  transition: 0.25s;
+  transition: all 0.25s ease;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-
-  box-shadow:
-    0 10px 30px rgba(59,130,246,.35);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(59,130,246,.25);
 }
 
 .btn-secondary {
-  background: rgba(255,255,255,.05);
-
+  background: rgba(255,255,255,.04);
   border: 1px solid var(--dark-border);
-
   color: white;
 
   border-radius: 14px;
-
   padding: 12px 18px;
 
   cursor: pointer;
-
   transition: 0.25s;
 }
 
 .btn-secondary:hover {
-  border-color: rgba(59,130,246,.4);
+  border-color: rgba(59,130,246,.35);
+  background: rgba(59,130,246,.06);
 }
 
 /* =========================
-   PANELS
+   PANELS / SURFACES
 ========================= */
 
 .panel {
-  background: rgba(16,24,39,.75);
-
+  background: var(--surface-2);
   border: 1px solid var(--dark-border);
-
-  backdrop-filter: blur(20px);
-
+  backdrop-filter: blur(24px);
   border-radius: 24px;
 }
 
 /* =========================
-   GAMING STATUS
+   STATUS DOTS
 ========================= */
 
 .status-online {
   width: 10px;
   height: 10px;
-
   border-radius: 999px;
-
   background: var(--success);
-
-  box-shadow:
-    0 0 10px var(--success);
+  box-shadow: 0 0 10px var(--success);
 }
 
 .status-busy {
   width: 10px;
   height: 10px;
-
   border-radius: 999px;
-
   background: var(--warning);
-
-  box-shadow:
-    0 0 10px var(--warning);
+  box-shadow: 0 0 10px var(--warning);
 }
 
 .status-offline {
   width: 10px;
   height: 10px;
-
   border-radius: 999px;
-
   background: #6b7280;
 }
 
 /* =========================
-   XP BAR
+   XP BAR (CLEAN GAMIFICATION)
 ========================= */
 
 .xp-bar {
-  height: 10px;
-
-  overflow: hidden;
-
+  height: 8px;
   border-radius: 999px;
-
   background: rgba(255,255,255,.08);
+  overflow: hidden;
 }
 
 .xp-fill {
   height: 100%;
-
-  background: linear-gradient(
-    90deg,
-    #2563eb,
-    #60a5fa
-  );
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  transition: width 0.3s ease;
 }
 
 /* =========================
@@ -233,21 +213,16 @@ body {
 
 .badge {
   display: inline-flex;
-
   align-items: center;
-
   gap: 6px;
 
   padding: 6px 10px;
-
   border-radius: 999px;
 
-  background: rgba(59,130,246,.15);
-
+  background: rgba(59,130,246,.12);
   border: 1px solid rgba(59,130,246,.25);
 
   font-size: 12px;
-
   font-weight: 700;
 }
 
@@ -256,59 +231,65 @@ body {
 ========================= */
 
 .floating-nav {
-  background: rgba(16,24,39,.9);
-
+  background: rgba(16,24,39,.85);
   border: 1px solid var(--dark-border);
-
   backdrop-filter: blur(20px);
 
   border-radius: 24px;
 
-  box-shadow:
-    0 10px 40px rgba(0,0,0,.4);
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
 }
 
 /* =========================
-   ANIMATIONS
+   GLASS SYSTEM (APPLE-STYLE)
+========================= */
+
+.glass {
+  background: var(--glass-soft);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,.05);
+}
+
+.glass-strong {
+  background: rgba(16, 24, 39, 0.65);
+  backdrop-filter: blur(30px);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+/* =========================
+   ANIMATIONS (CLEANER)
 ========================= */
 
 @keyframes pulseGlow {
   0% {
-    box-shadow: 0 0 0 rgba(59,130,246,.4);
+    box-shadow: 0 0 0 rgba(59,130,246,.3);
   }
-
   50% {
-    box-shadow: 0 0 25px rgba(59,130,246,.5);
+    box-shadow: 0 0 22px rgba(59,130,246,.35);
   }
-
   100% {
-    box-shadow: 0 0 0 rgba(59,130,246,.4);
+    box-shadow: 0 0 0 rgba(59,130,246,.3);
   }
 }
 
-.animate-gaming {
-  animation: pulseGlow 2s infinite;
+.animate-glow-pulse {
+  animation: pulseGlow 2.5s ease-in-out infinite;
 }
 
 /* =========================
-   UTILITIES
+   TEXT UTILITIES
 ========================= */
 
 .text-gradient {
-  background: linear-gradient(
-    90deg,
-    #60a5fa,
-    #3b82f6
-  );
-
+  background: linear-gradient(90deg, #60a5fa, #3b82f6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.glass {
-  background: rgba(255,255,255,.03);
+/* =========================
+   LAYOUT HELPERS
+========================= */
 
-  backdrop-filter: blur(20px);
-
-  border: 1px solid rgba(255,255,255,.05);
+.safe-area {
+  padding-bottom: env(safe-area-inset-bottom);
 }

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import {
-  Home,
-  Compass,
-  Users,
+  Radar,
+  Globe2,
+  DoorOpen,
   Headphones,
-  Shield,
+  UserCircle2,
   Menu,
   Gamepad2
 } from "lucide-react";
@@ -35,14 +35,14 @@ export default function App() {
   const { communities } = useCommunities();
   const users = useAllUsers();
 
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeTab, setActiveTab] = useState("radar");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCommsOpen, setIsCommsOpen] = useState(false);
 
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-dark-bg">
-        <Gamepad2 className="w-10 h-10 animate-pulse text-brand-primary" />
+        <Gamepad2 className="w-12 h-12 animate-pulse text-brand-primary" />
       </div>
     );
   }
@@ -53,48 +53,64 @@ export default function App() {
 
   return (
     <div className="w-full min-h-screen bg-dark-bg flex justify-center">
-      <div className="w-full max-w-lg min-h-screen flex flex-col">
+      <div className="w-full max-w-lg min-h-screen flex flex-col relative">
 
         {/* HEADER */}
-        <header className="sticky top-0 z-50 border-b border-dark-border bg-dark-bg/95 backdrop-blur-xl">
-          <div className="h-16 px-4 flex items-center justify-between">
+        <header className="sticky top-0 z-50 bg-dark-bg/80 backdrop-blur-2xl border-b border-dark-border">
+          <div className="h-20 px-5 flex items-center justify-between">
 
             <div className="flex items-center gap-3">
+
               <button
                 onClick={() => setIsSidebarOpen(true)}
+                className="p-2 rounded-xl hover:bg-dark-card"
               >
                 <Menu className="w-5 h-5" />
               </button>
 
-              <div className="flex items-center gap-2">
-                <Gamepad2 className="w-6 h-6 text-brand-primary" />
+              <div className="flex items-center gap-3">
+
+                <div className="w-10 h-10 rounded-2xl bg-brand-primary/15 flex items-center justify-center">
+                  <Gamepad2 className="w-5 h-5 text-brand-primary" />
+                </div>
 
                 <div>
-                  <h1 className="font-black tracking-wider">
+                  <h1 className="font-black tracking-[0.25em] text-sm">
                     CAISTERPLAYZ
                   </h1>
 
-                  <p className="text-xs text-dark-muted">
-                    Gaming Social Network
+                  <p className="text-xs text-brand-primary">
+                    Live Gaming Universe
                   </p>
                 </div>
+
               </div>
             </div>
 
             <button
               onClick={() => setIsCommsOpen(true)}
-              className="px-3 py-1 rounded-lg bg-brand-primary/10 text-brand-primary text-sm"
+              className="
+                flex items-center gap-2
+                px-3 py-2
+                rounded-xl
+                bg-brand-primary/10
+                border border-brand-primary/20
+              "
             >
-              Comms
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-sm text-brand-primary">
+                Party
+              </span>
             </button>
 
           </div>
         </header>
 
         {/* MAIN */}
-        <main className="flex-1 pb-24">
+        <main className="flex-1 pb-28">
 
-          {activeTab === "home" && (
+          {/* RADAR */}
+          {activeTab === "radar" && (
             <HomeTab
               user={user}
               users={users}
@@ -103,7 +119,8 @@ export default function App() {
             />
           )}
 
-          {activeTab === "discover" && (
+          {/* WORLDS */}
+          {activeTab === "worlds" && (
             <DiscoverTab
               posts={posts}
               communities={communities}
@@ -111,14 +128,16 @@ export default function App() {
             />
           )}
 
-          {activeTab === "squads" && (
+          {/* ROOMS */}
+          {activeTab === "rooms" && (
             <SquadsTab
               posts={posts}
               users={users}
             />
           )}
 
-          {activeTab === "locker" && (
+          {/* ME */}
+          {activeTab === "me" && (
             <LockerTab
               viewingUserId={user.id}
               currentUserId={user.id}
@@ -131,26 +150,37 @@ export default function App() {
 
         </main>
 
-        {/* NAVIGATION */}
-        <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4">
-          <div className="bg-dark-card border border-dark-border rounded-2xl backdrop-blur-xl flex justify-around py-2 shadow-xl">
+        {/* FLOATING NAV */}
+        <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-50">
+
+          <div
+            className="
+              bg-dark-card/80
+              backdrop-blur-2xl
+              border border-dark-border
+              rounded-3xl
+              flex justify-around
+              py-3
+              shadow-2xl
+            "
+          >
 
             <TabButton
-              icon={Home}
-              active={activeTab === "home"}
-              onClick={() => setActiveTab("home")}
+              icon={Radar}
+              active={activeTab === "radar"}
+              onClick={() => setActiveTab("radar")}
             />
 
             <TabButton
-              icon={Compass}
-              active={activeTab === "discover"}
-              onClick={() => setActiveTab("discover")}
+              icon={Globe2}
+              active={activeTab === "worlds"}
+              onClick={() => setActiveTab("worlds")}
             />
 
             <TabButton
-              icon={Users}
-              active={activeTab === "squads"}
-              onClick={() => setActiveTab("squads")}
+              icon={DoorOpen}
+              active={activeTab === "rooms"}
+              onClick={() => setActiveTab("rooms")}
             />
 
             <TabButton
@@ -160,14 +190,16 @@ export default function App() {
             />
 
             <TabButton
-              icon={Shield}
-              active={activeTab === "locker"}
-              onClick={() => setActiveTab("locker")}
+              icon={UserCircle2}
+              active={activeTab === "me"}
+              onClick={() => setActiveTab("me")}
             />
 
           </div>
+
         </nav>
 
+        {/* PARTY / DMS */}
         <DirectMessages
           isOpen={isCommsOpen}
           onClose={() => setIsCommsOpen(false)}
@@ -188,13 +220,34 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`p-3 rounded-xl transition-all duration-300 ${
-        active
-          ? "bg-brand-primary/15 text-brand-primary scale-110"
-          : "text-dark-muted hover:text-white"
-      }`}
+      className={`
+        relative
+        p-3
+        rounded-2xl
+        transition-all
+        duration-300
+        ${
+          active
+            ? "bg-brand-primary/15 text-brand-primary scale-110"
+            : "text-dark-muted hover:text-white"
+        }
+      `}
     >
       <Icon className="w-6 h-6" />
+
+      {active && (
+        <div
+          className="
+            absolute
+            -bottom-1
+            left-1/2
+            -translate-x-1/2
+            w-1 h-1
+            rounded-full
+            bg-brand-primary
+          "
+        />
+      )}
     </button>
   );
 }

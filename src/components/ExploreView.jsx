@@ -6,16 +6,13 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return posts;
+    if (!query.trim()) return [];
     const q = query.toLowerCase();
     return posts.filter(p =>
       (p.text || '').toLowerCase().includes(q) ||
       (users.find(u => u.id === p.userId)?.displayName || '').toLowerCase().includes(q)
     );
   }, [query, posts, users]);
-
-  const imagePosts = useMemo(() =>
-    posts.filter(p => p.imageUrl).slice(0, 30), [posts]);
 
   const hashtags = useMemo(() => {
     const counts = {};
@@ -25,78 +22,72 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
     });
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
+      .slice(0, 10)
       .map(([tag, count]) => ({ tag, count }));
   }, [posts]);
+
+  const imagePosts = useMemo(() =>
+    posts.filter(p => p.imageUrl).slice(0, 30), [posts]);
+
+  const isSearching = query.trim().length > 0;
 
   return (
     <div>
       {/* Search */}
-      <div className="search-bar-wrap">
-        <div className="search-bar">
+      <div className="search-box-wrap">
+        <div className="search-box">
           <Search size={16} />
           <input
-            placeholder="Search posts, players…"
+            placeholder="Search posts, players, #tags…"
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
         </div>
       </div>
 
-      {query.trim() ? (
-        /* Search results */
+      {isSearching ? (
         <>
-          <div className="section-title">
-            Results for "{query}" <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({filtered.length})</span>
+          <div className="explore-section-title">
+            Results ({filtered.length})
           </div>
           {filtered.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">🔍</div>
-              <h3>No results found</h3>
-              <p>Try a different search term or hashtag.</p>
+            <div className="empty">
+              <div className="empty-icon">🔍</div>
+              <h3>No matches</h3>
+              <p>Try a different keyword or #tag.</p>
             </div>
           ) : (
             filtered.map(post => (
-              <PostCard
-                key={post.id}
-                post={post}
-                currentUserId={currentUserId}
-                users={users}
-                onProfileClick={onProfileClick}
-              />
+              <PostCard key={post.id} post={post} currentUserId={currentUserId} users={users} onProfileClick={onProfileClick} />
             ))
           )}
         </>
       ) : (
         <>
-          {/* Trending Tags */}
+          {/* Trending */}
           {hashtags.length > 0 && (
             <>
-              <div className="section-title">🔥 Trending</div>
+              <div className="explore-section-title">🔥 Trending Tags</div>
               {hashtags.map(({ tag, count }) => (
-                <div
-                  key={tag}
-                  className="trending-tag"
-                  onClick={() => setQuery(tag)}
-                >
+                <div key={tag} className="trending-row" onClick={() => setQuery(tag)}>
                   <div>
                     <div className="trending-tag-name">{tag}</div>
                     <div className="trending-tag-count">{count} post{count !== 1 ? 's' : ''}</div>
                   </div>
-                  <span style={{ color: 'var(--muted)', fontSize: 18 }}>›</span>
+                  <span className="trending-arrow">›</span>
                 </div>
               ))}
             </>
           )}
 
-          {/* Image Grid */}
+          {/* Media Grid */}
           {imagePosts.length > 0 && (
             <>
-              <div className="section-title">📸 Recent Captures</div>
-              <div className="explore-grid">
-                {imagePosts.map(post => (
-                  <div key={post.id} className="explore-grid-item">
-                    <img src={post.imageUrl} alt="" loading="lazy" />
+              <div className="explore-section-title">📸 Captures</div>
+              <div className="media-grid">
+                {imagePosts.map(p => (
+                  <div key={p.id} className="media-grid-item">
+                    <img src={p.imageUrl} alt="" loading="lazy" />
                   </div>
                 ))}
               </div>
@@ -104,10 +95,10 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
           )}
 
           {hashtags.length === 0 && imagePosts.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-state-icon">🌐</div>
-              <h3>Nothing here yet</h3>
-              <p>Be the first to post and explore!</p>
+            <div className="empty">
+              <div className="empty-icon">🌐</div>
+              <h3>Nothing to explore yet</h3>
+              <p>Start posting to see content here!</p>
             </div>
           )}
         </>

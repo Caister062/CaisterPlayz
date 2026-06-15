@@ -1,56 +1,34 @@
-import PostCard from './PostCard';
-import { Loader } from 'lucide-react';
+import PostCard, { Avatar } from './PostCard';
 
-function formatTime(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  const now = new Date();
-  const diff = (now - d) / 1000;
-  if (diff < 60) return 'now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  return `${Math.floor(diff / 86400)}d`;
-}
-
-/* ── Stories Row ── */
-function StoriesRow({ users, currentUserId }) {
-  const storyUsers = users.slice(0, 12);
+function PulseRow({ users, currentUserId }) {
   return (
-    <div className="stories-row">
-      {/* My Story / Add */}
-      <div className="story-item">
-        <div className="story-ring">
-          <div className="story-avatar" style={{ background: 'var(--brand)', fontSize: 28 }}>＋</div>
-        </div>
-        <span className="story-name">Your Story</span>
-      </div>
-      {storyUsers.map(user => (
-        <div key={user.id} className="story-item">
-          <div className={`story-ring${user.id === currentUserId ? ' seen' : ''}`}>
-            <div className="story-avatar">
+    <div className="pulse-row">
+      {users.slice(0, 15).map(user => (
+        <div key={user.id} className="pulse-item">
+          <div className={`pulse-ring${user.id === currentUserId ? ' inactive' : ''}`}>
+            <div className="pulse-avatar">
               {user.avatarUrl
                 ? <img src={user.avatarUrl} alt={user.displayName} />
                 : (user.displayName || '?')[0].toUpperCase()
               }
             </div>
           </div>
-          <span className="story-name">{(user.displayName || 'User').split(' ')[0]}</span>
+          <span className="pulse-name">{(user.displayName || 'Player').split(' ')[0]}</span>
         </div>
       ))}
     </div>
   );
 }
 
-/* ── Skeleton ── */
-function PostSkeleton() {
+function SkeletonCard() {
   return (
-    <div className="post-skeleton">
-      <div className="skeleton-row">
-        <div className="skeleton skeleton-avatar" />
+    <div className="skel-card">
+      <div className="skel-row">
+        <div className="skel skel-circle" style={{ width: 38, height: 38, flexShrink: 0 }} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div className="skeleton skeleton-line" style={{ width: '40%' }} />
-          <div className="skeleton skeleton-line" style={{ width: '100%' }} />
-          <div className="skeleton skeleton-line" style={{ width: '70%' }} />
+          <div className="skel" style={{ width: '35%', height: 12 }} />
+          <div className="skel" style={{ width: '100%', height: 12 }} />
+          <div className="skel" style={{ width: '65%', height: 12 }} />
         </div>
       </div>
     </div>
@@ -58,22 +36,27 @@ function PostSkeleton() {
 }
 
 export default function FeedView({ posts, loading, users, currentUserId, onProfileClick }) {
+  if (loading) {
+    return (
+      <>
+        <PulseRow users={[]} currentUserId={currentUserId} />
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </>
+    );
+  }
+
   return (
     <div>
-      <StoriesRow users={users} currentUserId={currentUserId} />
+      <PulseRow users={users} currentUserId={currentUserId} />
 
-      {loading ? (
-        <>
-          <PostSkeleton />
-          <PostSkeleton />
-          <PostSkeleton />
-          <PostSkeleton />
-        </>
-      ) : posts.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">🎮</div>
+      {posts.length === 0 ? (
+        <div className="empty">
+          <div className="empty-icon">🎮</div>
           <h3>No posts yet</h3>
-          <p>Be the first to share something with the community!</p>
+          <p>Be the first to drop a post in the community!</p>
         </div>
       ) : (
         posts.map(post => (

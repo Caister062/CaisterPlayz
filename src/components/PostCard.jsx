@@ -1,212 +1,202 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Heart, Repeat2, MessageCircle, Bookmark, MoreHorizontal, Eye, Share2, Trash2, Loader } from 'lucide-react';
-import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, deleteComment } from '../hooks';
+import { Heart, Repeat2, MessageCircle, Bookmark, Eye, MoreHorizontal, Trash2, Share2, Loader } from 'lucide-react';
+import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost } from '../hooks';
 
-function formatTime(ts) {
+function timeAgo(ts) {
   if (!ts) return '';
-  const d = new Date(ts);
-  const now = new Date();
-  const diff = (now - d) / 1000;
-  if (diff < 60) return 'now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
-  return d.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  const sec = (Date.now() - new Date(ts)) / 1000;
+  if (sec < 60) return 'now';
+  if (sec < 3600) return `${Math.floor(sec / 60)}m`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)}d`;
+  return new Date(ts).toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 
-function Avatar({ src, name, size = 'md', onClick }) {
+function Avatar({ src, name, size = '', onClick }) {
   const initial = (name || '?')[0].toUpperCase();
   return (
-    <div
-      className={`avatar ${size}`}
-      onClick={onClick}
-      style={onClick ? { cursor: 'pointer' } : {}}
-    >
-      {src ? <img src={src} alt={name} /> : initial}
+    <div className={`av${size ? ` ${size}` : ''}`} onClick={onClick}>
+      {src ? <img src={src} alt={name} loading="lazy" /> : initial}
     </div>
   );
 }
 
 function RichText({ text }) {
   if (!text) return null;
-  const parts = text.split(/(\s+)/).map((word, i) => {
-    if (/^#\w+/.test(word)) return <span key={i} className="hashtag">{word}</span>;
-    if (/^@\w+/.test(word)) return <span key={i} className="mention">{word}</span>;
-    if (/^https?:\/\//.test(word)) return <a key={i} href={word} target="_blank" rel="noreferrer" className="rich-link">{word.replace(/^https?:\/\/(www\.)?/,'').slice(0,35)}{word.length > 35 ? '…' : ''}</a>;
-    return <span key={i}>{word}</span>;
-  });
-  return <p className="post-content">{parts}</p>;
+  const parts = [];
+  const regex = /(#\w+|@\w+|https?:\/\/[^\s]+)/g;
+  let last = 0, m;
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) parts.push({ type: 'text', val: text.slice(last, m.index) });
+    const w = m[0];
+    if (w.startsWith('#')) parts.push({ type: 'hash', val: w });
+    else if (w.startsWith('@')) parts.push({ type: 'mention', val: w });
+    else parts.push({ type: 'link', val: w });
+    last = m.index + w.length;
+  }
+  if (last < text.length) parts.push({ type: 'text', val: text.slice(last) });
+
+  return (
+    <p className="p-body">
+      {parts.map((p, i) =>
+        p.type === 'hash' ? <span key={i} className="hashtag">{p.val}</span> :
+        p.type === 'mention' ? <span key={i} className="mention">{p.val}</span> :
+        p.type === 'link' ? <a key={i} href={p.val} target="_blank" rel="noreferrer" className="p-link">{p.val.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40)}</a> :
+        <span key={i}>{p.val}</span>
+      )}
+    </p>
+  );
 }
+
+export { Avatar, timeAgo };
 
 export default function PostCard({ post, currentUserId, users = [], onProfileClick }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  // Optimistic UI state
-  const [optimisticLiked, setOptimisticLiked] = useState(null);
-  const [optimisticLikeCount, setOptimisticLikeCount] = useState(null);
-  const [likeAnimating, setLikeAnimating] = useState(false);
-  const [optimisticReposted, setOptimisticReposted] = useState(null);
-  const [optimisticRepostCount, setOptimisticRepostCount] = useState(null);
-  const [optimisticBookmarked, setOptimisticBookmarked] = useState(null);
+  // Optimistic UI
+  const [optLiked, setOptLiked] = useState(null);
+  const [optLikeCount, setOptLikeCount] = useState(null);
+  const [optReposted, setOptReposted] = useState(null);
+  const [optRepostCount, setOptRepostCount] = useState(null);
+  const [optBookmarked, setOptBookmarked] = useState(null);
+  const [likeAnim, setLikeAnim] = useState(false);
 
-  const likeDebounceRef = useRef(null);
-  const repostDebounceRef = useRef(null);
+  const likeTimer = useRef(null);
+  const repostTimer = useRef(null);
   const viewedRef = useRef(false);
-  const postRef = useRef(null);
+  const cardRef = useRef(null);
 
-  const { comments, refreshComments } = useComments(showComments ? post.id : null);
-
+  const { comments } = useComments(showComments ? post.id : null);
   const author = users.find(u => u.id === post.userId);
 
-  // Derive state (prefer optimistic if set)
-  const isLiked = optimisticLiked !== null ? optimisticLiked : (post.likedBy || []).includes(currentUserId);
-  const likeCount = optimisticLikeCount !== null ? optimisticLikeCount : (post.likedBy?.length || 0);
-  const isReposted = optimisticReposted !== null ? optimisticReposted : (post.repostedBy || []).includes(currentUserId);
-  const repostCount = optimisticRepostCount !== null ? optimisticRepostCount : (post.repostedBy?.length || 0);
-  const isBookmarked = optimisticBookmarked !== null ? optimisticBookmarked : (post.favoritedBy || []).includes(currentUserId);
-  const viewCount = post.viewedBy?.length || 0;
+  const isLiked     = optLiked     !== null ? optLiked     : (post.likedBy     || []).includes(currentUserId);
+  const likeCount   = optLikeCount !== null ? optLikeCount : (post.likedBy     || []).length;
+  const isReposted  = optReposted  !== null ? optReposted  : (post.repostedBy  || []).includes(currentUserId);
+  const repostCount = optRepostCount !== null ? optRepostCount : (post.repostedBy || []).length;
+  const isBookmarked = optBookmarked !== null ? optBookmarked : (post.favoritedBy || []).includes(currentUserId);
+  const viewCount   = (post.viewedBy || []).length;
 
-  // Reset optimistic when real post data changes
+  // Reset optimistic when server data catches up
   useEffect(() => {
-    setOptimisticLiked(null);
-    setOptimisticLikeCount(null);
-    setOptimisticReposted(null);
-    setOptimisticRepostCount(null);
-    setOptimisticBookmarked(null);
-  }, [post.likedBy?.length, post.repostedBy?.length, post.favoritedBy?.length]);
+    setOptLiked(null); setOptLikeCount(null);
+    setOptReposted(null); setOptRepostCount(null);
+    setOptBookmarked(null);
+  }, [
+    (post.likedBy || []).join(','),
+    (post.repostedBy || []).join(','),
+    (post.favoritedBy || []).join(',')
+  ]);
 
-  // Intersection observer for view tracking
+  // View tracking
   useEffect(() => {
-    if (!postRef.current || viewedRef.current || !currentUserId) return;
+    if (!cardRef.current || viewedRef.current || !currentUserId) return;
     if ((post.viewedBy || []).includes(currentUserId)) { viewedRef.current = true; return; }
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
         viewedRef.current = true;
         addView(post.id, currentUserId).catch(() => {});
         obs.disconnect();
       }
-    }, { threshold: 0.5 });
-    obs.observe(postRef.current);
+    }, { threshold: 0.6 });
+    obs.observe(cardRef.current);
     return () => obs.disconnect();
   }, [post.id, currentUserId]);
 
   const handleLike = useCallback(() => {
-    // Optimistic update immediately
-    const newLiked = !isLiked;
-    const newCount = likeCount + (newLiked ? 1 : -1);
-    setOptimisticLiked(newLiked);
-    setOptimisticLikeCount(Math.max(0, newCount));
-
-    if (newLiked) {
-      setLikeAnimating(true);
-      setTimeout(() => setLikeAnimating(false), 400);
-    }
-
-    // Debounce the actual API call
-    if (likeDebounceRef.current) clearTimeout(likeDebounceRef.current);
-    likeDebounceRef.current = setTimeout(() => {
-      toggleLike(post.id, currentUserId, !newLiked).catch(() => {
-        // Revert on error
-        setOptimisticLiked(isLiked);
-        setOptimisticLikeCount(likeCount);
+    const next = !isLiked;
+    setOptLiked(next);
+    setOptLikeCount(Math.max(0, likeCount + (next ? 1 : -1)));
+    if (next) { setLikeAnim(true); setTimeout(() => setLikeAnim(false), 400); }
+    if (likeTimer.current) clearTimeout(likeTimer.current);
+    const snapLiked = isLiked;
+    const snapCount = likeCount;
+    likeTimer.current = setTimeout(() => {
+      toggleLike(post.id, currentUserId, !next).catch(() => {
+        setOptLiked(snapLiked); setOptLikeCount(snapCount);
       });
-    }, 400);
+    }, 500);
   }, [isLiked, likeCount, post.id, currentUserId]);
 
   const handleRepost = useCallback(() => {
-    const newReposted = !isReposted;
-    setOptimisticReposted(newReposted);
-    setOptimisticRepostCount(Math.max(0, repostCount + (newReposted ? 1 : -1)));
-
-    if (repostDebounceRef.current) clearTimeout(repostDebounceRef.current);
-    repostDebounceRef.current = setTimeout(() => {
-      toggleRepost(post.id, currentUserId, !newReposted).catch(() => {
-        setOptimisticReposted(isReposted);
-        setOptimisticRepostCount(repostCount);
+    const next = !isReposted;
+    setOptReposted(next);
+    setOptRepostCount(Math.max(0, repostCount + (next ? 1 : -1)));
+    if (repostTimer.current) clearTimeout(repostTimer.current);
+    const snapR = isReposted; const snapC = repostCount;
+    repostTimer.current = setTimeout(() => {
+      toggleRepost(post.id, currentUserId, !next).catch(() => {
+        setOptReposted(snapR); setOptRepostCount(snapC);
       });
-    }, 400);
+    }, 500);
   }, [isReposted, repostCount, post.id, currentUserId]);
 
   const handleBookmark = useCallback(() => {
-    const newBookmarked = !isBookmarked;
-    setOptimisticBookmarked(newBookmarked);
-    toggleBookmark(post.id, currentUserId, !newBookmarked).catch(() => {
-      setOptimisticBookmarked(isBookmarked);
-    });
+    const next = !isBookmarked;
+    setOptBookmarked(next);
+    toggleBookmark(post.id, currentUserId, !next).catch(() => setOptBookmarked(isBookmarked));
   }, [isBookmarked, post.id, currentUserId]);
 
   const handleComment = useCallback(async (e) => {
     e.preventDefault();
     if (!commentText.trim() || submitting) return;
     setSubmitting(true);
-    try {
-      await addComment(post.id, currentUserId, commentText.trim());
-      setCommentText('');
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSubmitting(false);
-    }
+    try { await addComment(post.id, currentUserId, commentText.trim()); setCommentText(''); }
+    catch (err) { console.error(err); }
+    finally { setSubmitting(false); }
   }, [commentText, submitting, post.id, currentUserId]);
 
   const handleDelete = useCallback(async () => {
-    if (!window.confirm('Delete this post?')) return;
+    if (!confirm('Delete this post?')) return;
     setDeleting(true);
-    try {
-      await deletePost(post.id);
-    } catch (err) {
-      console.error(err);
-      setDeleting(false);
-    }
+    try { await deletePost(post.id); }
+    catch (err) { console.error(err); setDeleting(false); }
   }, [post.id]);
-
-  const handleShare = useCallback(() => {
-    if (navigator.share) {
-      navigator.share({ title: 'CaisterPlayz Post', text: post.text, url: window.location.href });
-    } else {
-      navigator.clipboard?.writeText(window.location.href);
-    }
-  }, [post.text]);
 
   if (!author) return null;
 
   return (
     <>
-      <article ref={postRef} className="post-card">
+      <article ref={cardRef} className={`p-card${post.imageUrl ? ' has-media' : ''}`}>
         {/* Header */}
-        <div className="post-header">
+        <div className="p-header">
           <Avatar src={author.avatarUrl} name={author.displayName} onClick={() => onProfileClick?.(author.id)} />
-          <div className="post-meta">
-            <div className="post-author-row">
-              <span className="post-author-name" onClick={() => onProfileClick?.(author.id)}>
+          <div className="p-meta">
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+              <span className="p-name" onClick={() => onProfileClick?.(author.id)}>
                 {author.displayName}
               </span>
-              {author.verified && <span style={{ color: 'var(--brand)', fontSize: 13 }}>✓</span>}
-              <span className="post-handle" style={{ color: 'var(--muted)', fontSize: 13 }}>·</span>
-              <span className="post-time">{formatTime(post.created)}</span>
+              {author.verified && <span className="p-verified">✓</span>}
+              <span className="p-time">· {timeAgo(post.created)}</span>
             </div>
           </div>
+
           <div style={{ position: 'relative', marginLeft: 'auto' }}>
-            <button className="post-more-btn" onClick={() => setShowMenu(v => !v)}>
-              <MoreHorizontal size={18} />
+            <button className="p-menu-btn" onClick={() => setShowMenu(v => !v)}>
+              <MoreHorizontal />
             </button>
             {showMenu && (
               <div style={{
-                position: 'absolute', right: 0, top: '100%', zIndex: 50,
-                background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 12, padding: '6px 0', minWidth: 140,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+                position: 'absolute', right: 0, top: '110%', zIndex: 80,
+                background: 'var(--card)', border: '1px solid var(--border-bright)',
+                borderRadius: 14, padding: '6px 0', minWidth: 148,
+                boxShadow: '0 10px 40px rgba(0,0,0,0.6)'
               }}>
-                <button onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', width: '100%', fontSize: 13, color: 'var(--text)' }}>
+                <button
+                  onClick={() => { setShowMenu(false); navigator.share?.({ text: post.text, url: window.location.href }) || navigator.clipboard?.writeText(window.location.href); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', width: '100%', fontSize: 13, color: 'var(--text)' }}
+                >
                   <Share2 size={14} /> Share
                 </button>
                 {post.userId === currentUserId && (
-                  <button onClick={() => { setShowMenu(false); handleDelete(); }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', width: '100%', fontSize: 13, color: 'var(--danger)' }}>
+                  <button
+                    onClick={() => { setShowMenu(false); handleDelete(); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', width: '100%', fontSize: 13, color: 'var(--danger)' }}
+                  >
                     {deleting ? <Loader size={14} className="spin" /> : <Trash2 size={14} />} Delete
                   </button>
                 )}
@@ -218,107 +208,92 @@ export default function PostCard({ post, currentUserId, users = [], onProfileCli
         {/* Content */}
         <RichText text={post.text} />
 
-        {/* Image */}
+        {/* Media */}
         {post.imageUrl && (
-          <img
-            className="post-image"
-            src={post.imageUrl}
-            alt="post media"
-            onClick={() => setShowLightbox(true)}
-            loading="lazy"
-          />
+          <div className="p-media" onClick={() => setShowLightbox(true)}>
+            <img src={post.imageUrl} alt="post media" loading="lazy" />
+          </div>
         )}
 
-        {/* Actions */}
-        <div className="post-actions">
-          <div className="post-actions-group">
-            {/* Comment */}
+        {/* Action Bar */}
+        <div className="p-actions">
+          <div className="p-actions-left">
             <button
-              className="action-btn comment-hover"
+              className={`act do-comment${showComments ? ' reposted' : ''}`}
               onClick={() => setShowComments(v => !v)}
-              style={showComments ? { color: 'var(--brand)' } : {}}
             >
-              <MessageCircle size={18} />
+              <MessageCircle size={17} />
               {comments.length > 0 && <span>{comments.length}</span>}
             </button>
 
-            {/* Repost */}
             <button
-              className={`action-btn repost-hover ${isReposted ? 'reposted' : ''}`}
+              className={`act do-repost${isReposted ? ' reposted' : ''}`}
               onClick={handleRepost}
             >
-              <Repeat2 size={18} />
+              <Repeat2 size={17} />
               {repostCount > 0 && <span>{repostCount}</span>}
             </button>
 
-            {/* Like */}
             <button
-              className={`action-btn like-hover ${isLiked ? 'liked' : ''} ${likeAnimating ? 'like-pop' : ''}`}
+              className={`act do-like${isLiked ? ' liked' : ''}${likeAnim ? ' like-pop' : ''}`}
               onClick={handleLike}
             >
-              <Heart size={18} />
+              <Heart size={17} />
               {likeCount > 0 && <span>{likeCount}</span>}
             </button>
           </div>
 
-          <div className="post-actions-group">
-            {/* Views */}
+          <div className="p-actions-right">
             {viewCount > 0 && (
-              <span className="action-btn" style={{ cursor: 'default' }}>
-                <Eye size={16} />
-                <span>{viewCount}</span>
+              <span className="act views">
+                <Eye size={15} /> <span>{viewCount}</span>
               </span>
             )}
-            {/* Bookmark */}
             <button
-              className={`action-btn bookmark-hover ${isBookmarked ? 'bookmarked' : ''}`}
+              className={`act do-bookmark${isBookmarked ? ' bookmarked' : ''}`}
               onClick={handleBookmark}
             >
-              <Bookmark size={18} />
+              <Bookmark size={17} />
             </button>
           </div>
         </div>
 
-        {/* Comments */}
+        {/* Comments Panel */}
         {showComments && (
-          <div className="comments-section">
-            <form onSubmit={handleComment} className="comment-compose">
+          <div className="comments-panel">
+            <form className="cmt-form" onSubmit={handleComment}>
               <Avatar
                 src={users.find(u => u.id === currentUserId)?.avatarUrl}
                 name={users.find(u => u.id === currentUserId)?.displayName || 'Me'}
                 size="sm"
               />
               <input
-                className="comment-input"
+                className="cmt-input"
                 value={commentText}
                 onChange={e => setCommentText(e.target.value)}
                 placeholder="Add a comment…"
                 maxLength={280}
               />
-              <button
-                type="submit"
-                className="comment-send-btn"
-                disabled={!commentText.trim() || submitting}
-              >
-                {submitting ? <Loader size={14} className="spin" /> : 'Post'}
+              <button type="submit" className="cmt-send" disabled={!commentText.trim() || submitting}>
+                {submitting ? <Loader size={13} className="spin" /> : 'Post'}
               </button>
             </form>
 
             {comments.length === 0 && (
-              <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, padding: '8px 0 4px' }}>
-                No comments yet. Be first!
+              <p style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 12, padding: '4px 0 8px' }}>
+                No replies yet — jump in!
               </p>
             )}
 
             {comments.map(c => {
               const cu = users.find(u => u.id === c.userId);
               return (
-                <div key={c.id} className="comment-item">
+                <div key={c.id} className="cmt-item">
                   <Avatar src={cu?.avatarUrl} name={cu?.displayName || '?'} size="sm" />
-                  <div className="comment-bubble">
-                    <div className="comment-author">{cu?.displayName || 'User'}</div>
-                    <div className="comment-text">{c.text}</div>
-                    <div className="comment-time">{formatTime(c.created)}</div>
+                  <div className="cmt-bubble">
+                    <div className="cmt-author">{cu?.displayName || 'User'}</div>
+                    <div className="cmt-text">{c.text}</div>
+                    <div className="cmt-time">{timeAgo(c.created)}</div>
                   </div>
                 </div>
               );
@@ -329,18 +304,15 @@ export default function PostCard({ post, currentUserId, users = [], onProfileCli
 
       {/* Lightbox */}
       {showLightbox && (
-        <div className="lightbox-overlay" onClick={() => setShowLightbox(false)}>
-          <button className="lightbox-close" onClick={() => setShowLightbox(false)}>✕</button>
-          <img src={post.imageUrl} alt="Full size" onClick={e => e.stopPropagation()} />
+        <div className="lightbox" onClick={() => setShowLightbox(false)}>
+          <button className="lightbox-x" onClick={() => setShowLightbox(false)}>✕</button>
+          <img src={post.imageUrl} alt="fullsize" onClick={e => e.stopPropagation()} />
         </div>
       )}
 
-      {/* Close menu on outside click */}
+      {/* Menu backdrop */}
       {showMenu && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 49 }}
-          onClick={() => setShowMenu(false)}
-        />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 79 }} onClick={() => setShowMenu(false)} />
       )}
     </>
   );

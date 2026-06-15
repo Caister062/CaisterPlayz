@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { X, Image, Loader } from 'lucide-react';
+import { X, Image as ImageIcon, Loader } from 'lucide-react';
 import { createPost } from '../hooks';
 
 const MAX_CHARS = 280;
@@ -14,8 +14,7 @@ function compressImage(file) {
       let { width, height } = img;
       if (width > max) { height = (height * max) / width; width = max; }
       if (height > max) { width = (width * max) / height; height = max; }
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = width; canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL('image/jpeg', 0.8));
     };
@@ -27,39 +26,26 @@ function compressImage(file) {
   });
 }
 
-export default function Composer({ currentUserId, currentUser, onClose, onPosted }) {
+export default function Composer({ currentUserId, currentUser, onClose }) {
   const [text, setText] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [imageData, setImageData] = useState('');
   const [posting, setPosting] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const fileRef = useRef(null);
-  const textRef = useRef(null);
 
   const charsLeft = MAX_CHARS - text.length;
   const canPost = (text.trim() || imageData) && !posting && !compressing;
 
-  const handleImagePick = useCallback(async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImage = useCallback(async (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
     if (file.size > 10 * 1024 * 1024) { alert('File must be under 10MB'); return; }
     setCompressing(true);
     try {
-      if (file.type.startsWith('video/')) {
-        const reader = new FileReader();
-        reader.onload = ev => { setImagePreview(ev.target.result); setImageData(ev.target.result); setCompressing(false); };
-        reader.readAsDataURL(file);
-      } else {
-        const compressed = await compressImage(file);
-        setImagePreview(compressed);
-        setImageData(compressed);
-        setCompressing(false);
-      }
-    } catch {
-      alert('Failed to process image');
-      setCompressing(false);
-    }
-    if (fileRef.current) fileRef.current.value = '';
+      const c = await compressImage(file);
+      setImagePreview(c); setImageData(c);
+    } catch { alert('Failed to process image'); }
+    finally { setCompressing(false); if (fileRef.current) fileRef.current.value = ''; }
   }, []);
 
   const handlePost = useCallback(async () => {
@@ -67,83 +53,65 @@ export default function Composer({ currentUserId, currentUser, onClose, onPosted
     setPosting(true);
     try {
       await createPost(currentUserId, text.trim(), imageData);
-      onPosted?.();
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Failed to post. Please try again.');
-    } finally {
-      setPosting(false);
-    }
-  }, [canPost, currentUserId, text, imageData, onPosted, onClose]);
+      alert('Failed to post.');
+    } finally { setPosting(false); }
+  }, [canPost, currentUserId, text, imageData, onClose]);
 
-  const avatar = currentUser;
-  const initial = (avatar?.displayName || 'M')[0].toUpperCase();
+  const initial = (currentUser?.displayName || 'M')[0].toUpperCase();
 
   return (
-    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="composer-sheet" onClick={e => e.stopPropagation()}>
-        {/* Handle bar */}
-        <div style={{ width: 36, height: 4, background: 'var(--border-light)', borderRadius: 2, margin: '0 auto 14px' }} />
+    <div className="overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="sheet" onClick={e => e.stopPropagation()}>
+        <div className="sheet-handle" />
 
         {/* Header */}
-        <div className="composer-header">
-          <button className="composer-close-btn" onClick={onClose}>
-            <X size={16} />
+        <div className="sheet-header">
+          <button className="sheet-close" onClick={onClose}>
+            <X size={14} />
           </button>
-          <h2>New Post</h2>
+          <span className="sheet-title">New Post</span>
           <button className="post-btn" onClick={handlePost} disabled={!canPost}>
             {posting ? <Loader size={14} className="spin" style={{ display: 'block' }} /> : 'Post'}
           </button>
         </div>
 
         {/* Body */}
-        <div className="composer-body">
-          <div className="avatar" style={{ flexShrink: 0, marginTop: 2 }}>
-            {avatar?.avatarUrl ? <img src={avatar.avatarUrl} alt="" /> : initial}
+        <div className="sheet-body">
+          <div className="av" style={{ flexShrink: 0, marginTop: 2 }}>
+            {currentUser?.avatarUrl ? <img src={currentUser.avatarUrl} alt="" /> : initial}
           </div>
-          <div style={{ flex: 1 }}>
-            <textarea
-              ref={textRef}
-              className="composer-textarea"
-              placeholder="What's happening in your game?"
-              value={text}
-              onChange={e => setText(e.target.value.slice(0, MAX_CHARS))}
-              rows={4}
-              autoFocus
-            />
-          </div>
+          <textarea
+            className="sheet-textarea"
+            placeholder="What's happening in your game?"
+            value={text}
+            onChange={e => setText(e.target.value.slice(0, MAX_CHARS))}
+            rows={4}
+            autoFocus
+          />
         </div>
 
         {/* Image Preview */}
         {imagePreview && (
-          <div className="composer-image-preview">
-            {imagePreview.startsWith('data:video') ? (
-              <video src={imagePreview} controls style={{ width: '100%', borderRadius: 12, maxHeight: 220 }} />
-            ) : (
-              <img src={imagePreview} alt="preview" />
-            )}
-            <button className="composer-image-remove" onClick={() => { setImagePreview(''); setImageData(''); }}>
-              <X size={14} />
+          <div className="sheet-img-preview">
+            <img src={imagePreview} alt="preview" />
+            <button className="sheet-img-remove" onClick={() => { setImagePreview(''); setImageData(''); }}>
+              <X size={12} />
             </button>
           </div>
         )}
 
         {/* Footer */}
-        <div className="composer-footer">
-          <div className="composer-tools">
-            <input ref={fileRef} type="file" accept="image/*,video/*" hidden onChange={handleImagePick} />
-            <button
-              className="composer-tool-btn"
-              onClick={() => fileRef.current?.click()}
-              disabled={compressing}
-              title="Add image"
-            >
-              {compressing ? <Loader size={20} className="spin" /> : <Image size={20} />}
+        <div className="sheet-footer">
+          <div className="sheet-tools">
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleImage} />
+            <button className="sheet-tool" onClick={() => fileRef.current?.click()} disabled={compressing}>
+              {compressing ? <Loader size={19} className="spin" /> : <ImageIcon size={19} />}
             </button>
           </div>
-
-          <span className={`char-counter ${charsLeft < 20 ? 'danger' : charsLeft < 60 ? 'warn' : ''}`}>
+          <span className={`char-count${charsLeft < 20 ? ' over' : charsLeft < 60 ? ' warn' : ''}`}>
             {charsLeft}
           </span>
         </div>

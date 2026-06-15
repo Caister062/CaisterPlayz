@@ -293,3 +293,40 @@ body {
 .safe-area {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* =========================
+   HORIZONTAL CAROUSEL (CONSOLE STYLE)
+========================= */
+
+.carousel-row {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  /* Hide scrollbar for clean look */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.carousel-row::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-item {
+  scroll-snap-align: center;
+  flex: 0 0 auto;
+}
+
+/* =========================
+   MESH BACKGROUND
+========================= */
+
+.mesh-bg {
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.12), transparent 45%),
+    radial-gradient(circle at 85% 30%, rgba(147, 51, 234, 0.12), transparent 45%),
+    var(--dark-bg);
+  background-attachment: fixed;
+}

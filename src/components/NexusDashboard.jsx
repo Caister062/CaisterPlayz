@@ -17,6 +17,9 @@ export default function NexusDashboard({ posts, users, currentUserId, onProfileC
 
   // The Hero post (most active or recent big post)
   const heroPost = trendingPosts.length > 0 ? trendingPosts[0] : null;
+  const heroUser = heroPost ? users.find(u => u.id === heroPost.userId) : null;
+  const heroDisplayName = heroUser?.displayName || "Unknown Gamer";
+  const heroInitial = heroDisplayName.charAt(0).toUpperCase();
 
   return (
     <div className="pb-24 pt-4 space-y-10">
@@ -38,18 +41,21 @@ export default function NexusDashboard({ posts, users, currentUserId, onProfileC
             <div className="absolute bottom-0 left-0 right-0 p-6 z-10 glass-strong m-4 rounded-2xl">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-brand-primary flex items-center justify-center font-bold text-white shadow-lg overflow-hidden border-2 border-white/10">
-                   {/* Fallback to initials if we had user logic here, for now simple letter */}
-                   {heroPost.expand?.user?.username?.charAt(0).toUpperCase() || "?"}
+                   {heroUser?.avatarUrl ? (
+                     <img src={heroUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                   ) : (
+                     heroInitial
+                   )}
                 </div>
                 <div>
                   <h3 className="font-bold text-white leading-tight">
-                    {heroPost.expand?.user?.username || "Unknown Gamer"}
+                    {heroDisplayName}
                   </h3>
                   <p className="text-xs text-brand-secondary font-medium">Top Broadcast</p>
                 </div>
               </div>
               <p className="text-sm text-gray-200 line-clamp-2">
-                {heroPost.content || "Experience the latest from the community."}
+                {heroPost.text || "Experience the latest from the community."}
               </p>
             </div>
           </div>
@@ -95,7 +101,7 @@ export default function NexusDashboard({ posts, users, currentUserId, onProfileC
                   <img src={post.imageUrl} alt="Capture" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-gradient-to-t from-dark-bg/90 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
                   <div className="absolute bottom-4 left-4 right-4 z-10">
-                    <p className="text-xs font-medium text-white line-clamp-2">{post.content}</p>
+                    <p className="text-xs font-medium text-white line-clamp-2">{post.text}</p>
                   </div>
                 </div>
               </div>

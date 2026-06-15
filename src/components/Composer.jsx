@@ -10,7 +10,6 @@ import {
   Gamepad2,
 } from "lucide-react";
 
-import { Avatar } from "./Shared";
 import { compressImage } from "../utils";
 import { createPost } from "../hooks";
 import { MUSIC_TRACKS, previewTrack, stopTrack } from "../musicLibrary";
@@ -186,16 +185,11 @@ export default function Composer({
   ───────────────────────────── */
   return (
     <div className="px-4 py-3 border-b border-dark-border">
-      <div className="flex gap-3">
-        <Avatar src={profile?.avatarUrl} name={profile?.displayName} />
-
+      <div className="flex">
         <div className="flex-1">
           {/* Community */}
           {communities.length > 0 && (
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-[10px] text-dark-muted uppercase">
-                Post to
-              </span>
               <select
                 value={activeCommunityId}
                 onChange={(e) => setActiveCommunityId(e.target.value)}

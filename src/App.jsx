@@ -1,47 +1,19 @@
-import { useEffect, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import PostCard from "./components/PostCard";
 import { usePosts, useAllUsers } from "./hooks";
 
 export default function App() {
-  const [posts, setPosts] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { posts, loading } = usePosts();
+  const users = useAllUsers();
 
   // ORIGINAL NAV STRUCTURE (NOT TWITTER-LIKE)
   const [activeTab, setActiveTab] = useState("explore");
   // explore | circles | moments | you
 
-  const currentUserId = "me";
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [postData, userData] = await Promise.all([
-        fetchPosts(),
-        fetchUsers(),
-      ]);
-
-      setPosts(postData || []);
-      setUsers(userData || []);
-    } catch (err) {
-      console.error("Load error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  useEffect(() => {
-    const refresh = () => loadData();
-    window.addEventListener("refreshPosts", refresh);
-    return () => window.removeEventListener("refreshPosts", refresh);
-  }, [loadData]);
+  const currentUserId = localStorage.getItem("cplayz_user_id") || "me";
 
   // 🔥 NEW FEED LOGIC (more “app-like”, less social media)
-  const filteredPosts = (() => {
+  const filteredPosts = useMemo(() => {
     switch (activeTab) {
       case "circles":
         // group-based feel (simulate interest clusters)
@@ -62,7 +34,7 @@ export default function App() {
           .sort(() => Math.random() - 0.5)
           .slice(0, 50);
     }
-  })();
+  }, [activeTab, posts, currentUserId]);
 
   const handleProfileClick = (userId) => {
     console.log("Open profile:", userId);

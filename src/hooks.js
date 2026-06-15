@@ -294,21 +294,245 @@ export function useNotifications(userId) {
    WRITE ACTIONS
 ───────────────────────────── */
 
-export async function toggleLike(postId, userId, isLiked) {
+function uniqueList(values) {
+  return [...new Set((values || []).filter(Boolean))];
+}
+
+async function togglePostListField(postId, userId, fieldName, isActive) {
   const post = await pb.collection('cplayz_posts').getOne(postId);
-  let likedBy = post.likedBy || [];
+  let values = post[fieldName] || [];
 
-  likedBy = isLiked
-    ? likedBy.filter(id => id !== userId)
-    : [...new Set([...likedBy, userId])];
+  values = isActive
+    ? values.filter(id => id !== userId)
+    : uniqueList([...values, userId]);
 
-  await pb.collection('cplayz_posts').update(postId, { likedBy });
+  await pb.collection('cplayz_posts').update(postId, { [fieldName]: values });
+}
+
+export async function createPost(
+  userId,
+  text,
+  imageUrl = '',
+  musicId = '',
+  musicName = '',
+  originalPostId = '',
+  type = 'post',
+  communityId = ''
+) {
+  const data = {
+    userId,
+    text: text || '',
+    imageUrl,
+    likedBy: [],
+    viewedBy: [],
+    repostedBy: [],
+    favoritedBy: [],
+    type,
+    originalPostId,
+    musicId,
+    musicName,
+  };
+
+  if (communityId) data.communityId = communityId;
+
+  return pb.collection('cplayz_posts').create(data);
+}
+
+export async function toggleLike(postId, userId, isLiked) {
+  return togglePostListField(postId, userId, 'likedBy', isLiked);
+}
+
+export async function toggleRepost(postId, userId, isReposted) {
+  return togglePostListField(postId, userId, 'repostedBy', isReposted);
+}
+
+export async function toggleBookmark(postId, userId, isBookmarked) {
+  return togglePostListField(postId, userId, 'favoritedBy', isBookmarked);
+}
+
+export async function addView(postId, userId) {
+  const post = await pb.collection('cplayz_posts').getOne(postId);
+  const viewedBy = uniqueList([...(post.viewedBy || []), userId]);
+  return pb.collection('cplayz_posts').update(postId, { viewedBy });
+}
+
+export async function deletePost(postId, userId) {
+  return pb.collection('cplayz_posts').delete(postId, {
+    headers: { x_user_id: userId }
+  });
 }
 
 export async function addComment(postId, userId, text) {
-  await pb.collection('cplayz_comments').create({
+  return pb.collection('cplayz_comments').create({
     postId,
     userId,
     text
   });
+}
+
+export async function deleteComment(commentId, userId) {
+  return pb.collection('cplayz_comments').delete(commentId, {
+    headers: { x_user_id: userId }
+  });
+}
+
+export function useFollows(userId) {
+  const [following, setFollowing] = useState([]);
+  const [followers, setFollowers] = useState([]);
+
+  const fetchFollows = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const [followingRes, followersRes] = await Promise.all([
+        pb.collection('cplayz_follows').getList(1, 200, {
+          filter: `followerId="${userId}"`
+        }),
+        pb.collection('cplayz_follows').getList(1, 200, {
+          filter: `followingId="${userId}"`
+        })
+      ]);
+
+      setFollowing(followingRes.items);
+      setFollowers(followersRes.items);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchFollows();
+  }, [fetchFollows]);
+
+  return { following, followers, refresh: fetchFollows };
+}
+
+export async function followUser(followerId, followingId) {
+  if (!followerId || !followingId || followerId === followingId) return null;
+
+  const existing = await pb.collection('cplayz_follows').getList(1, 1, {
+    filter: `followerId="${followerId}" && followingId="${followingId}"`
+  });
+
+  if (existing.items.length) return existing.items[0];
+
+  return pb.collection('cplayz_follows').create(
+    { followerId, followingId },
+    { headers: { x_user_id: followerId } }
+  );
+}
+
+export async function unfollowUser(followerId, followingId) {
+  const existing = await pb.collection('cplayz_follows').getList(1, 1, {
+    filter: `followerId="${followerId}" && followingId="${followingId}"`
+  });
+
+  if (!existing.items.length) return;
+
+  return pb.collection('cplayz_follows').delete(existing.items[0].id, {
+    headers: { x_user_id: followerId }
+  });
+}
+
+export async function updateProfile(userId, data) {
+  return pb.collection('cplayz_users').update(userId, data);
+}
+
+export async function markNotificationRead(notificationId) {
+  return pb.collection('cplayz_notifications').update(notificationId, {
+    read: true
+  });
+}
+
+export function useDirectMessages(currentUserId, recipientId) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMessages = useCallback(async () => {
+    if (!currentUserId || !recipientId) {
+      setMessages([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await pb.collection('cplayz_messages').getList(1, 200, {
+        filter: `(senderId="${currentUserId}" && recipientId="${recipientId}") || (senderId="${recipientId}" && recipientId="${currentUserId}")`,
+        sort: 'created',
+        headers: { x_user_id: currentUserId }
+      });
+
+      setMessages(res.items);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUserId, recipientId]);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
+
+  return { messages, loading, refresh: fetchMessages };
+}
+
+export function useDMThreads(currentUserId) {
+  const [threads, setThreads] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchThreads = useCallback(async () => {
+    if (!currentUserId) {
+      setThreads([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await pb.collection('cplayz_messages').getList(1, 200, {
+        filter: `senderId="${currentUserId}" || recipientId="${currentUserId}"`,
+        sort: '-created',
+        headers: { x_user_id: currentUserId }
+      });
+
+      const byUser = new Map();
+      for (const message of res.items) {
+        const otherId = message.senderId === currentUserId
+          ? message.recipientId
+          : message.senderId;
+
+        if (!byUser.has(otherId)) {
+          byUser.set(otherId, {
+            userId: otherId,
+            lastMessage: message
+          });
+        }
+      }
+
+      setThreads([...byUser.values()]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    fetchThreads();
+  }, [fetchThreads]);
+
+  return { threads, loading, refresh: fetchThreads };
+}
+
+export async function sendMessage(senderId, recipientId, text, imageUrl = '') {
+  return pb.collection('cplayz_messages').create(
+    {
+      senderId,
+      recipientId,
+      text,
+      imageUrl,
+      read: false
+    },
+    { headers: { x_user_id: senderId } }
+  );
 }

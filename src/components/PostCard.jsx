@@ -80,6 +80,8 @@ export default function BroadcastCard({ post, currentUserId, users = [], onProfi
 
   useEffect(() => {
     if (!elRef.current || viewedR.current || !currentUserId) return;
+    // Don't count your own views
+    if (post.userId === currentUserId) { viewedR.current = true; return; }
     if ((post.viewedBy||[]).includes(currentUserId)) { viewedR.current = true; return; }
     const ob = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) { viewedR.current = true; addView(post.id, currentUserId).catch(()=>{}); ob.disconnect(); }

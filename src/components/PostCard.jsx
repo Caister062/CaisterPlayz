@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Zap, RotateCw, MessageSquare, Pin, Eye, MoreHorizontal, Trash2, Share2, Loader } from 'lucide-react';
-import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost } from '../hooks';
+import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, deleteComment } from '../hooks';
 
 export function timeAgo(ts) {
   if (!ts) return '';
@@ -204,7 +204,20 @@ export default function BroadcastCard({ post, currentUserId, users = [], onProfi
                 <div key={c.id} className="reply-item">
                   <Hex src={cu?.avatarUrl} name={cu?.displayName||'?'} size="sm" />
                   <div className="reply-bubble">
-                    <div className="reply-who">{cu?.displayName||'User'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div className="reply-who">{cu?.displayName||'User'}</div>
+                      {c.userId === currentUserId && (
+                        <button
+                          onClick={() => { if (confirm('Delete this reply?')) deleteComment(c.id).catch(console.error); }}
+                          style={{ background: 'none', border: 'none', padding: '2px 4px', cursor: 'pointer', color: 'var(--text3)', transition: 'color 0.15s', borderRadius: 4 }}
+                          onMouseEnter={e => e.currentTarget.style.color = 'var(--hot)'}
+                          onMouseLeave={e => e.currentTarget.style.color = 'var(--text3)'}
+                          title="Delete reply"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      )}
+                    </div>
                     <div className="reply-msg">{c.text}</div>
                     <div className="reply-ts">{timeAgo(c.created)}</div>
                   </div>

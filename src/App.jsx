@@ -1,103 +1,212 @@
-import { useState } from "react";
-import NexusDashboard from "./components/NexusDashboard";
-import { usePosts, useAllUsers } from "./hooks";
+import { useState, useEffect } from 'react';
+import { Home, Search, Bell, User, Plus, Loader } from 'lucide-react';
+import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, ensureGuestUser } from './hooks';
+import FeedView from './components/FeedView';
+import ExploreView from './components/ExploreView';
+import NotificationsView from './components/NotificationsView';
+import ProfileView from './components/ProfileView';
+import Composer from './components/Composer';
 
 export default function App() {
-  const { posts, loading } = usePosts();
+  const [activeTab, setActiveTab] = useState('feed');
+  const [showComposer, setShowComposer] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [viewingProfile, setViewingProfile] = useState(null); // userId being viewed
+
+  // Bootstrap guest auth
+  useEffect(() => {
+    ensureGuestUser()
+      .then(user => {
+        setCurrentUserId(user.id);
+      })
+      .catch(err => {
+        console.error('Auth error:', err);
+      })
+      .finally(() => setAuthLoading(false));
+  }, []);
+
+  const { posts, loading: postsLoading, refresh: refreshPosts } = useRealtimePosts();
   const users = useAllUsers();
+  const { notifications, unreadCount, refresh: refreshNotifs } = useNotifications(currentUserId);
+  const followData = useFollows(currentUserId);
+  const { profile: myProfile, refresh: refreshProfile } = useUserProfile(currentUserId);
 
-  const [activeView, setActiveView] = useState("nexus");
-  // nexus | squads | vault | profile
-
-  const currentUserId = localStorage.getItem("cplayz_user_id") || "me";
+  // Profile being viewed (own or other)
+  const profileUser = viewingProfile
+    ? users.find(u => u.id === viewingProfile)
+    : myProfile;
 
   const handleProfileClick = (userId) => {
-    console.log("Open profile:", userId);
+    setViewingProfile(userId);
+    setActiveTab('profile');
   };
 
-  const handleQuote = (post) => {
-    console.log("Quote:", post.id);
+  const handleTabChange = (tab) => {
+    if (tab === 'profile') setViewingProfile(null); // reset to own profile
+    setActiveTab(tab);
+  };
+
+  if (authLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 20,
+        background: 'var(--bg)'
+      }}>
+        <div style={{
+          width: 60, height: 60, borderRadius: 18,
+          background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 28, boxShadow: '0 0 40px rgba(59,130,246,0.4)',
+          animation: 'floatAnim 2s ease-in-out infinite'
+        }}>🎮</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: 'white', letterSpacing: '0.06em' }}>
+          CAISTERPLAYZ
+        </div>
+        <Loader size={20} style={{ color: 'var(--brand)', animation: 'spin 1s linear infinite' }} />
+        <style>{`
+          @keyframes floatAnim { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+      </div>
+    );
+  }
+
+  const TAB_HEADER_TITLES = {
+    feed: 'CaisterPlayz',
+    explore: 'Explore',
+    notifications: 'Notifications',
+    profile: profileUser?.displayName || 'Profile',
   };
 
   return (
-    <div className="min-h-screen mesh-bg text-white flex md:flex-row flex-col-reverse">
-
-      {/* FLOATING DOCK (Mobile Bottom, Desktop Side) */}
-      <nav className="fixed md:sticky md:top-0 bottom-0 left-0 w-full md:w-24 md:h-screen z-50 p-4 flex md:flex-col justify-center items-center pointer-events-none">
-        <div className="pointer-events-auto flex md:flex-col gap-6 bg-dark-bg/80 backdrop-blur-2xl border border-white/10 p-4 rounded-3xl shadow-2xl">
-          {[
-            { id: "nexus", icon: "🌌", label: "Nexus" },
-            { id: "squads", icon: "🎮", label: "Squads" },
-            { id: "vault", icon: "💎", label: "Vault" },
-            { id: "profile", icon: "👤", label: "Profile" }
-          ].map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              className={`relative group p-3 rounded-2xl transition-all duration-300 flex flex-col items-center justify-center gap-1 ${
-                activeView === item.id 
-                  ? "bg-brand-primary text-white shadow-lg shadow-brand-primary/30 scale-110" 
-                  : "hover:bg-white/10 text-white/50 hover:text-white"
-              }`}
-            >
-              <span className="text-xl">{item.icon}</span>
-              {/* Tooltip for desktop */}
-              <span className="absolute left-full ml-4 px-2 py-1 bg-dark-card text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block border border-white/10">
-                {item.label}
-              </span>
-            </button>
-          ))}
-          <div className="w-px h-6 md:w-6 md:h-px bg-white/10 mx-auto" />
-          <button
-             className="p-3 rounded-2xl bg-gradient-to-tr from-purple-500 to-brand-primary text-white shadow-lg hover:scale-110 transition-transform flex items-center justify-center"
-             onClick={() => console.log("Broadcasting...")}
-          >
-             <span className="text-xl">+</span>
-          </button>
+    <div className="app-shell">
+      {/* Header */}
+      <header className="top-header">
+        <h1>{TAB_HEADER_TITLES[activeTab]}</h1>
+        <div className="header-actions">
+          {activeTab === 'notifications' && unreadCount > 0 && (
+            <span style={{
+              background: 'var(--danger)', color: 'white', borderRadius: 999,
+              fontSize: 11, fontWeight: 700, padding: '2px 7px'
+            }}>{unreadCount}</span>
+          )}
         </div>
+      </header>
+
+      {/* Main content */}
+      <div className="feed-scroll">
+        {activeTab === 'feed' && (
+          <FeedView
+            posts={posts}
+            loading={postsLoading}
+            users={users}
+            currentUserId={currentUserId}
+            onProfileClick={handleProfileClick}
+          />
+        )}
+        {activeTab === 'explore' && (
+          <ExploreView
+            posts={posts}
+            users={users}
+            currentUserId={currentUserId}
+            onProfileClick={handleProfileClick}
+          />
+        )}
+        {activeTab === 'notifications' && (
+          <NotificationsView
+            notifications={notifications}
+            users={users}
+            currentUserId={currentUserId}
+            onRefresh={refreshNotifs}
+          />
+        )}
+        {activeTab === 'profile' && (
+          <ProfileView
+            profile={profileUser || myProfile}
+            posts={posts}
+            users={users}
+            currentUserId={currentUserId}
+            followData={viewingProfile ? {} : followData}
+            onProfileClick={handleProfileClick}
+            onRefresh={refreshProfile}
+          />
+        )}
+      </div>
+
+      {/* Bottom Nav */}
+      <nav className="bottom-nav">
+        <button
+          className={`nav-btn ${activeTab === 'feed' ? 'active' : ''}`}
+          onClick={() => handleTabChange('feed')}
+        >
+          <Home size={22} fill={activeTab === 'feed' ? 'currentColor' : 'none'} />
+          <span>Home</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'explore' ? 'active' : ''}`}
+          onClick={() => handleTabChange('explore')}
+        >
+          <Search size={22} />
+          <span>Explore</span>
+        </button>
+
+        {/* Compose button */}
+        <button className="nav-compose" onClick={() => setShowComposer(true)}>
+          <Plus size={24} strokeWidth={2.5} />
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'notifications' ? 'active' : ''}`}
+          onClick={() => handleTabChange('notifications')}
+          style={{ position: 'relative' }}
+        >
+          <Bell size={22} fill={activeTab === 'notifications' ? 'currentColor' : 'none'} />
+          {unreadCount > 0 && (
+            <span style={{
+              position: 'absolute', top: 2, right: 10,
+              background: 'var(--danger)', color: 'white',
+              borderRadius: 999, fontSize: 9, fontWeight: 700,
+              padding: '1px 4px', border: '1.5px solid var(--bg)'
+            }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
+          )}
+          <span>Activity</span>
+        </button>
+
+        <button
+          className={`nav-btn ${activeTab === 'profile' ? 'active' : ''}`}
+          onClick={() => handleTabChange('profile')}
+        >
+          {myProfile?.avatarUrl ? (
+            <img
+              src={myProfile.avatarUrl}
+              style={{
+                width: 26, height: 26, borderRadius: '50%', objectFit: 'cover',
+                border: activeTab === 'profile' ? '2px solid var(--brand)' : '2px solid var(--border)'
+              }}
+              alt=""
+            />
+          ) : (
+            <User size={22} fill={activeTab === 'profile' ? 'currentColor' : 'none'} />
+          )}
+          <span>Profile</span>
+        </button>
       </nav>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 overflow-y-auto w-full md:max-w-5xl mx-auto safe-area">
-        {/* HEADER */}
-        <header className="sticky top-0 z-40 bg-transparent px-6 py-6 flex items-center justify-between">
-          <h1 className="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/50">
-            CaisterPlayz
-          </h1>
-          <div className="flex gap-3">
-             <button className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-white/10 transition">
-               🔔
-             </button>
-             <button className="w-10 h-10 rounded-full glass flex items-center justify-center hover:bg-white/10 transition">
-               ⚙️
-             </button>
-          </div>
-        </header>
-
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-pulse flex flex-col items-center gap-4">
-               <div className="w-12 h-12 rounded-full border-4 border-brand-primary border-t-transparent animate-spin" />
-               <p className="text-brand-secondary font-medium tracking-widest uppercase text-sm">Booting System...</p>
-            </div>
-          </div>
-        ) : activeView === "nexus" ? (
-          <NexusDashboard 
-            posts={posts} 
-            users={users} 
-            currentUserId={currentUserId} 
-            onProfileClick={handleProfileClick} 
-            onQuote={handleQuote} 
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
-            <span className="text-6xl mb-4 opacity-50">🚧</span>
-            <h2 className="text-2xl font-bold mb-2">Module Offline</h2>
-            <p className="text-dark-muted max-w-md">The {activeView} module is currently being calibrated for the new CaisterPlayz experience.</p>
-          </div>
-        )}
-      </main>
-
+      {/* Composer Modal */}
+      {showComposer && currentUserId && (
+        <Composer
+          currentUserId={currentUserId}
+          currentUser={myProfile}
+          onClose={() => setShowComposer(false)}
+          onPosted={() => {
+            setShowComposer(false);
+            setActiveTab('feed');
+          }}
+        />
+      )}
     </div>
   );
 }

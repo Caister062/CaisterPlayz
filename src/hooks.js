@@ -1,218 +1,111 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import pb from './pocketbase';
 
 /* ─────────────────────────────
-   DEVICE AUTH
+   DEVICE / GUEST AUTH
 ───────────────────────────── */
-
 function getDeviceId() {
   let id = localStorage.getItem('cplayz_device_id');
-
   if (!id) {
-    const uuid =
-      typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : Date.now().toString(36) + Math.random().toString(36).slice(2);
-
+    const uuid = typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).slice(2);
     id = 'dev_' + uuid;
     localStorage.setItem('cplayz_device_id', id);
   }
-
   return id;
 }
 
-/* ─────────────────────────────
-   AUTH HOOK
-───────────────────────────── */
-
-export function useAuth() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const syncUserProfile = useCallback(async (authRecord) => {
+export async function ensureGuestUser() {
+  const existing = localStorage.getItem('cplayz_user_id');
+  if (existing) {
     try {
-      const existing = await pb.collection('cplayz_users').getList(1, 1, {
-        filter: `deviceId="pb_${authRecord.id}"`
-      });
-
-      let profile;
-
-      if (existing.items.length > 0) {
-        profile = existing.items[0];
-      } else {
-        profile = await pb.collection('cplayz_users').create({
-          displayName:
-            authRecord.name ||
-            authRecord.username ||
-            `User_${authRecord.id.slice(0, 6)}`,
-          bio: '',
-          website: '',
-          avatarUrl: authRecord.avatar
-            ? pb.files.getURL(authRecord, authRecord.avatar)
-            : '',
-          deviceId: `pb_${authRecord.id}`,
-        });
-      }
-
-      localStorage.setItem('cplayz_user_id', profile.id);
-      setUser(profile);
+      const profile = await pb.collection('cplayz_users').getOne(existing);
       return profile;
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-      throw err;
+    } catch {
+      localStorage.removeItem('cplayz_user_id');
     }
-  }, []);
-
-  const loginAsGuest = useCallback(async () => {
-    try {
-      setLoading(true);
-      const deviceId = getDeviceId();
-
-      const list = await pb.collection('cplayz_users').getList(1, 1, {
-        filter: `deviceId="${deviceId}"`
-      });
-
-      let user;
-
-      if (list.items.length > 0) {
-        user = list.items[0];
-      } else {
-        user = await pb.collection('cplayz_users').create({
-          displayName: `Guest_${deviceId.slice(4, 10)}`,
-          deviceId
-        });
-      }
-
-      localStorage.setItem('cplayz_user_id', user.id);
-      setUser(user);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const loginWithGoogle = async () => {
-    setLoading(true);
-    try {
-      const authData = await pb
-        .collection('users')
-        .authWithOAuth2({ provider: 'google' });
-
-      return syncUserProfile(authData.record);
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const logout = useCallback(async () => {
-    pb.authStore.clear();
-    localStorage.removeItem('cplayz_user_id');
-    setUser(null);
-  }, []);
-
-  const init = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      if (pb.authStore.isValid && pb.authStore.model) {
-        await syncUserProfile(pb.authStore.model);
-      } else if (localStorage.getItem('cplayz_is_guest') === 'true') {
-        await loginAsGuest();
-      } else {
-        setUser(null);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [syncUserProfile, loginAsGuest]);
-
-  useEffect(() => {
-    init();
-
-    const unsubscribe = pb.authStore.onChange((_, model) => {
-      if (model) syncUserProfile(model);
-      else setUser(null);
+  }
+  const deviceId = getDeviceId();
+  const list = await pb.collection('cplayz_users').getList(1, 1, {
+    filter: `deviceId="${deviceId}"`
+  });
+  let user;
+  if (list.items.length > 0) {
+    user = list.items[0];
+  } else {
+    user = await pb.collection('cplayz_users').create({
+      displayName: `Player_${deviceId.slice(4, 10)}`,
+      bio: '',
+      deviceId,
     });
-
-    return () => unsubscribe();
-  }, [init, syncUserProfile]);
-
-  return {
-    user,
-    loading,
-    error,
-    loginAsGuest,
-    loginWithGoogle,
-    logout,
-    retry: init
-  };
+  }
+  localStorage.setItem('cplayz_user_id', user.id);
+  return user;
 }
 
 /* ─────────────────────────────
-   USER PROFILE
+   REALTIME POSTS
 ───────────────────────────── */
-
-export function useUserProfile(userId) {
-  const [profile, setProfile] = useState(null);
-
-  const fetchProfile = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const res = await pb.collection('cplayz_users').getOne(userId);
-      setProfile(res);
-    } catch {}
-  }, [userId]);
-
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  return profile;
-}
-
-/* ─────────────────────────────
-   POSTS HOOK (FIXED EXPORT)
-───────────────────────────── */
-
-export function usePosts() {
+export function useRealtimePosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const subRef = useRef(null);
 
-  const fetchPosts = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     try {
-      setLoading(true);
-
-      const res = await pb.collection('cplayz_posts').getList(1, 15, {
-        sort: '-id'
+      const res = await pb.collection('cplayz_posts').getList(1, 50, {
+        sort: '-created'
       });
-
       setPosts(res.items);
     } catch (err) {
-      console.error(err);
+      console.error('fetchPosts:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    fetchAll();
 
-  return {
-    posts,
-    loading,
-    refresh: fetchPosts
-  };
+    let unsub;
+    (async () => {
+      try {
+        unsub = await pb.collection('cplayz_posts').subscribe('*', (e) => {
+          if (e.action === 'create') {
+            setPosts(prev => [e.record, ...prev]);
+          } else if (e.action === 'update') {
+            setPosts(prev => prev.map(p => p.id === e.record.id ? e.record : p));
+          } else if (e.action === 'delete') {
+            setPosts(prev => prev.filter(p => p.id !== e.record.id));
+          }
+        });
+        subRef.current = unsub;
+      } catch (err) {
+        console.warn('Realtime subscription failed, falling back to polling', err);
+        // Fallback: poll every 15s
+        const interval = setInterval(fetchAll, 15000);
+        subRef.current = () => clearInterval(interval);
+      }
+    })();
+
+    const refreshHandler = () => fetchAll();
+    window.addEventListener('refreshPosts', refreshHandler);
+
+    return () => {
+      window.removeEventListener('refreshPosts', refreshHandler);
+      if (subRef.current) {
+        try { subRef.current(); } catch {}
+      }
+    };
+  }, [fetchAll]);
+
+  return { posts, loading, refresh: fetchAll };
 }
 
 /* ─────────────────────────────
-   USERS HOOK (FIXED EXPORT)
+   USERS
 ───────────────────────────── */
-
 export function useAllUsers() {
   const [users, setUsers] = useState([]);
 
@@ -221,104 +114,202 @@ export function useAllUsers() {
       const res = await pb.collection('cplayz_users').getList(1, 200);
       setUsers(res.items);
     } catch (err) {
-      console.error(err);
+      console.error('fetchUsers:', err);
     }
   }, []);
 
   useEffect(() => {
     fetchUsers();
+    let unsub;
+    (async () => {
+      try {
+        unsub = await pb.collection('cplayz_users').subscribe('*', (e) => {
+          if (e.action === 'create') setUsers(prev => [...prev, e.record]);
+          else if (e.action === 'update') setUsers(prev => prev.map(u => u.id === e.record.id ? e.record : u));
+          else if (e.action === 'delete') setUsers(prev => prev.filter(u => u.id !== e.record.id));
+        });
+      } catch {}
+    })();
+    return () => { if (unsub) try { unsub(); } catch {} };
   }, [fetchUsers]);
 
   return users;
 }
 
 /* ─────────────────────────────
-   COMMENTS
+   USER PROFILE
 ───────────────────────────── */
+export function useUserProfile(userId) {
+  const [profile, setProfile] = useState(null);
+  const fetchProfile = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const res = await pb.collection('cplayz_users').getOne(userId);
+      setProfile(res);
+    } catch {}
+  }, [userId]);
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
+  return { profile, refresh: fetchProfile };
+}
 
+/* ─────────────────────────────
+   COMMENTS (realtime)
+───────────────────────────── */
 export function useComments(postId) {
   const [comments, setComments] = useState([]);
-
   const fetchComments = useCallback(async () => {
     if (!postId) return;
-
     try {
-      const res = await pb.collection('cplayz_comments').getList(1, 200, {
-        filter: `postId="${postId}"`
+      const res = await pb.collection('cplayz_comments').getList(1, 100, {
+        filter: `postId="${postId}"`,
+        sort: 'created'
       });
-
       setComments(res.items);
     } catch {}
   }, [postId]);
 
   useEffect(() => {
+    if (!postId) return;
     fetchComments();
-  }, [fetchComments]);
+    let unsub;
+    (async () => {
+      try {
+        unsub = await pb.collection('cplayz_comments').subscribe('*', (e) => {
+          if (e.record.postId !== postId) return;
+          if (e.action === 'create') setComments(prev => [...prev, e.record]);
+          else if (e.action === 'delete') setComments(prev => prev.filter(c => c.id !== e.record.id));
+        });
+      } catch {}
+    })();
+    return () => { if (unsub) try { unsub(); } catch {} };
+  }, [postId, fetchComments]);
 
   return { comments, refreshComments: fetchComments };
 }
 
 /* ─────────────────────────────
-   NOTIFICATIONS (SIMPLIFIED SAFE VERSION)
+   NOTIFICATIONS (realtime)
 ───────────────────────────── */
-
 export function useNotifications(userId) {
   const [notifications, setNotifications] = useState([]);
-
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
-
     try {
       const res = await pb.collection('cplayz_notifications').getList(1, 50, {
         filter: `recipientId="${userId}"`,
-        sort: '-id'
+        sort: '-created'
       });
-
       setNotifications(res.items);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch {}
   }, [userId]);
 
   useEffect(() => {
+    if (!userId) return;
     fetchNotifications();
-  }, [fetchNotifications]);
+    let unsub;
+    (async () => {
+      try {
+        unsub = await pb.collection('cplayz_notifications').subscribe('*', (e) => {
+          if (e.record.recipientId !== userId) return;
+          if (e.action === 'create') setNotifications(prev => [e.record, ...prev]);
+          else if (e.action === 'update') setNotifications(prev => prev.map(n => n.id === e.record.id ? e.record : n));
+          else if (e.action === 'delete') setNotifications(prev => prev.filter(n => n.id !== e.record.id));
+        });
+      } catch {}
+    })();
+    return () => { if (unsub) try { unsub(); } catch {} };
+  }, [userId, fetchNotifications]);
 
   return {
     notifications,
-    unreadCount: notifications.filter(n => !n.read).length
+    unreadCount: notifications.filter(n => !n.read).length,
+    refresh: fetchNotifications
   };
+}
+
+/* ─────────────────────────────
+   FOLLOWS
+───────────────────────────── */
+export function useFollows(userId) {
+  const [following, setFollowing] = useState([]);
+  const [followers, setFollowers] = useState([]);
+
+  const fetchFollows = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const [fr, fo] = await Promise.all([
+        pb.collection('cplayz_follows').getList(1, 200, { filter: `followerId="${userId}"` }),
+        pb.collection('cplayz_follows').getList(1, 200, { filter: `followingId="${userId}"` }),
+      ]);
+      setFollowing(fr.items);
+      setFollowers(fo.items);
+    } catch {}
+  }, [userId]);
+
+  useEffect(() => { fetchFollows(); }, [fetchFollows]);
+  return { following, followers, refresh: fetchFollows };
 }
 
 /* ─────────────────────────────
    WRITE ACTIONS
 ───────────────────────────── */
-
-function uniqueList(values) {
-  return [...new Set((values || []).filter(Boolean))];
+function uniqueList(arr) {
+  return [...new Set((arr || []).filter(Boolean))];
 }
 
-async function togglePostListField(postId, userId, fieldName, isActive) {
-  const post = await pb.collection('cplayz_posts').getOne(postId);
-  let values = post[fieldName] || [];
+// Debounce helper to prevent spam
+const pendingToggles = new Map();
 
-  values = isActive
-    ? values.filter(id => id !== userId)
-    : uniqueList([...values, userId]);
-
-  await pb.collection('cplayz_posts').update(postId, { [fieldName]: values });
+async function debouncedToggle(key, fn, delay = 500) {
+  if (pendingToggles.has(key)) return;
+  pendingToggles.set(key, true);
+  try {
+    await fn();
+  } finally {
+    setTimeout(() => pendingToggles.delete(key), delay);
+  }
 }
 
-export async function createPost(
-  userId,
-  text,
-  imageUrl = '',
-  musicId = '',
-  musicName = '',
-  originalPostId = '',
-  type = 'post',
-  communityId = ''
-) {
+export async function toggleLike(postId, userId, isLiked) {
+  return debouncedToggle(`like:${postId}:${userId}`, async () => {
+    const post = await pb.collection('cplayz_posts').getOne(postId);
+    const likedBy = isLiked
+      ? (post.likedBy || []).filter(id => id !== userId)
+      : uniqueList([...(post.likedBy || []), userId]);
+    await pb.collection('cplayz_posts').update(postId, { likedBy });
+  });
+}
+
+export async function toggleRepost(postId, userId, isReposted) {
+  return debouncedToggle(`repost:${postId}:${userId}`, async () => {
+    const post = await pb.collection('cplayz_posts').getOne(postId);
+    const repostedBy = isReposted
+      ? (post.repostedBy || []).filter(id => id !== userId)
+      : uniqueList([...(post.repostedBy || []), userId]);
+    await pb.collection('cplayz_posts').update(postId, { repostedBy });
+  });
+}
+
+export async function toggleBookmark(postId, userId, isBookmarked) {
+  return debouncedToggle(`bookmark:${postId}:${userId}`, async () => {
+    const post = await pb.collection('cplayz_posts').getOne(postId);
+    const favoritedBy = isBookmarked
+      ? (post.favoritedBy || []).filter(id => id !== userId)
+      : uniqueList([...(post.favoritedBy || []), userId]);
+    await pb.collection('cplayz_posts').update(postId, { favoritedBy });
+  });
+}
+
+export async function addView(postId, userId) {
+  try {
+    const post = await pb.collection('cplayz_posts').getOne(postId);
+    if ((post.viewedBy || []).includes(userId)) return;
+    const viewedBy = uniqueList([...(post.viewedBy || []), userId]);
+    await pb.collection('cplayz_posts').update(postId, { viewedBy });
+  } catch {}
+}
+
+export async function createPost(userId, text, imageUrl = '', communityId = '') {
   const data = {
     userId,
     text: text || '',
@@ -327,111 +318,39 @@ export async function createPost(
     viewedBy: [],
     repostedBy: [],
     favoritedBy: [],
-    type,
-    originalPostId,
-    musicId,
-    musicName,
+    type: 'post',
   };
-
   if (communityId) data.communityId = communityId;
-
   return pb.collection('cplayz_posts').create(data);
 }
 
-export async function toggleLike(postId, userId, isLiked) {
-  return togglePostListField(postId, userId, 'likedBy', isLiked);
-}
-
-export async function toggleRepost(postId, userId, isReposted) {
-  return togglePostListField(postId, userId, 'repostedBy', isReposted);
-}
-
-export async function toggleBookmark(postId, userId, isBookmarked) {
-  return togglePostListField(postId, userId, 'favoritedBy', isBookmarked);
-}
-
-export async function addView(postId, userId) {
-  const post = await pb.collection('cplayz_posts').getOne(postId);
-  const viewedBy = uniqueList([...(post.viewedBy || []), userId]);
-  return pb.collection('cplayz_posts').update(postId, { viewedBy });
-}
-
-export async function deletePost(postId, userId) {
-  return pb.collection('cplayz_posts').delete(postId, {
-    headers: { x_user_id: userId }
-  });
+export async function deletePost(postId) {
+  return pb.collection('cplayz_posts').delete(postId);
 }
 
 export async function addComment(postId, userId, text) {
-  return pb.collection('cplayz_comments').create({
-    postId,
-    userId,
-    text
-  });
+  return pb.collection('cplayz_comments').create({ postId, userId, text });
 }
 
-export async function deleteComment(commentId, userId) {
-  return pb.collection('cplayz_comments').delete(commentId, {
-    headers: { x_user_id: userId }
-  });
-}
-
-export function useFollows(userId) {
-  const [following, setFollowing] = useState([]);
-  const [followers, setFollowers] = useState([]);
-
-  const fetchFollows = useCallback(async () => {
-    if (!userId) return;
-
-    try {
-      const [followingRes, followersRes] = await Promise.all([
-        pb.collection('cplayz_follows').getList(1, 200, {
-          filter: `followerId="${userId}"`
-        }),
-        pb.collection('cplayz_follows').getList(1, 200, {
-          filter: `followingId="${userId}"`
-        })
-      ]);
-
-      setFollowing(followingRes.items);
-      setFollowers(followersRes.items);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    fetchFollows();
-  }, [fetchFollows]);
-
-  return { following, followers, refresh: fetchFollows };
+export async function deleteComment(commentId) {
+  return pb.collection('cplayz_comments').delete(commentId);
 }
 
 export async function followUser(followerId, followingId) {
   if (!followerId || !followingId || followerId === followingId) return null;
-
   const existing = await pb.collection('cplayz_follows').getList(1, 1, {
     filter: `followerId="${followerId}" && followingId="${followingId}"`
   });
-
   if (existing.items.length) return existing.items[0];
-
-  return pb.collection('cplayz_follows').create(
-    { followerId, followingId },
-    { headers: { x_user_id: followerId } }
-  );
+  return pb.collection('cplayz_follows').create({ followerId, followingId });
 }
 
 export async function unfollowUser(followerId, followingId) {
   const existing = await pb.collection('cplayz_follows').getList(1, 1, {
     filter: `followerId="${followerId}" && followingId="${followingId}"`
   });
-
   if (!existing.items.length) return;
-
-  return pb.collection('cplayz_follows').delete(existing.items[0].id, {
-    headers: { x_user_id: followerId }
-  });
+  return pb.collection('cplayz_follows').delete(existing.items[0].id);
 }
 
 export async function updateProfile(userId, data) {
@@ -439,100 +358,16 @@ export async function updateProfile(userId, data) {
 }
 
 export async function markNotificationRead(notificationId) {
-  return pb.collection('cplayz_notifications').update(notificationId, {
-    read: true
-  });
+  return pb.collection('cplayz_notifications').update(notificationId, { read: true });
 }
 
-export function useDirectMessages(currentUserId, recipientId) {
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetchMessages = useCallback(async () => {
-    if (!currentUserId || !recipientId) {
-      setMessages([]);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await pb.collection('cplayz_messages').getList(1, 200, {
-        filter: `(senderId="${currentUserId}" && recipientId="${recipientId}") || (senderId="${recipientId}" && recipientId="${currentUserId}")`,
-        sort: 'created',
-        headers: { x_user_id: currentUserId }
-      });
-
-      setMessages(res.items);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUserId, recipientId]);
-
-  useEffect(() => {
-    fetchMessages();
-  }, [fetchMessages]);
-
-  return { messages, loading, refresh: fetchMessages };
-}
-
-export function useDMThreads(currentUserId) {
-  const [threads, setThreads] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetchThreads = useCallback(async () => {
-    if (!currentUserId) {
-      setThreads([]);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await pb.collection('cplayz_messages').getList(1, 200, {
-        filter: `senderId="${currentUserId}" || recipientId="${currentUserId}"`,
-        sort: '-created',
-        headers: { x_user_id: currentUserId }
-      });
-
-      const byUser = new Map();
-      for (const message of res.items) {
-        const otherId = message.senderId === currentUserId
-          ? message.recipientId
-          : message.senderId;
-
-        if (!byUser.has(otherId)) {
-          byUser.set(otherId, {
-            userId: otherId,
-            lastMessage: message
-          });
-        }
-      }
-
-      setThreads([...byUser.values()]);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUserId]);
-
-  useEffect(() => {
-    fetchThreads();
-  }, [fetchThreads]);
-
-  return { threads, loading, refresh: fetchThreads };
-}
-
-export async function sendMessage(senderId, recipientId, text, imageUrl = '') {
-  return pb.collection('cplayz_messages').create(
-    {
-      senderId,
-      recipientId,
-      text,
-      imageUrl,
-      read: false
-    },
-    { headers: { x_user_id: senderId } }
-  );
+export async function markAllNotificationsRead(userId) {
+  try {
+    const res = await pb.collection('cplayz_notifications').getList(1, 100, {
+      filter: `recipientId="${userId}" && read=false`
+    });
+    await Promise.all(res.items.map(n =>
+      pb.collection('cplayz_notifications').update(n.id, { read: true })
+    ));
+  } catch {}
 }

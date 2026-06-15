@@ -1,277 +1,346 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Heart, Repeat2, MessageCircle, Bookmark, Eye, Share, Trash2, Loader2, X } from 'lucide-react';
-import { Avatar, AnimatedNumber, ImageLightbox, RichText, FollowButton } from './Shared';
-import { formatTime, parsePostText, getGamerBadge } from '../utils';
-import { toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, useComments, deleteComment, followUser, unfollowUser, useFollows } from '../hooks';
-import { playLikeSound, playRepostSound } from '../sounds';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Heart, Repeat2, MessageCircle, Bookmark, MoreHorizontal, Eye, Share2, Trash2, Loader } from 'lucide-react';
+import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, deleteComment } from '../hooks';
 
-export default function PostCard({
-  post,
-  currentUserId,
-  users = [],
-  onProfileClick,
-  onHashtagClick,
-  onQuote,
-  posts = [],
-  compact = false // New prop for carousel mode
-}) {
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 60) return 'now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
+  return d.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+}
+
+function Avatar({ src, name, size = 'md', onClick }) {
+  const initial = (name || '?')[0].toUpperCase();
+  return (
+    <div
+      className={`avatar ${size}`}
+      onClick={onClick}
+      style={onClick ? { cursor: 'pointer' } : {}}
+    >
+      {src ? <img src={src} alt={name} /> : initial}
+    </div>
+  );
+}
+
+function RichText({ text }) {
+  if (!text) return null;
+  const parts = text.split(/(\s+)/).map((word, i) => {
+    if (/^#\w+/.test(word)) return <span key={i} className="hashtag">{word}</span>;
+    if (/^@\w+/.test(word)) return <span key={i} className="mention">{word}</span>;
+    if (/^https?:\/\//.test(word)) return <a key={i} href={word} target="_blank" rel="noreferrer" className="rich-link">{word.replace(/^https?:\/\/(www\.)?/,'').slice(0,35)}{word.length > 35 ? '…' : ''}</a>;
+    return <span key={i}>{word}</span>;
+  });
+  return <p className="post-content">{parts}</p>;
+}
+
+export default function PostCard({ post, currentUserId, users = [], onProfileClick }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
-  const [detailModal, setDetailModal] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
-  const postRef = useRef(null);
+  // Optimistic UI state
+  const [optimisticLiked, setOptimisticLiked] = useState(null);
+  const [optimisticLikeCount, setOptimisticLikeCount] = useState(null);
+  const [likeAnimating, setLikeAnimating] = useState(false);
+  const [optimisticReposted, setOptimisticReposted] = useState(null);
+  const [optimisticRepostCount, setOptimisticRepostCount] = useState(null);
+  const [optimisticBookmarked, setOptimisticBookmarked] = useState(null);
+
+  const likeDebounceRef = useRef(null);
+  const repostDebounceRef = useRef(null);
   const viewedRef = useRef(false);
+  const postRef = useRef(null);
 
-  const { following = [] } = useFollows(currentUserId);
-  const { comments = [], refreshComments } = useComments(showComments && !compact ? post.id : null);
+  const { comments, refreshComments } = useComments(showComments ? post.id : null);
 
-  const author = useMemo(() => users.find(u => u.id === post.userId), [users, post.userId]);
+  const author = users.find(u => u.id === post.userId);
 
-  const gamerBadge = getGamerBadge(post.userId);
-
-  const isLiked = post.likedBy?.includes(currentUserId);
-  const isReposted = post.repostedBy?.includes(currentUserId);
-  const isBookmarked = post.favoritedBy?.includes(currentUserId);
-
-  const likeCount = post.likedBy?.length || 0;
-  const repostCount = post.repostedBy?.length || 0;
+  // Derive state (prefer optimistic if set)
+  const isLiked = optimisticLiked !== null ? optimisticLiked : (post.likedBy || []).includes(currentUserId);
+  const likeCount = optimisticLikeCount !== null ? optimisticLikeCount : (post.likedBy?.length || 0);
+  const isReposted = optimisticReposted !== null ? optimisticReposted : (post.repostedBy || []).includes(currentUserId);
+  const repostCount = optimisticRepostCount !== null ? optimisticRepostCount : (post.repostedBy?.length || 0);
+  const isBookmarked = optimisticBookmarked !== null ? optimisticBookmarked : (post.favoritedBy || []).includes(currentUserId);
   const viewCount = post.viewedBy?.length || 0;
-  const commentCount = post._commentCount || 0;
 
-  const textParts = parsePostText(post.text || '');
-
+  // Reset optimistic when real post data changes
   useEffect(() => {
-    if (!postRef.current || viewedRef.current) return;
-    if (post.viewedBy?.includes(currentUserId)) return;
+    setOptimisticLiked(null);
+    setOptimisticLikeCount(null);
+    setOptimisticReposted(null);
+    setOptimisticRepostCount(null);
+    setOptimisticBookmarked(null);
+  }, [post.likedBy?.length, post.repostedBy?.length, post.favoritedBy?.length]);
 
+  // Intersection observer for view tracking
+  useEffect(() => {
+    if (!postRef.current || viewedRef.current || !currentUserId) return;
+    if ((post.viewedBy || []).includes(currentUserId)) { viewedRef.current = true; return; }
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
         viewedRef.current = true;
         addView(post.id, currentUserId).catch(() => {});
         obs.disconnect();
       }
-    });
-
+    }, { threshold: 0.5 });
     obs.observe(postRef.current);
     return () => obs.disconnect();
-  }, [post.id, currentUserId, post.viewedBy]);
+  }, [post.id, currentUserId]);
 
-  const handleLike = useCallback(async () => {
-    const liked = isLiked;
-    if (!liked) playLikeSound();
-    try {
-      await toggleLike(post.id, currentUserId, liked, post.userId);
-    } catch (e) {
-      console.error(e);
-    }
-  }, [isLiked, post, currentUserId]);
+  const handleLike = useCallback(() => {
+    // Optimistic update immediately
+    const newLiked = !isLiked;
+    const newCount = likeCount + (newLiked ? 1 : -1);
+    setOptimisticLiked(newLiked);
+    setOptimisticLikeCount(Math.max(0, newCount));
 
-  const handleRepost = useCallback(async () => {
-    const reposted = isReposted;
-    if (!reposted) playRepostSound();
-    try {
-      await toggleRepost(post.id, currentUserId, reposted, post.userId);
-    } catch (e) {
-      console.error(e);
+    if (newLiked) {
+      setLikeAnimating(true);
+      setTimeout(() => setLikeAnimating(false), 400);
     }
-  }, [isReposted, post, currentUserId]);
 
-  const handleBookmark = async () => {
-    try {
-      await toggleBookmark(post.id, currentUserId, isBookmarked);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+    // Debounce the actual API call
+    if (likeDebounceRef.current) clearTimeout(likeDebounceRef.current);
+    likeDebounceRef.current = setTimeout(() => {
+      toggleLike(post.id, currentUserId, !newLiked).catch(() => {
+        // Revert on error
+        setOptimisticLiked(isLiked);
+        setOptimisticLikeCount(likeCount);
+      });
+    }, 400);
+  }, [isLiked, likeCount, post.id, currentUserId]);
 
-  const handleDelete = async () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      setTimeout(() => setConfirmDelete(false), 2500);
-      return;
-    }
-    setDeleting(true);
-    try {
-      await deletePost(post.id, currentUserId);
-      window.dispatchEvent(new Event('refreshPosts'));
-    } catch (e) {
-      console.error(e);
-      setDeleting(false);
-    }
-  };
+  const handleRepost = useCallback(() => {
+    const newReposted = !isReposted;
+    setOptimisticReposted(newReposted);
+    setOptimisticRepostCount(Math.max(0, repostCount + (newReposted ? 1 : -1)));
 
-  const handleComment = async e => {
+    if (repostDebounceRef.current) clearTimeout(repostDebounceRef.current);
+    repostDebounceRef.current = setTimeout(() => {
+      toggleRepost(post.id, currentUserId, !newReposted).catch(() => {
+        setOptimisticReposted(isReposted);
+        setOptimisticRepostCount(repostCount);
+      });
+    }, 400);
+  }, [isReposted, repostCount, post.id, currentUserId]);
+
+  const handleBookmark = useCallback(() => {
+    const newBookmarked = !isBookmarked;
+    setOptimisticBookmarked(newBookmarked);
+    toggleBookmark(post.id, currentUserId, !newBookmarked).catch(() => {
+      setOptimisticBookmarked(isBookmarked);
+    });
+  }, [isBookmarked, post.id, currentUserId]);
+
+  const handleComment = useCallback(async (e) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
+    if (!commentText.trim() || submitting) return;
     setSubmitting(true);
     try {
-      await addComment(post.id, currentUserId, commentText, post.userId);
+      await addComment(post.id, currentUserId, commentText.trim());
       setCommentText('');
-      refreshComments();
+    } catch (err) {
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [commentText, submitting, post.id, currentUserId]);
+
+  const handleDelete = useCallback(async () => {
+    if (!window.confirm('Delete this post?')) return;
+    setDeleting(true);
+    try {
+      await deletePost(post.id);
+    } catch (err) {
+      console.error(err);
+      setDeleting(false);
+    }
+  }, [post.id]);
+
+  const handleShare = useCallback(() => {
+    if (navigator.share) {
+      navigator.share({ title: 'CaisterPlayz Post', text: post.text, url: window.location.href });
+    } else {
+      navigator.clipboard?.writeText(window.location.href);
+    }
+  }, [post.text]);
 
   if (!author) return null;
 
-  // COMPACT MODE (CAROUSEL ITEM)
-  if (compact) {
-    return (
-      <div ref={postRef} className="card relative h-[280px] rounded-[24px] overflow-hidden group cursor-pointer border border-white/5">
-         {post.imageUrl ? (
-           <img src={post.imageUrl} alt="post" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-         ) : (
-           <div className="absolute inset-0 bg-gradient-to-br from-brand-secondary/20 to-purple-600/20" />
-         )}
-         
-         {/* Glassmorphic Overlay */}
-         <div className="absolute inset-0 bg-gradient-to-t from-dark-bg via-dark-bg/50 to-transparent" />
-         
-         <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-2 z-10">
-            <div className="flex items-center gap-2 mb-1">
-              <Avatar src={author.avatarUrl} name={author.displayName} size="sm" onClick={(e) => { e.stopPropagation(); onProfileClick(author.id); }} />
-              <span className="font-bold text-sm text-white drop-shadow-md truncate">{author.displayName}</span>
-            </div>
-            
-            <p className="text-xs text-gray-200 line-clamp-2 drop-shadow-sm font-medium">
-              {post.text}
-            </p>
-
-            <div className="flex gap-4 mt-2 text-white/70">
-              <button className="flex items-center gap-1 hover:text-brand-primary transition" onClick={(e) => { e.stopPropagation(); handleLike(); }}>
-                 <Heart size={14} className={isLiked ? "fill-brand-primary text-brand-primary" : ""} />
-                 <span className="text-xs font-bold">{likeCount > 0 ? likeCount : ''}</span>
-              </button>
-              <button className="flex items-center gap-1 hover:text-white transition">
-                 <MessageCircle size={14} />
-                 <span className="text-xs font-bold">{commentCount > 0 ? commentCount : ''}</span>
-              </button>
-            </div>
-         </div>
-      </div>
-    );
-  }
-
-  // STANDARD MODE (FEED ITEM)
   return (
     <>
-      <div ref={postRef} className="card p-6 mb-6 rounded-3xl mx-4 my-2 border border-white/10 hover:border-brand-primary/30 transition-all shadow-lg hover:shadow-brand-primary/10">
-        
-        {/* HEADER */}
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex gap-3 items-center">
-            <Avatar src={author.avatarUrl} name={author.displayName} onClick={() => onProfileClick(author.id)} className="ring-2 ring-brand-primary/20" />
-            <div>
-              <div className="flex gap-2 items-center">
-                <span className="font-bold text-white hover:text-brand-primary transition cursor-pointer" onClick={() => onProfileClick(author.id)}>
-                  {author.displayName}
-                </span>
-                {author.verified && <span className="text-brand-primary text-xs">✓</span>}
-              </div>
-              <span className="text-xs text-dark-muted font-medium uppercase tracking-wider">{formatTime(post.createdAt)}</span>
+      <article ref={postRef} className="post-card">
+        {/* Header */}
+        <div className="post-header">
+          <Avatar src={author.avatarUrl} name={author.displayName} onClick={() => onProfileClick?.(author.id)} />
+          <div className="post-meta">
+            <div className="post-author-row">
+              <span className="post-author-name" onClick={() => onProfileClick?.(author.id)}>
+                {author.displayName}
+              </span>
+              {author.verified && <span style={{ color: 'var(--brand)', fontSize: 13 }}>✓</span>}
+              <span className="post-handle" style={{ color: 'var(--muted)', fontSize: 13 }}>·</span>
+              <span className="post-time">{formatTime(post.created)}</span>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            {post.userId === currentUserId && (
-              <button onClick={handleDelete} className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-danger transition">
-                {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-              </button>
-            )}
-            <button className="p-2 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition" onClick={() => navigator.share?.({ title: 'Post', text: post.text, url: window.location.href })}>
-              <Share size={16} />
+          <div style={{ position: 'relative', marginLeft: 'auto' }}>
+            <button className="post-more-btn" onClick={() => setShowMenu(v => !v)}>
+              <MoreHorizontal size={18} />
             </button>
+            {showMenu && (
+              <div style={{
+                position: 'absolute', right: 0, top: '100%', zIndex: 50,
+                background: 'var(--card)', border: '1px solid var(--border)',
+                borderRadius: 12, padding: '6px 0', minWidth: 140,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+              }}>
+                <button onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', width: '100%', fontSize: 13, color: 'var(--text)' }}>
+                  <Share2 size={14} /> Share
+                </button>
+                {post.userId === currentUserId && (
+                  <button onClick={() => { setShowMenu(false); handleDelete(); }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', width: '100%', fontSize: 13, color: 'var(--danger)' }}>
+                    {deleting ? <Loader size={14} className="spin" /> : <Trash2 size={14} />} Delete
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* CONTENT */}
-        <div className="mb-4 text-[15px] leading-relaxed text-gray-200">
-          <RichText parts={textParts} />
-        </div>
+        {/* Content */}
+        <RichText text={post.text} />
 
-        {/* MEDIA */}
+        {/* Image */}
         {post.imageUrl && (
-          <div className="relative rounded-2xl overflow-hidden mb-4 cursor-pointer ring-1 ring-white/10" onClick={() => setShowLightbox(true)}>
-             <img src={post.imageUrl} className="w-full h-[300px] object-cover hover:scale-105 transition-transform duration-500" />
-          </div>
+          <img
+            className="post-image"
+            src={post.imageUrl}
+            alt="post media"
+            onClick={() => setShowLightbox(true)}
+            loading="lazy"
+          />
         )}
 
-        {/* ACTIONS */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5 text-white/50">
-          <div className="flex gap-6">
-            <button onClick={() => setShowComments(!showComments)} className="flex items-center gap-2 hover:text-brand-primary transition group">
-              <div className="p-2 rounded-full group-hover:bg-brand-primary/10 transition"><MessageCircle size={18} /></div>
-              <span className="text-sm font-bold">{commentCount > 0 ? commentCount : ''}</span>
+        {/* Actions */}
+        <div className="post-actions">
+          <div className="post-actions-group">
+            {/* Comment */}
+            <button
+              className="action-btn comment-hover"
+              onClick={() => setShowComments(v => !v)}
+              style={showComments ? { color: 'var(--brand)' } : {}}
+            >
+              <MessageCircle size={18} />
+              {comments.length > 0 && <span>{comments.length}</span>}
             </button>
 
-            <button onClick={handleRepost} className={`flex items-center gap-2 transition group ${isReposted ? "text-success" : "hover:text-success"}`}>
-              <div className={`p-2 rounded-full transition ${isReposted ? "bg-success/10" : "group-hover:bg-success/10"}`}><Repeat2 size={18} /></div>
-              <span className="text-sm font-bold">{repostCount > 0 ? repostCount : ''}</span>
+            {/* Repost */}
+            <button
+              className={`action-btn repost-hover ${isReposted ? 'reposted' : ''}`}
+              onClick={handleRepost}
+            >
+              <Repeat2 size={18} />
+              {repostCount > 0 && <span>{repostCount}</span>}
             </button>
 
-            <button onClick={handleLike} className={`flex items-center gap-2 transition group ${isLiked ? "text-brand-primary" : "hover:text-brand-primary"}`}>
-              <div className={`p-2 rounded-full transition ${isLiked ? "bg-brand-primary/10" : "group-hover:bg-brand-primary/10"}`}>
-                <Heart size={18} className={isLiked ? "fill-current" : ""} />
-              </div>
-              <span className="text-sm font-bold">{likeCount > 0 ? likeCount : ''}</span>
+            {/* Like */}
+            <button
+              className={`action-btn like-hover ${isLiked ? 'liked' : ''} ${likeAnimating ? 'like-pop' : ''}`}
+              onClick={handleLike}
+            >
+              <Heart size={18} />
+              {likeCount > 0 && <span>{likeCount}</span>}
             </button>
           </div>
 
-          <div className="flex gap-2">
-            <button className="p-2 rounded-full hover:bg-white/5 transition flex items-center gap-1" title="Views">
-              <Eye size={18} /> <span className="text-xs">{viewCount > 0 ? viewCount : ''}</span>
-            </button>
-            <button onClick={handleBookmark} className={`p-2 rounded-full hover:bg-white/5 transition ${isBookmarked ? "text-brand-secondary fill-brand-secondary" : ""}`}>
-              <Bookmark size={18} className={isBookmarked ? "fill-current" : ""} />
+          <div className="post-actions-group">
+            {/* Views */}
+            {viewCount > 0 && (
+              <span className="action-btn" style={{ cursor: 'default' }}>
+                <Eye size={16} />
+                <span>{viewCount}</span>
+              </span>
+            )}
+            {/* Bookmark */}
+            <button
+              className={`action-btn bookmark-hover ${isBookmarked ? 'bookmarked' : ''}`}
+              onClick={handleBookmark}
+            >
+              <Bookmark size={18} />
             </button>
           </div>
         </div>
 
-        {/* COMMENTS SECTION */}
+        {/* Comments */}
         {showComments && (
-          <div className="mt-4 pt-4 border-t border-white/5">
-            <form onSubmit={handleComment} className="flex gap-3 mb-6">
-              <Avatar src={users.find(u => u.id === currentUserId)?.avatarUrl} name="Me" size="sm" />
+          <div className="comments-section">
+            <form onSubmit={handleComment} className="comment-compose">
+              <Avatar
+                src={users.find(u => u.id === currentUserId)?.avatarUrl}
+                name={users.find(u => u.id === currentUserId)?.displayName || 'Me'}
+                size="sm"
+              />
               <input
-                className="flex-1 bg-dark-bg/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition"
+                className="comment-input"
                 value={commentText}
                 onChange={e => setCommentText(e.target.value)}
-                placeholder="Broadcast a reply..."
+                placeholder="Add a comment…"
+                maxLength={280}
               />
-              <button disabled={submitting || !commentText.trim()} className="btn-primary py-2 px-6 text-sm disabled:opacity-50">
-                Send
+              <button
+                type="submit"
+                className="comment-send-btn"
+                disabled={!commentText.trim() || submitting}
+              >
+                {submitting ? <Loader size={14} className="spin" /> : 'Post'}
               </button>
             </form>
 
-            <div className="space-y-4">
-              {comments.map(c => {
-                const u = users.find(x => x.id === c.userId);
-                return (
-                  <div key={c.id} className="flex gap-3">
-                    <Avatar src={u?.avatarUrl} name={u?.displayName} size="sm" />
-                    <div className="flex-1 bg-white/5 rounded-2xl rounded-tl-none p-3 border border-white/5">
-                      <div className="flex items-baseline justify-between mb-1">
-                        <b className="text-sm text-white">{u?.displayName || 'User'}</b>
-                        <span className="text-xs text-white/40">{formatTime(c.createdAt)}</span>
-                      </div>
-                      <p className="text-sm text-gray-300">{c.text}</p>
-                    </div>
+            {comments.length === 0 && (
+              <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, padding: '8px 0 4px' }}>
+                No comments yet. Be first!
+              </p>
+            )}
+
+            {comments.map(c => {
+              const cu = users.find(u => u.id === c.userId);
+              return (
+                <div key={c.id} className="comment-item">
+                  <Avatar src={cu?.avatarUrl} name={cu?.displayName || '?'} size="sm" />
+                  <div className="comment-bubble">
+                    <div className="comment-author">{cu?.displayName || 'User'}</div>
+                    <div className="comment-text">{c.text}</div>
+                    <div className="comment-time">{formatTime(c.created)}</div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         )}
-      </div>
+      </article>
 
-      {/* LIGHTBOX */}
-      {showLightbox && post.imageUrl && (
-        <ImageLightbox src={post.imageUrl} onClose={() => setShowLightbox(false)} />
+      {/* Lightbox */}
+      {showLightbox && (
+        <div className="lightbox-overlay" onClick={() => setShowLightbox(false)}>
+          <button className="lightbox-close" onClick={() => setShowLightbox(false)}>✕</button>
+          <img src={post.imageUrl} alt="Full size" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
+      {/* Close menu on outside click */}
+      {showMenu && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 49 }}
+          onClick={() => setShowMenu(false)}
+        />
       )}
     </>
   );

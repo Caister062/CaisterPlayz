@@ -125,8 +125,8 @@ export default function BroadcastCard({ post, currentUserId, users = [], onProfi
   const doDel = useCallback(async () => {
     if (!confirm('Delete this broadcast?')) return;
     setDeleting(true);
-    try { await deletePost(post.id); } catch (err) { console.error(err); setDeleting(false); }
-  }, [post.id]);
+    try { await deletePost(post.id, currentUserId); } catch (err) { console.error(err); setDeleting(false); }
+  }, [post.id, currentUserId]);
 
   if (!author) return null;
 
@@ -210,7 +210,7 @@ export default function BroadcastCard({ post, currentUserId, users = [], onProfi
                       <div className="reply-who">{cu?.displayName||'User'}</div>
                       {c.userId === currentUserId && (
                         <button
-                          onClick={() => { if (confirm('Delete this reply?')) deleteComment(c.id).catch(console.error); }}
+                          onClick={() => { if (confirm('Delete this reply?')) deleteComment(c.id, currentUserId).catch(console.error); }}
                           style={{ background: 'none', border: 'none', padding: '2px 4px', cursor: 'pointer', color: 'var(--text3)', transition: 'color 0.15s', borderRadius: 4 }}
                           onMouseEnter={e => e.currentTarget.style.color = 'var(--hot)'}
                           onMouseLeave={e => e.currentTarget.style.color = 'var(--text3)'}

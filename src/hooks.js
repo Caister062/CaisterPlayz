@@ -324,16 +324,24 @@ export async function createPost(userId, text, imageUrl = '', communityId = '') 
   return pb.collection('cplayz_posts').create(data);
 }
 
-export async function deletePost(postId) {
-  return pb.collection('cplayz_posts').delete(postId);
+export async function deletePost(postId, userId) {
+  const res = await fetch(`${pb.baseURL}/api/collections/cplayz_posts/records/${postId}`, {
+    method: 'DELETE',
+    headers: { 'X-User-Id': userId },
+  });
+  if (!res.ok && res.status !== 204) throw new Error('Delete failed: ' + res.status);
 }
 
 export async function addComment(postId, userId, text) {
   return pb.collection('cplayz_comments').create({ postId, userId, text });
 }
 
-export async function deleteComment(commentId) {
-  return pb.collection('cplayz_comments').delete(commentId);
+export async function deleteComment(commentId, userId) {
+  const res = await fetch(`${pb.baseURL}/api/collections/cplayz_comments/records/${commentId}`, {
+    method: 'DELETE',
+    headers: { 'X-User-Id': userId },
+  });
+  if (!res.ok && res.status !== 204) throw new Error('Delete failed: ' + res.status);
 }
 
 export async function followUser(followerId, followingId) {

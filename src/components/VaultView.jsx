@@ -1,33 +1,17 @@
-import PostCard from './PostCard';
+import BroadcastCard from './PostCard';
 
 export default function VaultView({ posts, currentUserId, users, onProfileClick }) {
-  const bookmarked = posts.filter(p => (p.favoritedBy || []).includes(currentUserId));
-
+  const pinned = posts.filter(p => (p.favoritedBy || []).includes(currentUserId));
   return (
     <div>
-      <div className="vault-header">
-        <div className="vault-title">Your Vault</div>
-        <div className="vault-subtitle">
-          {bookmarked.length} saved post{bookmarked.length !== 1 ? 's' : ''}
-        </div>
+      <div className="vault-head">
+        <div className="vault-title">🔒 Vault</div>
+        <div className="vault-sub">{pinned.length} pinned broadcast{pinned.length !== 1 ? 's' : ''}</div>
       </div>
-
-      {bookmarked.length === 0 ? (
-        <div className="empty">
-          <div className="empty-icon">🔒</div>
-          <h3>Vault is empty</h3>
-          <p>Bookmark posts to save them here for later.</p>
-        </div>
+      {pinned.length === 0 ? (
+        <div className="empty"><div className="empty-ico">📌</div><h3>Vault empty</h3><p>Pin broadcasts to save them here.</p></div>
       ) : (
-        bookmarked.map(post => (
-          <PostCard
-            key={post.id}
-            post={post}
-            currentUserId={currentUserId}
-            users={users}
-            onProfileClick={onProfileClick}
-          />
-        ))
+        pinned.map(p => <BroadcastCard key={p.id} post={p} currentUserId={currentUserId} users={users} onProfileClick={onProfileClick} />)
       )}
     </div>
   );

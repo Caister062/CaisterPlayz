@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Heart, Repeat2, MessageCircle, Bookmark, Eye, MoreHorizontal, Trash2, Share2, Loader } from 'lucide-react';
+import { Zap, RotateCw, MessageSquare, Pin, Eye, MoreHorizontal, Trash2, Share2, Loader } from 'lucide-react';
 import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost } from '../hooks';
 
-function timeAgo(ts) {
+export function timeAgo(ts) {
   if (!ts) return '';
   const sec = (Date.now() - new Date(ts)) / 1000;
   if (sec < 60) return 'now';
@@ -12,192 +12,145 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 
-function Avatar({ src, name, size = '', onClick }) {
-  const initial = (name || '?')[0].toUpperCase();
+export function Hex({ src, name, size = '', onClick }) {
+  const i = (name || '?')[0].toUpperCase();
   return (
-    <div className={`av${size ? ` ${size}` : ''}`} onClick={onClick}>
-      {src ? <img src={src} alt={name} loading="lazy" /> : initial}
+    <div className={`hex${size ? ` ${size}` : ''}`} onClick={onClick}>
+      {src ? <img src={src} alt={name} loading="lazy" /> : i}
     </div>
   );
 }
 
-function RichText({ text }) {
+function RichBody({ text }) {
   if (!text) return null;
   const parts = [];
-  const regex = /(#\w+|@\w+|https?:\/\/[^\s]+)/g;
+  const rx = /(#\w+|@\w+|https?:\/\/[^\s]+)/g;
   let last = 0, m;
-  while ((m = regex.exec(text)) !== null) {
-    if (m.index > last) parts.push({ type: 'text', val: text.slice(last, m.index) });
+  while ((m = rx.exec(text)) !== null) {
+    if (m.index > last) parts.push({ t: 'x', v: text.slice(last, m.index) });
     const w = m[0];
-    if (w.startsWith('#')) parts.push({ type: 'hash', val: w });
-    else if (w.startsWith('@')) parts.push({ type: 'mention', val: w });
-    else parts.push({ type: 'link', val: w });
+    parts.push({ t: w[0] === '#' ? 'h' : w[0] === '@' ? 'a' : 'l', v: w });
     last = m.index + w.length;
   }
-  if (last < text.length) parts.push({ type: 'text', val: text.slice(last) });
-
+  if (last < text.length) parts.push({ t: 'x', v: text.slice(last) });
   return (
-    <p className="p-body">
+    <div className="bc-text">
       {parts.map((p, i) =>
-        p.type === 'hash' ? <span key={i} className="hashtag">{p.val}</span> :
-        p.type === 'mention' ? <span key={i} className="mention">{p.val}</span> :
-        p.type === 'link' ? <a key={i} href={p.val} target="_blank" rel="noreferrer" className="p-link">{p.val.replace(/^https?:\/\/(www\.)?/, '').slice(0, 40)}</a> :
-        <span key={i}>{p.val}</span>
+        p.t === 'h' ? <span key={i} className="tag">{p.v}</span> :
+        p.t === 'a' ? <span key={i} className="at">{p.v}</span> :
+        p.t === 'l' ? <a key={i} href={p.v} target="_blank" rel="noreferrer" className="lnk">{p.v.replace(/^https?:\/\/(www\.)?/, '').slice(0, 35)}</a> :
+        <span key={i}>{p.v}</span>
       )}
-    </p>
+    </div>
   );
 }
 
-export { Avatar, timeAgo };
-
-export default function PostCard({ post, currentUserId, users = [], onProfileClick }) {
-  const [showComments, setShowComments] = useState(false);
-  const [commentText, setCommentText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [showLightbox, setShowLightbox] = useState(false);
+export default function BroadcastCard({ post, currentUserId, users = [], onProfileClick }) {
+  const [showThread, setShowThread] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [showLB, setShowLB] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // Optimistic UI
-  const [optLiked, setOptLiked] = useState(null);
-  const [optLikeCount, setOptLikeCount] = useState(null);
-  const [optReposted, setOptReposted] = useState(null);
-  const [optRepostCount, setOptRepostCount] = useState(null);
-  const [optBookmarked, setOptBookmarked] = useState(null);
-  const [likeAnim, setLikeAnim] = useState(false);
+  const [oLiked, setOLiked] = useState(null);
+  const [oLikeN, setOLikeN] = useState(null);
+  const [oReposted, setOReposted] = useState(null);
+  const [oRepostN, setORepostN] = useState(null);
+  const [oPinned, setOPinned] = useState(null);
+  const [boostAnim, setBoostAnim] = useState(false);
 
-  const likeTimer = useRef(null);
-  const repostTimer = useRef(null);
-  const viewedRef = useRef(false);
-  const cardRef = useRef(null);
+  const likeT = useRef(null);
+  const repostT = useRef(null);
+  const viewedR = useRef(false);
+  const elRef = useRef(null);
 
-  const { comments } = useComments(showComments ? post.id : null);
+  const { comments } = useComments(showThread ? post.id : null);
   const author = users.find(u => u.id === post.userId);
 
-  const isLiked     = optLiked     !== null ? optLiked     : (post.likedBy     || []).includes(currentUserId);
-  const likeCount   = optLikeCount !== null ? optLikeCount : (post.likedBy     || []).length;
-  const isReposted  = optReposted  !== null ? optReposted  : (post.repostedBy  || []).includes(currentUserId);
-  const repostCount = optRepostCount !== null ? optRepostCount : (post.repostedBy || []).length;
-  const isBookmarked = optBookmarked !== null ? optBookmarked : (post.favoritedBy || []).includes(currentUserId);
-  const viewCount   = (post.viewedBy || []).length;
+  const liked = oLiked !== null ? oLiked : (post.likedBy || []).includes(currentUserId);
+  const likeN = oLikeN !== null ? oLikeN : (post.likedBy || []).length;
+  const reposted = oReposted !== null ? oReposted : (post.repostedBy || []).includes(currentUserId);
+  const repostN = oRepostN !== null ? oRepostN : (post.repostedBy || []).length;
+  const pinned = oPinned !== null ? oPinned : (post.favoritedBy || []).includes(currentUserId);
+  const viewN = (post.viewedBy || []).length;
 
-  // Reset optimistic when server data catches up
-  useEffect(() => {
-    setOptLiked(null); setOptLikeCount(null);
-    setOptReposted(null); setOptRepostCount(null);
-    setOptBookmarked(null);
-  }, [
-    (post.likedBy || []).join(','),
-    (post.repostedBy || []).join(','),
-    (post.favoritedBy || []).join(',')
-  ]);
+  useEffect(() => { setOLiked(null); setOLikeN(null); setOReposted(null); setORepostN(null); setOPinned(null); },
+    [(post.likedBy||[]).join(','), (post.repostedBy||[]).join(','), (post.favoritedBy||[]).join(',')]);
 
-  // View tracking
   useEffect(() => {
-    if (!cardRef.current || viewedRef.current || !currentUserId) return;
-    if ((post.viewedBy || []).includes(currentUserId)) { viewedRef.current = true; return; }
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        viewedRef.current = true;
-        addView(post.id, currentUserId).catch(() => {});
-        obs.disconnect();
-      }
+    if (!elRef.current || viewedR.current || !currentUserId) return;
+    if ((post.viewedBy||[]).includes(currentUserId)) { viewedR.current = true; return; }
+    const ob = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { viewedR.current = true; addView(post.id, currentUserId).catch(()=>{}); ob.disconnect(); }
     }, { threshold: 0.6 });
-    obs.observe(cardRef.current);
-    return () => obs.disconnect();
+    ob.observe(elRef.current);
+    return () => ob.disconnect();
   }, [post.id, currentUserId]);
 
-  const handleLike = useCallback(() => {
-    const next = !isLiked;
-    setOptLiked(next);
-    setOptLikeCount(Math.max(0, likeCount + (next ? 1 : -1)));
-    if (next) { setLikeAnim(true); setTimeout(() => setLikeAnim(false), 400); }
-    if (likeTimer.current) clearTimeout(likeTimer.current);
-    const snapLiked = isLiked;
-    const snapCount = likeCount;
-    likeTimer.current = setTimeout(() => {
-      toggleLike(post.id, currentUserId, !next).catch(() => {
-        setOptLiked(snapLiked); setOptLikeCount(snapCount);
-      });
-    }, 500);
-  }, [isLiked, likeCount, post.id, currentUserId]);
+  const doBoost = useCallback(() => {
+    const next = !liked;
+    setOLiked(next); setOLikeN(Math.max(0, likeN + (next ? 1 : -1)));
+    if (next) { setBoostAnim(true); setTimeout(() => setBoostAnim(false), 450); }
+    if (likeT.current) clearTimeout(likeT.current);
+    const sL = liked, sN = likeN;
+    likeT.current = setTimeout(() => { toggleLike(post.id, currentUserId, !next).catch(() => { setOLiked(sL); setOLikeN(sN); }); }, 500);
+  }, [liked, likeN, post.id, currentUserId]);
 
-  const handleRepost = useCallback(() => {
-    const next = !isReposted;
-    setOptReposted(next);
-    setOptRepostCount(Math.max(0, repostCount + (next ? 1 : -1)));
-    if (repostTimer.current) clearTimeout(repostTimer.current);
-    const snapR = isReposted; const snapC = repostCount;
-    repostTimer.current = setTimeout(() => {
-      toggleRepost(post.id, currentUserId, !next).catch(() => {
-        setOptReposted(snapR); setOptRepostCount(snapC);
-      });
-    }, 500);
-  }, [isReposted, repostCount, post.id, currentUserId]);
+  const doEcho = useCallback(() => {
+    const next = !reposted;
+    setOReposted(next); setORepostN(Math.max(0, repostN + (next ? 1 : -1)));
+    if (repostT.current) clearTimeout(repostT.current);
+    const sR = reposted, sN = repostN;
+    repostT.current = setTimeout(() => { toggleRepost(post.id, currentUserId, !next).catch(() => { setOReposted(sR); setORepostN(sN); }); }, 500);
+  }, [reposted, repostN, post.id, currentUserId]);
 
-  const handleBookmark = useCallback(() => {
-    const next = !isBookmarked;
-    setOptBookmarked(next);
-    toggleBookmark(post.id, currentUserId, !next).catch(() => setOptBookmarked(isBookmarked));
-  }, [isBookmarked, post.id, currentUserId]);
+  const doPin = useCallback(() => {
+    const next = !pinned;
+    setOPinned(next);
+    toggleBookmark(post.id, currentUserId, !next).catch(() => setOPinned(pinned));
+  }, [pinned, post.id, currentUserId]);
 
-  const handleComment = useCallback(async (e) => {
+  const doReply = useCallback(async (e) => {
     e.preventDefault();
-    if (!commentText.trim() || submitting) return;
-    setSubmitting(true);
-    try { await addComment(post.id, currentUserId, commentText.trim()); setCommentText(''); }
+    if (!replyText.trim() || sending) return;
+    setSending(true);
+    try { await addComment(post.id, currentUserId, replyText.trim()); setReplyText(''); }
     catch (err) { console.error(err); }
-    finally { setSubmitting(false); }
-  }, [commentText, submitting, post.id, currentUserId]);
+    finally { setSending(false); }
+  }, [replyText, sending, post.id, currentUserId]);
 
-  const handleDelete = useCallback(async () => {
-    if (!confirm('Delete this post?')) return;
+  const doDel = useCallback(async () => {
+    if (!confirm('Delete this broadcast?')) return;
     setDeleting(true);
-    try { await deletePost(post.id); }
-    catch (err) { console.error(err); setDeleting(false); }
+    try { await deletePost(post.id); } catch (err) { console.error(err); setDeleting(false); }
   }, [post.id]);
 
   if (!author) return null;
 
   return (
     <>
-      <article ref={cardRef} className={`p-card${post.imageUrl ? ' has-media' : ''}`}>
-        {/* Header */}
-        <div className="p-header">
-          <Avatar src={author.avatarUrl} name={author.displayName} onClick={() => onProfileClick?.(author.id)} />
-          <div className="p-meta">
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
-              <span className="p-name" onClick={() => onProfileClick?.(author.id)}>
-                {author.displayName}
-              </span>
-              {author.verified && <span className="p-verified">✓</span>}
-              <span className="p-time">· {timeAgo(post.created)}</span>
-            </div>
+      <div ref={elRef} className="bc">
+        {/* Head */}
+        <div className="bc-head">
+          <Hex src={author.avatarUrl} name={author.displayName} onClick={() => onProfileClick?.(author.id)} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span className="bc-who" onClick={() => onProfileClick?.(author.id)}>{author.displayName}</span>
+            {author.verified && <span className="bc-verified"> ✓</span>}
+            <span className="bc-when">· {timeAgo(post.created)}</span>
           </div>
-
-          <div style={{ position: 'relative', marginLeft: 'auto' }}>
-            <button className="p-menu-btn" onClick={() => setShowMenu(v => !v)}>
-              <MoreHorizontal />
+          <div style={{ position: 'relative' }}>
+            <button className="hud-btn" onClick={() => setShowMenu(v => !v)} style={{ width: 28, height: 28 }}>
+              <MoreHorizontal size={14} />
             </button>
             {showMenu && (
-              <div style={{
-                position: 'absolute', right: 0, top: '110%', zIndex: 80,
-                background: 'var(--card)', border: '1px solid var(--border-bright)',
-                borderRadius: 14, padding: '6px 0', minWidth: 148,
-                boxShadow: '0 10px 40px rgba(0,0,0,0.6)'
-              }}>
-                <button
-                  onClick={() => { setShowMenu(false); navigator.share?.({ text: post.text, url: window.location.href }) || navigator.clipboard?.writeText(window.location.href); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', width: '100%', fontSize: 13, color: 'var(--text)' }}
-                >
-                  <Share2 size={14} /> Share
-                </button>
+              <div style={{ position: 'absolute', right: 0, top: '110%', zIndex: 80, background: 'var(--surface)', border: '1px solid var(--border-b)', borderRadius: 12, padding: '4px 0', minWidth: 140, boxShadow: '0 10px 40px rgba(0,0,0,0.7)' }}>
+                <button onClick={() => { setShowMenu(false); navigator.share?.({ text: post.text, url: location.href }) || navigator.clipboard?.writeText(location.href); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', width: '100%', fontSize: 11, fontWeight: 700 }}><Share2 size={12} /> Share</button>
                 {post.userId === currentUserId && (
-                  <button
-                    onClick={() => { setShowMenu(false); handleDelete(); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', width: '100%', fontSize: 13, color: 'var(--danger)' }}
-                  >
-                    {deleting ? <Loader size={14} className="spin" /> : <Trash2 size={14} />} Delete
+                  <button onClick={() => { setShowMenu(false); doDel(); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', width: '100%', fontSize: 11, fontWeight: 700, color: 'var(--hot)' }}>
+                    {deleting ? <Loader size={12} className="spin" /> : <Trash2 size={12} />} Delete
                   </button>
                 )}
               </div>
@@ -205,115 +158,65 @@ export default function PostCard({ post, currentUserId, users = [], onProfileCli
           </div>
         </div>
 
-        {/* Content */}
-        <RichText text={post.text} />
+        <RichBody text={post.text} />
 
-        {/* Media */}
         {post.imageUrl && (
-          <div className="p-media" onClick={() => setShowLightbox(true)}>
-            <img src={post.imageUrl} alt="post media" loading="lazy" />
+          <div className="bc-media" onClick={() => setShowLB(true)}>
+            <img src={post.imageUrl} alt="" loading="lazy" />
           </div>
         )}
 
-        {/* Action Bar */}
-        <div className="p-actions">
-          <div className="p-actions-left">
-            <button
-              className={`act do-comment${showComments ? ' reposted' : ''}`}
-              onClick={() => setShowComments(v => !v)}
-            >
-              <MessageCircle size={17} />
-              {comments.length > 0 && <span>{comments.length}</span>}
-            </button>
-
-            <button
-              className={`act do-repost${isReposted ? ' reposted' : ''}`}
-              onClick={handleRepost}
-            >
-              <Repeat2 size={17} />
-              {repostCount > 0 && <span>{repostCount}</span>}
-            </button>
-
-            <button
-              className={`act do-like${isLiked ? ' liked' : ''}${likeAnim ? ' like-pop' : ''}`}
-              onClick={handleLike}
-            >
-              <Heart size={17} />
-              {likeCount > 0 && <span>{likeCount}</span>}
-            </button>
-          </div>
-
-          <div className="p-actions-right">
-            {viewCount > 0 && (
-              <span className="act views">
-                <Eye size={15} /> <span>{viewCount}</span>
-              </span>
-            )}
-            <button
-              className={`act do-bookmark${isBookmarked ? ' bookmarked' : ''}`}
-              onClick={handleBookmark}
-            >
-              <Bookmark size={17} />
-            </button>
-          </div>
+        {/* Reaction Bar */}
+        <div className="rx-bar">
+          <button className={`rx do-reply${showThread ? ' echoed' : ''}`} onClick={() => setShowThread(v => !v)}>
+            <MessageSquare size={16} />
+            {comments.length > 0 && <span>{comments.length}</span>}
+          </button>
+          <button className={`rx do-echo${reposted ? ' echoed' : ''}`} onClick={doEcho}>
+            <RotateCw size={16} />
+            {repostN > 0 && <span>{repostN}</span>}
+          </button>
+          <button className={`rx do-boost${liked ? ' boosted' : ''}${boostAnim ? ' boost-pop' : ''}`} onClick={doBoost}>
+            <Zap size={16} />
+            {likeN > 0 && <span>{likeN}</span>}
+          </button>
+          <div className="rx-spacer" />
+          {viewN > 0 && <span className="rx views"><Eye size={13} /> {viewN}</span>}
+          <button className={`rx do-pin${pinned ? ' pinned' : ''}`} onClick={doPin}>
+            <Pin size={16} />
+          </button>
         </div>
 
-        {/* Comments Panel */}
-        {showComments && (
-          <div className="comments-panel">
-            <form className="cmt-form" onSubmit={handleComment}>
-              <Avatar
-                src={users.find(u => u.id === currentUserId)?.avatarUrl}
-                name={users.find(u => u.id === currentUserId)?.displayName || 'Me'}
-                size="sm"
-              />
-              <input
-                className="cmt-input"
-                value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                placeholder="Add a comment…"
-                maxLength={280}
-              />
-              <button type="submit" className="cmt-send" disabled={!commentText.trim() || submitting}>
-                {submitting ? <Loader size={13} className="spin" /> : 'Post'}
+        {/* Thread */}
+        {showThread && (
+          <div className="thread">
+            <form className="thread-input-row" onSubmit={doReply}>
+              <Hex src={users.find(u => u.id === currentUserId)?.avatarUrl} name="Me" size="sm" />
+              <input className="thread-input" value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Reply…" maxLength={280} />
+              <button type="submit" className="thread-send" disabled={!replyText.trim() || sending}>
+                {sending ? <Loader size={11} className="spin" /> : 'SEND'}
               </button>
             </form>
-
-            {comments.length === 0 && (
-              <p style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 12, padding: '4px 0 8px' }}>
-                No replies yet — jump in!
-              </p>
-            )}
-
+            {comments.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 11, padding: '2px 0 6px' }}>No replies yet</p>}
             {comments.map(c => {
               const cu = users.find(u => u.id === c.userId);
               return (
-                <div key={c.id} className="cmt-item">
-                  <Avatar src={cu?.avatarUrl} name={cu?.displayName || '?'} size="sm" />
-                  <div className="cmt-bubble">
-                    <div className="cmt-author">{cu?.displayName || 'User'}</div>
-                    <div className="cmt-text">{c.text}</div>
-                    <div className="cmt-time">{timeAgo(c.created)}</div>
+                <div key={c.id} className="reply-item">
+                  <Hex src={cu?.avatarUrl} name={cu?.displayName||'?'} size="sm" />
+                  <div className="reply-bubble">
+                    <div className="reply-who">{cu?.displayName||'User'}</div>
+                    <div className="reply-msg">{c.text}</div>
+                    <div className="reply-ts">{timeAgo(c.created)}</div>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-      </article>
+      </div>
 
-      {/* Lightbox */}
-      {showLightbox && (
-        <div className="lightbox" onClick={() => setShowLightbox(false)}>
-          <button className="lightbox-x" onClick={() => setShowLightbox(false)}>✕</button>
-          <img src={post.imageUrl} alt="fullsize" onClick={e => e.stopPropagation()} />
-        </div>
-      )}
-
-      {/* Menu backdrop */}
-      {showMenu && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 79 }} onClick={() => setShowMenu(false)} />
-      )}
+      {showLB && <div className="lb" onClick={() => setShowLB(false)}><button className="lb-x" onClick={() => setShowLB(false)}>✕</button><img src={post.imageUrl} alt="" onClick={e => e.stopPropagation()} /></div>}
+      {showMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 79 }} onClick={() => setShowMenu(false)} />}
     </>
   );
 }

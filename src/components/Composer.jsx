@@ -2,118 +2,80 @@ import { useState, useRef, useCallback } from 'react';
 import { X, Image as ImageIcon, Loader } from 'lucide-react';
 import { createPost } from '../hooks';
 
-const MAX_CHARS = 280;
+const MAX = 280;
 
-function compressImage(file) {
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new window.Image();
+function compress(file) {
+  return new Promise((res, rej) => {
+    const c = document.createElement('canvas'), ctx = c.getContext('2d'), img = new window.Image();
     img.onload = () => {
-      const max = 1200;
-      let { width, height } = img;
-      if (width > max) { height = (height * max) / width; width = max; }
-      if (height > max) { width = (width * max) / height; height = max; }
-      canvas.width = width; canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.8));
+      const mx = 1200; let { width: w, height: h } = img;
+      if (w > mx) { h = (h*mx)/w; w = mx; } if (h > mx) { w = (w*mx)/h; h = mx; }
+      c.width = w; c.height = h; ctx.drawImage(img,0,0,w,h); res(c.toDataURL('image/jpeg',0.8));
     };
-    img.onerror = reject;
-    const reader = new FileReader();
-    reader.onload = e => { img.src = e.target.result; };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = rej;
+    const r = new FileReader(); r.onload = e => { img.src = e.target.result; }; r.onerror = rej; r.readAsDataURL(file);
   });
 }
 
 export default function Composer({ currentUserId, currentUser, onClose }) {
   const [text, setText] = useState('');
-  const [imagePreview, setImagePreview] = useState('');
-  const [imageData, setImageData] = useState('');
+  const [imgPrev, setImgPrev] = useState('');
+  const [imgData, setImgData] = useState('');
   const [posting, setPosting] = useState(false);
   const [compressing, setCompressing] = useState(false);
-  const fileRef = useRef(null);
+  const fRef = useRef(null);
+  const left = MAX - text.length;
+  const ok = (text.trim() || imgData) && !posting && !compressing;
 
-  const charsLeft = MAX_CHARS - text.length;
-  const canPost = (text.trim() || imageData) && !posting && !compressing;
-
-  const handleImage = useCallback(async (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { alert('File must be under 10MB'); return; }
+  const handleImg = useCallback(async (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    if (f.size > 10*1024*1024) { alert('Max 10MB'); return; }
     setCompressing(true);
-    try {
-      const c = await compressImage(file);
-      setImagePreview(c); setImageData(c);
-    } catch { alert('Failed to process image'); }
-    finally { setCompressing(false); if (fileRef.current) fileRef.current.value = ''; }
+    try { const d = await compress(f); setImgPrev(d); setImgData(d); }
+    catch { alert('Failed'); }
+    finally { setCompressing(false); if (fRef.current) fRef.current.value = ''; }
   }, []);
 
-  const handlePost = useCallback(async () => {
-    if (!canPost) return;
-    setPosting(true);
-    try {
-      await createPost(currentUserId, text.trim(), imageData);
-      onClose();
-    } catch (err) {
-      console.error(err);
-      alert('Failed to post.');
-    } finally { setPosting(false); }
-  }, [canPost, currentUserId, text, imageData, onClose]);
+  const go = useCallback(async () => {
+    if (!ok) return; setPosting(true);
+    try { await createPost(currentUserId, text.trim(), imgData); onClose(); }
+    catch (err) { console.error(err); alert('Failed.'); }
+    finally { setPosting(false); }
+  }, [ok, currentUserId, text, imgData, onClose]);
 
-  const initial = (currentUser?.displayName || 'M')[0].toUpperCase();
+  const init = (currentUser?.displayName || 'M')[0].toUpperCase();
 
   return (
-    <div className="overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="overlay" onClick={e => { if (e.target===e.currentTarget) onClose(); }}>
       <div className="sheet" onClick={e => e.stopPropagation()}>
-        <div className="sheet-handle" />
-
-        {/* Header */}
-        <div className="sheet-header">
-          <button className="sheet-close" onClick={onClose}>
-            <X size={14} />
-          </button>
-          <span className="sheet-title">New Post</span>
-          <button className="post-btn" onClick={handlePost} disabled={!canPost}>
-            {posting ? <Loader size={14} className="spin" style={{ display: 'block' }} /> : 'Post'}
+        <div className="sheet-bar" />
+        <div className="sheet-head">
+          <button className="sheet-x" onClick={onClose}><X size={12} /></button>
+          <span className="sheet-title">New Broadcast</span>
+          <button className="go-btn" onClick={go} disabled={!ok}>
+            {posting ? <Loader size={12} className="spin" style={{ display:'block' }} /> : 'SEND'}
           </button>
         </div>
-
-        {/* Body */}
         <div className="sheet-body">
-          <div className="av" style={{ flexShrink: 0, marginTop: 2 }}>
-            {currentUser?.avatarUrl ? <img src={currentUser.avatarUrl} alt="" /> : initial}
+          <div className="hex" style={{ flexShrink:0, marginTop:2 }}>
+            {currentUser?.avatarUrl ? <img src={currentUser.avatarUrl} alt="" /> : init}
           </div>
-          <textarea
-            className="sheet-textarea"
-            placeholder="What's happening in your game?"
-            value={text}
-            onChange={e => setText(e.target.value.slice(0, MAX_CHARS))}
-            rows={4}
-            autoFocus
-          />
+          <textarea className="sheet-ta" placeholder="Broadcast to the arena…" value={text} onChange={e => setText(e.target.value.slice(0,MAX))} rows={4} autoFocus />
         </div>
-
-        {/* Image Preview */}
-        {imagePreview && (
-          <div className="sheet-img-preview">
-            <img src={imagePreview} alt="preview" />
-            <button className="sheet-img-remove" onClick={() => { setImagePreview(''); setImageData(''); }}>
-              <X size={12} />
-            </button>
+        {imgPrev && (
+          <div className="sheet-preview">
+            <img src={imgPrev} alt="" />
+            <button className="sheet-rm" onClick={() => { setImgPrev(''); setImgData(''); }}><X size={10} /></button>
           </div>
         )}
-
-        {/* Footer */}
-        <div className="sheet-footer">
+        <div className="sheet-foot">
           <div className="sheet-tools">
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleImage} />
-            <button className="sheet-tool" onClick={() => fileRef.current?.click()} disabled={compressing}>
-              {compressing ? <Loader size={19} className="spin" /> : <ImageIcon size={19} />}
+            <input ref={fRef} type="file" accept="image/*" hidden onChange={handleImg} />
+            <button className="sheet-tool" onClick={() => fRef.current?.click()} disabled={compressing}>
+              {compressing ? <Loader size={17} className="spin" /> : <ImageIcon size={17} />}
             </button>
           </div>
-          <span className={`char-count${charsLeft < 20 ? ' over' : charsLeft < 60 ? ' warn' : ''}`}>
-            {charsLeft}
-          </span>
+          <span className={`cc${left < 20 ? ' over' : left < 60 ? ' warn' : ''}`}>{left}</span>
         </div>
       </div>
     </div>

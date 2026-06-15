@@ -1,159 +1,120 @@
 import { useState, useRef } from 'react';
 import { Camera, Check, X, Loader } from 'lucide-react';
-import PostCard, { Avatar, timeAgo } from './PostCard';
+import BroadcastCard, { Hex, timeAgo } from './PostCard';
 import { updateProfile } from '../hooks';
 
-function compressAvatar(file) {
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new window.Image();
-    img.onload = () => { canvas.width = 200; canvas.height = 200; ctx.drawImage(img, 0, 0, 200, 200); resolve(canvas.toDataURL('image/jpeg', 0.85)); };
-    img.onerror = reject;
-    const reader = new FileReader();
-    reader.onload = e => { img.src = e.target.result; };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+function compressAv(file) {
+  return new Promise((res, rej) => {
+    const c = document.createElement('canvas'), ctx = c.getContext('2d'), img = new window.Image();
+    img.onload = () => { c.width = 200; c.height = 200; ctx.drawImage(img,0,0,200,200); res(c.toDataURL('image/jpeg',0.85)); };
+    img.onerror = rej;
+    const r = new FileReader(); r.onload = e => { img.src = e.target.result; }; r.onerror = rej; r.readAsDataURL(file);
   });
 }
 
 export default function ProfileView({ profile, posts, users, currentUserId, followData, onProfileClick, onRefresh }) {
-  const [tab, setTab] = useState('posts');
+  const [tab, setTab] = useState('broadcasts');
   const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editBio, setEditBio] = useState('');
+  const [eName, setEName] = useState('');
+  const [eBio, setEBio] = useState('');
   const [saving, setSaving] = useState(false);
-  const fileRef = useRef(null);
+  const fRef = useRef(null);
 
-  if (!profile) {
-    return <div className="empty"><div className="empty-icon">⏳</div><h3>Loading…</h3></div>;
-  }
+  if (!profile) return <div className="empty"><div className="empty-ico">⏳</div><h3>Loading…</h3></div>;
 
   const isOwn = profile.id === currentUserId;
   const myPosts = posts.filter(p => p.userId === profile.id);
   const mediaPosts = myPosts.filter(p => p.imageUrl);
-  const likedPosts = posts.filter(p => (p.likedBy || []).includes(profile.id));
-  const tabPosts = tab === 'posts' ? myPosts : tab === 'media' ? mediaPosts : likedPosts;
-  const followerCount = followData?.followers?.length || 0;
-  const followingCount = followData?.following?.length || 0;
-  const initial = (profile.displayName || '?')[0].toUpperCase();
+  const boostedPosts = posts.filter(p => (p.likedBy||[]).includes(profile.id));
+  const tabData = tab === 'broadcasts' ? myPosts : tab === 'media' ? mediaPosts : boostedPosts;
+  const totalBoosts = myPosts.reduce((s,p) => s + (p.likedBy?.length||0), 0);
+  const totalViews = myPosts.reduce((s,p) => s + (p.viewedBy?.length||0), 0);
+  const totalEchoes = myPosts.reduce((s,p) => s + (p.repostedBy?.length||0), 0);
+  const initial = (profile.displayName||'?')[0].toUpperCase();
 
-  const startEdit = () => { setEditName(profile.displayName || ''); setEditBio(profile.bio || ''); setEditing(true); };
+  const startEdit = () => { setEName(profile.displayName||''); setEBio(profile.bio||''); setEditing(true); };
   const saveEdit = async () => {
-    if (!editName.trim()) return;
-    setSaving(true);
-    try { await updateProfile(profile.id, { displayName: editName.trim(), bio: editBio.trim() }); await onRefresh?.(); setEditing(false); }
-    catch (err) { console.error(err); }
-    finally { setSaving(false); }
+    if (!eName.trim()) return; setSaving(true);
+    try { await updateProfile(profile.id,{displayName:eName.trim(),bio:eBio.trim()}); await onRefresh?.(); setEditing(false); }
+    catch(e){ console.error(e); } finally { setSaving(false); }
   };
-  const handleAvatar = async (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    setSaving(true);
-    try { const d = await compressAvatar(file); await updateProfile(profile.id, { avatarUrl: d }); await onRefresh?.(); }
-    catch (err) { console.error(err); }
-    finally { setSaving(false); if (fileRef.current) fileRef.current.value = ''; }
+  const handleAv = async (e) => {
+    const f = e.target.files?.[0]; if (!f) return; setSaving(true);
+    try { const d = await compressAv(f); await updateProfile(profile.id,{avatarUrl:d}); await onRefresh?.(); }
+    catch(e){ console.error(e); } finally { setSaving(false); if(fRef.current) fRef.current.value=''; }
   };
 
-  // Compute total engagement from all posts by this user
-  const totalLikes = myPosts.reduce((sum, p) => sum + (p.likedBy?.length || 0), 0);
-  const totalViews = myPosts.reduce((sum, p) => sum + (p.viewedBy?.length || 0), 0);
+  // Rank based on total engagement
+  const eng = totalBoosts + totalEchoes;
+  const rank = eng >= 50 ? '🏆 LEGEND' : eng >= 20 ? '⚡ VETERAN' : eng >= 5 ? '🎯 RISING' : '🎮 ROOKIE';
 
   return (
     <div>
-      {/* Banner */}
-      <div className="profile-banner">
-        <div className="profile-av-wrap">
-          <div className="profile-av-ring">
-            <div className="profile-av-inner">
-              <div className="av xl">
-                {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : initial}
-              </div>
+      <div className="pcard-banner">
+        <div className="pcard-av-wrap">
+          <div className="pcard-ring">
+            <div className="pcard-ring-inner">
+              <div className="hex xl">{profile.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : initial}</div>
             </div>
           </div>
           {isOwn && (
             <>
-              <button
-                onClick={() => fileRef.current?.click()}
-                style={{
-                  position: 'absolute', bottom: 4, right: -4,
-                  width: 28, height: 28, borderRadius: '50%',
-                  background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#000', boxShadow: '0 2px 10px rgba(0,212,255,0.5)', zIndex: 5
-                }}
-              >
-                {saving ? <Loader size={12} className="spin" /> : <Camera size={12} />}
+              <button onClick={() => fRef.current?.click()} style={{ position:'absolute',bottom:2,right:-6,width:26,height:26,borderRadius:8,background:'var(--cyan)',display:'flex',alignItems:'center',justifyContent:'center',color:'#000',boxShadow:'0 2px 10px rgba(0,229,255,0.5)',zIndex:5 }}>
+                {saving ? <Loader size={10} className="spin" /> : <Camera size={10} />}
               </button>
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleAvatar} />
+              <input ref={fRef} type="file" accept="image/*" hidden onChange={handleAv} />
             </>
           )}
         </div>
       </div>
 
-      {/* Profile Body */}
-      <div className="profile-body">
-        <div className="profile-row">
+      <div className="pcard-body">
+        <div className="pcard-row">
           <div />
-          {isOwn && !editing && <button className="edit-btn" onClick={startEdit}>Edit Profile</button>}
+          {isOwn && !editing && <button className="edit-btn" onClick={startEdit}>Edit</button>}
           {isOwn && editing && (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="edit-btn" onClick={() => setEditing(false)}><X size={14} /></button>
-              <button className="edit-btn" onClick={saveEdit} style={{ borderColor: 'var(--brand)', color: 'var(--brand)' }}>
-                {saving ? <Loader size={14} className="spin" /> : <Check size={14} />}
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button className="edit-btn" onClick={() => setEditing(false)}><X size={12} /></button>
+              <button className="edit-btn" onClick={saveEdit} style={{ borderColor:'var(--cyan)',color:'var(--cyan)' }}>
+                {saving ? <Loader size={12} className="spin" /> : <Check size={12} />}
               </button>
             </div>
           )}
         </div>
 
         {editing ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-            <input className="edit-input" value={editName} onChange={e => setEditName(e.target.value)} maxLength={40} placeholder="Display name" />
-            <textarea className="edit-input" value={editBio} onChange={e => setEditBio(e.target.value)} maxLength={160} rows={2} placeholder="Write a bio…" style={{ resize: 'none', lineHeight: 1.5 }} />
+          <div style={{ display:'flex',flexDirection:'column',gap:6,marginBottom:12 }}>
+            <input className="edit-box" value={eName} onChange={e => setEName(e.target.value)} maxLength={40} placeholder="Name" />
+            <textarea className="edit-box" value={eBio} onChange={e => setEBio(e.target.value)} maxLength={160} rows={2} placeholder="Bio…" style={{ resize:'none',lineHeight:1.5 }} />
           </div>
         ) : (
           <>
-            <div className="profile-name">{profile.displayName}</div>
-            <div className="profile-handle">Joined {timeAgo(profile.created)}</div>
-            {profile.bio && <div className="profile-bio">{profile.bio}</div>}
+            <div className="pcard-name">{profile.displayName}</div>
+            <div className="pcard-joined">Joined {timeAgo(profile.created)}</div>
+            {profile.bio && <div className="pcard-bio">{profile.bio}</div>}
           </>
         )}
 
-        {/* Gamer badge based on engagement */}
-        {isOwn && totalLikes > 0 && (
-          <div className="gamer-badge" style={{ marginBottom: 12, marginTop: 8 }}>
-            {totalLikes >= 20 ? '🏆 Legend' : totalLikes >= 10 ? '⚡ Rising Star' : '🎮 Newcomer'}
-            <span style={{ opacity: 0.6 }}>• {totalLikes} likes earned</span>
-          </div>
-        )}
+        <div className="rank-badge">{rank} · {eng} engagement</div>
 
-        <div className="profile-stats">
-          <div className="pstat"><div className="pstat-val">{myPosts.length}</div><div className="pstat-label">Posts</div></div>
-          <div className="pstat"><div className="pstat-val">{totalLikes}</div><div className="pstat-label">Likes</div></div>
-          <div className="pstat"><div className="pstat-val">{totalViews}</div><div className="pstat-label">Views</div></div>
-          <div className="pstat"><div className="pstat-val">{followerCount}</div><div className="pstat-label">Followers</div></div>
-          <div className="pstat"><div className="pstat-val">{followingCount}</div><div className="pstat-label">Following</div></div>
+        <div className="stat-grid">
+          <div className="stat-cell"><div className="stat-val">{myPosts.length}</div><div className="stat-key">Broadcasts</div></div>
+          <div className="stat-cell"><div className="stat-val">{totalBoosts}</div><div className="stat-key">Boosts</div></div>
+          <div className="stat-cell"><div className="stat-val">{totalViews}</div><div className="stat-key">Views</div></div>
+          <div className="stat-cell"><div className="stat-val">{totalEchoes}</div><div className="stat-key">Echoes</div></div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="profile-tabs">
-        {['posts', 'media', 'likes'].map(t => (
-          <button key={t} className={`ptab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
-            {t === 'posts' ? '📝 Posts' : t === 'media' ? '📸 Media' : '❤️ Likes'}
-          </button>
+      <div className="ptabs">
+        {[['broadcasts','📡'],['media','🖼️'],['boosted','⚡']].map(([k,icon]) => (
+          <button key={k} className={`ptab${tab===k?' on':''}`} onClick={() => setTab(k)}>{icon} {k}</button>
         ))}
       </div>
 
-      {/* Tab content */}
-      {tabPosts.length === 0 ? (
-        <div className="empty">
-          <div className="empty-icon">{tab === 'posts' ? '📝' : tab === 'media' ? '📸' : '❤️'}</div>
-          <h3>No {tab} yet</h3>
-          <p>{tab === 'posts' ? 'Share your first gaming moment!' : tab === 'media' ? 'Posts with images appear here.' : 'Posts you like appear here.'}</p>
-        </div>
+      {tabData.length === 0 ? (
+        <div className="empty"><div className="empty-ico">{tab==='broadcasts'?'📡':tab==='media'?'🖼️':'⚡'}</div><h3>No {tab}</h3></div>
       ) : (
-        tabPosts.map(post => (
-          <PostCard key={post.id} post={post} currentUserId={currentUserId} users={users} onProfileClick={onProfileClick} />
-        ))
+        tabData.map(p => <BroadcastCard key={p.id} post={p} currentUserId={currentUserId} users={users} onProfileClick={onProfileClick} />)
       )}
     </div>
   );

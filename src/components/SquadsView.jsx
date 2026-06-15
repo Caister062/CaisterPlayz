@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Users, Zap, Crown, Shield } from 'lucide-react';
-import { Avatar } from './PostCard';
+import { Hex } from './PostCard';
 
 const GAME_ICONS = ['⚔️', '🎯', '🏆', '🛡️', '🚀', '💣', '🗡️', '🔫', '🎮', '🕹️'];
 
@@ -84,7 +84,7 @@ export default function SquadsView({ posts, users, currentUserId }) {
           ].map(f => (
             <button
               key={f.key}
-              className={`filter-chip${filter === f.key ? ' active' : ''}`}
+              className={`chip${filter === f.key ? ' active' : ''}`}
               onClick={() => setFilter(f.key)}
             >
               {f.label}
@@ -101,7 +101,7 @@ export default function SquadsView({ posts, users, currentUserId }) {
       {/* Squad Cards */}
       {filtered.length === 0 ? (
         <div className="empty">
-          <div className="empty-icon">⚔️</div>
+          <div className="empty-ico">⚔️</div>
           <h3>No squads found</h3>
           <p>{filter === 'mine' ? 'Join a squad or create your own!' : 'Be the first to create a squad!'}</p>
         </div>
@@ -111,36 +111,36 @@ export default function SquadsView({ posts, users, currentUserId }) {
           const isJoined = joinedSquads.has(squad.id) || squad.ownerId === currentUserId;
 
           return (
-            <div key={squad.id} className="squad-card">
-              <div className="squad-card-header">
-                <div className="squad-icon">{squad.icon}</div>
+            <div key={squad.id} className="sq-card">
+              <div className="sq-top">
+                <div className="sq-icon">{squad.icon}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="squad-name">{squad.name}</div>
-                  <div className="squad-desc">{squad.desc}</div>
+                  <div className="sq-name">{squad.name}</div>
+                  <div className="sq-desc">{squad.desc}</div>
                 </div>
               </div>
 
               {/* Meta tags */}
-              <div className="squad-meta">
-                <span className="squad-tag">
+              <div className="sq-tags">
+                <span className="sq-tag">
                   <Users size={11} style={{ display: 'inline', verticalAlign: -1, marginRight: 3 }} />
                   {squad.memberCount} player{squad.memberCount !== 1 ? 's' : ''}
                 </span>
-                {squad.isHot && <span className="squad-tag hot">🔥 Active</span>}
-                {squad.isOpen && <span className="squad-tag open">Open</span>}
-                {squad.ownerId === currentUserId && <span className="squad-tag" style={{ color: 'var(--gold)' }}>👑 Owner</span>}
+                {squad.isHot && <span className="sq-tag hot">🔥 Active</span>}
+                {squad.isOpen && <span className="sq-tag open">Open</span>}
+                {squad.ownerId === currentUserId && <span className="sq-tag" style={{ color: 'var(--amber)' }}>👑 Owner</span>}
               </div>
 
               {/* Leader */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                <Avatar src={owner?.avatarUrl} name={owner?.displayName || '?'} size="sm" />
+                <Hex src={owner?.avatarUrl} name={owner?.displayName || '?'} size="sm" />
                 <span style={{ fontSize: 12, color: 'var(--text3)' }}>Led by <strong style={{ color: 'var(--text)' }}>{owner?.displayName || 'Unknown'}</strong></span>
               </div>
 
               {/* Actions */}
-              <div className="squad-actions">
+              <div className="sq-actions">
                 <button
-                  className={`join-btn${isJoined ? ' joined' : ''}`}
+                  className={`sq-join${isJoined ? ' in' : ''}`}
                   onClick={() => handleJoin(squad.id)}
                 >
                   {isJoined ? '✓ Joined' : 'Join Squad'}

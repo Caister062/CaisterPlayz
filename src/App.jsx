@@ -53,8 +53,8 @@ export default function App() {
 
   return (
     <div className="console">
-      {/* ─ HUD Bar ─ */}
-      <header className="hud-bar">
+      {/* ─ HUD ─ */}
+      <header className="hud">
         <div className="hud-logo">
           <div className="hud-glyph">🎮</div>
           <span className="hud-name">CaisterPlayz</span>
@@ -67,22 +67,9 @@ export default function App() {
         </div>
       </header>
 
-      {/* ─ Side Rail (desktop only) ─ */}
-      <nav className="side-rail">
-        {NAV.map(n => (
-          <button key={n.id} className={`rail-btn${tab===n.id?' active':''}`} onClick={() => goTab(n.id)} title={n.label}>
-            <div style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:2 }}>
-              <n.icon size={18} fill={tab===n.id?'currentColor':'none'} />
-              <span className="rail-label">{n.label}</span>
-            </div>
-          </button>
-        ))}
-        <div className="rail-spacer" />
-      </nav>
-
-      {/* ─ Main Content ─ */}
-      <main className="main-area">
-        {tab==='home' && <FeedView posts={posts} loading={loading} users={users} currentUserId={userId} onProfileClick={goProfile} />}
+      {/* ─ Main ─ */}
+      <main className="main">
+        {tab==='home' && <FeedView posts={posts} loading={loading} users={users} currentUserId={userId} notifications={notifications} onProfileClick={goProfile} />}
         {tab==='explore' && <ExploreView posts={posts} users={users} currentUserId={userId} onProfileClick={goProfile} />}
         {tab==='squads' && <SquadsView posts={posts} users={users} currentUserId={userId} />}
         {tab==='vault' && <VaultView posts={posts} currentUserId={userId} users={users} onProfileClick={goProfile} />}
@@ -90,10 +77,10 @@ export default function App() {
         {tab==='profile' && <ProfileView profile={pUser||me} posts={posts} users={users} currentUserId={userId} followData={viewProfile?{}:followData} onProfileClick={goProfile} onRefresh={refMe} />}
       </main>
 
-      {/* ─ Mobile Bottom Nav ─ */}
-      <nav className="mobile-nav">
+      {/* ─ Bottom Nav ─ */}
+      <nav className="bnav">
         {NAV.map(n => (
-          <button key={n.id} className={`mob-btn${tab===n.id?' active':''}`} onClick={() => goTab(n.id)}>
+          <button key={n.id} className={`bnav-item${tab===n.id?' on':''}`} onClick={() => goTab(n.id)}>
             <n.icon size={20} fill={tab===n.id?'currentColor':'none'} />
             <span>{n.label}</span>
           </button>
@@ -102,7 +89,7 @@ export default function App() {
 
       {/* ─ FAB ─ */}
       <button className="fab" onClick={() => setShowCompose(true)}>
-        <Plus size={22} strokeWidth={2.5} />
+        <Plus size={20} strokeWidth={2.5} />
       </button>
 
       {/* ─ Composer ─ */}

@@ -1,6 +1,9 @@
-import BroadcastCard from './PostCard';
+import { useState } from 'react';
+import { GridCard } from './PostCard';
+import ExpandedBroadcast from './PostCard';
 
 export default function VaultView({ posts, currentUserId, users, onProfileClick }) {
+  const [expanded, setExpanded] = useState(null);
   const pinned = posts.filter(p => (p.favoritedBy || []).includes(currentUserId));
   return (
     <div>
@@ -11,8 +14,11 @@ export default function VaultView({ posts, currentUserId, users, onProfileClick 
       {pinned.length === 0 ? (
         <div className="empty"><div className="empty-ico">📌</div><h3>Vault empty</h3><p>Pin broadcasts to save them here.</p></div>
       ) : (
-        pinned.map(p => <BroadcastCard key={p.id} post={p} currentUserId={currentUserId} users={users} onProfileClick={onProfileClick} />)
+        <div className="grid" style={{ padding: '10px 10px' }}>
+          {pinned.map(p => <GridCard key={p.id} post={p} users={users} onClick={setExpanded} />)}
+        </div>
       )}
+      {expanded && <ExpandedBroadcast post={expanded} currentUserId={currentUserId} users={users} onClose={() => setExpanded(null)} />}
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
-import BroadcastCard from './PostCard';
+import { GridCard } from './PostCard';
+import ExpandedBroadcast from './PostCard';
 
 export default function ExploreView({ posts, users, currentUserId, onProfileClick }) {
   const [q, setQ] = useState('');
+  const [expanded, setExpanded] = useState(null);
   const isSearching = q.trim().length > 0;
 
   const filtered = useMemo(() => {
@@ -34,10 +36,10 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
 
       {isSearching ? (
         <>
-          <div className="sec"><span className="sec-label">Results</span><span className="sec-action">{filtered.length}</span></div>
+          <div className="sec"><span className="sec-label">Results</span><span className="sec-badge">{filtered.length}</span></div>
           {filtered.length === 0
             ? <div className="empty"><div className="empty-ico">🔍</div><h3>No matches</h3></div>
-            : filtered.map(p => <BroadcastCard key={p.id} post={p} currentUserId={currentUserId} users={users} onProfileClick={onProfileClick} />)
+            : <div className="grid">{filtered.map(p => <GridCard key={p.id} post={p} users={users} onClick={setExpanded} />)}</div>
           }
         </>
       ) : (
@@ -47,7 +49,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
               <div className="sec"><span className="sec-label">Trending Tags</span></div>
               {hashtags.map(({ tag, count }) => (
                 <div key={tag} className="trending-item" onClick={() => setQ(tag)}>
-                  <div><div className="trending-name">{tag}</div><div className="trending-count">{count} broadcast{count !== 1 ? 's' : ''}</div></div>
+                  <div><div className="trending-name">{tag}</div><div className="trending-count">{count} broadcast{count!==1?'s':''}</div></div>
                   <span style={{ color: 'var(--text3)', fontSize: 16 }}>›</span>
                 </div>
               ))}
@@ -56,16 +58,14 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
           {media.length > 0 && (
             <>
               <div className="sec"><span className="sec-label">Media Wall</span></div>
-              <div className="media-wall">
-                {media.map(p => <div key={p.id} className="media-cell"><img src={p.imageUrl} alt="" loading="lazy" /></div>)}
-              </div>
+              <div className="media-wall">{media.map(p => <div key={p.id} className="media-cell"><img src={p.imageUrl} alt="" loading="lazy" /></div>)}</div>
             </>
           )}
-          {hashtags.length === 0 && media.length === 0 && (
-            <div className="empty"><div className="empty-ico">🌐</div><h3>Nothing yet</h3><p>Start broadcasting!</p></div>
-          )}
+          {hashtags.length===0 && media.length===0 && <div className="empty"><div className="empty-ico">🌐</div><h3>Nothing yet</h3><p>Start broadcasting!</p></div>}
         </>
       )}
+
+      {expanded && <ExpandedBroadcast post={expanded} currentUserId={currentUserId} users={users} onClose={() => setExpanded(null)} />}
     </div>
   );
 }

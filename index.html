@@ -2,51 +2,238 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
     <link rel="icon" type="image/svg+xml" href="/CaisterPlayz/favicon.svg" />
     <link rel="apple-touch-icon" href="/CaisterPlayz/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
-    <meta name="description" content="CaisterPlayz — A real-time social media platform. Share, connect, and discover." />
-    <meta name="theme-color" content="#000000" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <!-- SEO -->
     <title>CaisterPlayz</title>
-    <script type="module" crossorigin src="/CaisterPlayz/assets/index-B0SiUWNZ.js"></script>
-    <link rel="stylesheet" crossorigin href="/CaisterPlayz/assets/index-DhW9BdSA.css">
+
+    <meta
+      name="description"
+      content="The Social Network Built For Gamers. Find squads, join events, discover communities, and connect with players."
+    />
+
+    <meta
+      name="keywords"
+      content="gaming, gamers, fortnite, roblox, communities, squads, tournaments, gaming social network"
+    />
+
+    <!-- PWA -->
+    <meta name="theme-color" content="#0a0f1d" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+
+    <meta
+      name="apple-mobile-web-app-title"
+      content="CaisterPlayz"
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="CaisterPlayz" />
+
+    <meta
+      property="og:description"
+      content="Find Players. Build Squads. Share Wins."
+    />
+
+    <meta property="og:type" content="website" />
+
+    <!-- Fonts -->
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/CaisterPlayz/assets/index-WeedYmlr.js"></script>
+    <link rel="stylesheet" crossorigin href="/CaisterPlayz/assets/index-DP-j8tyU.css">
   <link rel="manifest" href="/CaisterPlayz/manifest.webmanifest"></head>
+
   <body>
     <div id="root">
+
       <style>
-        body { margin: 0; background-color: #0b0c0f; overflow: hidden; }
-        .startup-loader {
-          position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-          background: #0b0c0f; z-index: 9999;
+        * {
+          box-sizing: border-box;
         }
-        .glow-logo {
-          font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-          font-size: 2.2rem; font-weight: 800; letter-spacing: -1.5px;
-          color: #fff;
-          background: linear-gradient(135deg, #1d9bf0 0%, #8b5cf6 100%);
+
+        body {
+          margin: 0;
+          overflow: hidden;
+          background:
+            radial-gradient(
+              circle at top,
+              rgba(59,130,246,.15),
+              transparent 35%
+            ),
+            #070b14;
+
+          color: white;
+
+          font-family:
+            "Plus Jakarta Sans",
+            system-ui,
+            sans-serif;
+        }
+
+        .startup-loader {
+          position: fixed;
+          inset: 0;
+
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+
+          gap: 20px;
+
+          background: #070b14;
+
+          z-index: 99999;
+        }
+
+        .logo-container {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .logo-icon {
+          width: 52px;
+          height: 52px;
+
+          border-radius: 14px;
+
+          background:
+            linear-gradient(
+              135deg,
+              #2563eb,
+              #60a5fa
+            );
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          box-shadow:
+            0 0 30px rgba(59,130,246,.4);
+
+          animation: float 2s ease-in-out infinite;
+        }
+
+        .logo-text {
+          font-size: 2rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+
+          background:
+            linear-gradient(
+              90deg,
+              #ffffff,
+              #60a5fa
+            );
+
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          animation: pulseGlow 1.5s infinite alternate ease-in-out; margin-bottom: 2rem;
         }
-        .spinner {
-          width: 32px; height: 32px; border: 3px solid rgba(29, 155, 240, 0.1);
-          border-radius: 50%; border-top-color: #1d9bf0; animation: spin 0.8s linear infinite;
+
+        .tagline {
+          font-size: 0.85rem;
+          color: #94a3b8;
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
         }
-        @keyframes pulseGlow { 
-          0% { transform: scale(1); opacity: 0.95; } 
-          100% { transform: scale(1.04); opacity: 1; } 
+
+        .loading-bar {
+          width: 220px;
+          height: 8px;
+
+          border-radius: 999px;
+
+          overflow: hidden;
+
+          background:
+            rgba(255,255,255,.08);
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-fill {
+          width: 50%;
+          height: 100%;
+
+          background:
+            linear-gradient(
+              90deg,
+              #2563eb,
+              #60a5fa
+            );
+
+          animation: loading 1.2s infinite;
+        }
+
+        @keyframes loading {
+          0% {
+            transform: translateX(-100%);
+          }
+
+          100% {
+            transform: translateX(300%);
+          }
+        }
+
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+
+          50% {
+            transform: translateY(-5px);
+          }
+        }
       </style>
+
       <div class="startup-loader">
-        <div class="glow-logo">CaisterPlayz</div>
-        <div class="spinner"></div>
+
+        <div class="logo-container">
+
+          <div class="logo-icon">
+            🎮
+          </div>
+
+          <div class="logo-text">
+            CAISTERPLAYZ
+          </div>
+
+        </div>
+
+        <div class="tagline">
+          Find Players • Build Squads • Share Wins
+        </div>
+
+        <div class="loading-bar">
+          <div class="loading-fill"></div>
+        </div>
+
       </div>
-    </div>
+    </div>
+
   </body>
 </html>

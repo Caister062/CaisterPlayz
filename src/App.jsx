@@ -9,6 +9,15 @@ import VaultView from './components/VaultView';
 import SquadsView from './components/SquadsView';
 import Composer from './components/Composer';
 
+/* ─── CP Monogram SVG ─── */
+function CpMark({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="256" y="390" textAnchor="middle" fontFamily="'Arial Black','Impact',sans-serif" fontWeight="900" fontSize="340" fill="white" letterSpacing="-20">CP</text>
+    </svg>
+  );
+}
+
 export default function App() {
   const [tab, setTab] = useState('home');
   const [showCompose, setShowCompose] = useState(false);
@@ -34,8 +43,10 @@ export default function App() {
   if (booting) {
     return (
       <div style={{ minHeight:'100dvh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:18,background:'#04060e' }}>
-        <div style={{ width:56,height:56,borderRadius:16,background:'linear-gradient(135deg,#0050dd,#00e5ff)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,boxShadow:'0 0 40px rgba(0,229,255,0.4)',animation:'bootFloat 2s ease-in-out infinite' }}>🎮</div>
-        <div style={{ fontSize:13,fontWeight:900,letterSpacing:'0.12em',color:'#00e5ff',textTransform:'uppercase' }}>CaisterPlayz</div>
+        <div style={{ width:60,height:60,borderRadius:16,background:'linear-gradient(135deg,#00e5ff,#7c3aed,#f43f5e)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 40px rgba(0,229,255,0.35), 0 0 60px rgba(124,58,237,0.15)',animation:'bootFloat 2s ease-in-out infinite' }}>
+          <CpMark size={34} />
+        </div>
+        <div style={{ fontSize:13,fontWeight:900,letterSpacing:'0.12em',background:'linear-gradient(90deg,#00e5ff,#a78bfa,#f43f5e)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',textTransform:'uppercase' }}>CaisterPlayz</div>
         <div style={{ fontSize:10,color:'#475569',letterSpacing:'0.1em',textTransform:'uppercase' }}>Initializing…</div>
         <Loader size={16} style={{ color:'#00e5ff',animation:'bootSpin 0.8s linear infinite' }} />
         <style>{`@keyframes bootFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes bootSpin{to{transform:rotate(360deg)}}`}</style>
@@ -44,11 +55,11 @@ export default function App() {
   }
 
   const NAV = [
-    { id: 'home',    icon: Home,   label: 'Home' },
+    { id: 'home',    icon: Home,   label: 'Base' },
     { id: 'explore', icon: Search, label: 'Arena' },
     { id: 'squads',  icon: Swords, label: 'Squads' },
     { id: 'vault',   icon: Lock,   label: 'Vault' },
-    { id: 'profile', icon: User,   label: 'Player' },
+    { id: 'profile', icon: User,   label: 'Me' },
   ];
 
   return (
@@ -56,7 +67,9 @@ export default function App() {
       {/* ─ HUD ─ */}
       <header className="hud">
         <div className="hud-logo">
-          <div className="hud-glyph">🎮</div>
+          <div className="cp-mark">
+            <CpMark size={18} />
+          </div>
           <span className="hud-name">CaisterPlayz</span>
         </div>
         <div className="hud-actions">
@@ -76,6 +89,9 @@ export default function App() {
         {tab==='notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} onProfileClick={goProfile} />}
         {tab==='profile' && <ProfileView profile={pUser||me} posts={posts} users={users} currentUserId={userId} followData={viewProfile?{}:followData} onProfileClick={goProfile} onRefresh={refMe} />}
       </main>
+
+      {/* ─ Brand Footer ─ */}
+      <div className="brand-footer">Powered by CaisterPlayz</div>
 
       {/* ─ Bottom Nav ─ */}
       <nav className="bnav">

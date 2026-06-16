@@ -29,6 +29,8 @@
   --text2:      #94a3b8;
   --text3:      #475569;
   --glow-line:  linear-gradient(90deg, transparent, var(--cyan), transparent);
+  --caister-grad: linear-gradient(135deg, #00e5ff, #7c3aed, #f43f5e);
+  --caister-glow: 0 0 24px rgba(0,229,255,0.3), 0 0 48px rgba(124,58,237,0.15);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -81,7 +83,9 @@ input, textarea { font: inherit; }
   font-size: 13px; font-weight: 900;
   letter-spacing: 0.1em; text-transform: uppercase;
   font-family: "SF Mono", "JetBrains Mono", monospace;
-  color: var(--cyan);
+  background: linear-gradient(90deg, #00e5ff, #a78bfa, #f43f5e);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .hud-actions { display: flex; gap: 2px; }
 .hud-btn {
@@ -98,36 +102,76 @@ input, textarea { font: inherit; }
   background: var(--hot); border-radius: 50%; border: 1.5px solid var(--bg);
 }
 
+/* CP Monogram Mark */
+.cp-mark {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--caister-grad);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--caister-glow);
+  position: relative;
+  animation: cpPulse 3s ease-in-out infinite;
+}
+.cp-mark svg { width: 18px; height: 18px; }
+@keyframes cpPulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(0,229,255,0.25), 0 0 32px rgba(124,58,237,0.1); }
+  50% { box-shadow: 0 0 24px rgba(0,229,255,0.45), 0 0 48px rgba(124,58,237,0.25); }
+}
+
 /* Main scroll area */
-.main { flex: 1; overflow-y: auto; padding-bottom: 80px; overscroll-behavior: contain; }
+.main { flex: 1; overflow-y: auto; padding-bottom: 104px; overscroll-behavior: contain; }
 
 /* Bottom Nav */
 .bnav {
-  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 520px; z-index: 60;
-  background: rgba(4, 6, 14, 0.94);
-  backdrop-filter: blur(24px);
-  border-top: 1px solid var(--border);
+  position: fixed; bottom: max(10px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+  width: calc(100% - 24px); max-width: 496px; z-index: 60;
+  background:
+    linear-gradient(180deg, rgba(17, 25, 44, 0.96), rgba(5, 8, 18, 0.97)),
+    radial-gradient(circle at 18% 0%, rgba(0, 229, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 82% 0%, rgba(124, 58, 237, 0.16), transparent 32%);
+  backdrop-filter: blur(22px);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 22px;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 22px rgba(0, 229, 255, 0.12);
   display: flex;
-  padding: 4px 0 max(6px, env(safe-area-inset-bottom));
+  gap: 4px;
+  padding: 8px;
 }
 .bnav-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 6px 0; color: var(--text3);
-  font-size: 9px; font-weight: 800;
-  letter-spacing: 0.05em; text-transform: uppercase;
-  transition: color 0.15s;
+  flex: 1; min-width: 0; height: 50px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 6px 0; color: #71819f;
+  font-size: 8px; font-weight: 900;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  transition: color 0.18s, background 0.18s, transform 0.18s, box-shadow 0.18s;
   font-family: "SF Mono", monospace;
+  border-radius: 15px;
 }
-.bnav-item svg { width: 20px; height: 20px; }
-.bnav-item.on { color: var(--cyan); }
-.bnav-item.on svg { filter: drop-shadow(0 0 6px var(--cyan)); }
+.bnav-item svg { width: 20px; height: 20px; transition: transform 0.18s, filter 0.18s; }
+.bnav-item:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
+.bnav-item.on {
+  color: #06111a; position: relative;
+  background: var(--caister-grad);
+  box-shadow: 0 0 18px rgba(0,229,255,0.24), inset 0 1px 0 rgba(255,255,255,0.22);
+  transform: translateY(-2px);
+}
+.bnav-item.on::before {
+  content: ''; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+  width: 22px; height: 2px; border-radius: 999px;
+  background: rgba(255,255,255,0.7);
+}
+.bnav-item.on svg {
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.25));
+  transform: translateY(1px);
+}
 
 /* FAB */
 .fab {
-  position: fixed; bottom: 72px; right: max(16px, calc(50% - 244px));
+  position: fixed; bottom: 92px; right: max(22px, calc(50% - 238px));
   z-index: 70; width: 48px; height: 48px; border-radius: 14px;
-  background: linear-gradient(135deg, #0050dd, var(--cyan));
+  background: var(--caister-grad);
   display: flex; align-items: center; justify-content: center;
   color: #000; box-shadow: 0 6px 28px rgba(0,229,255,0.4);
   transition: transform 0.2s;
@@ -576,6 +620,15 @@ input, textarea { font: inherit; }
   position: relative; overflow: hidden;
   border-bottom: 1px solid var(--border);
 }
+.pcard-banner::before {
+  content: 'CP'; position: absolute; right: 14px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 64px; font-weight: 900; letter-spacing: -4px;
+  font-family: 'Arial Black', 'Impact', sans-serif;
+  background: var(--caister-grad); -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; background-clip: text;
+  opacity: 0.07; pointer-events: none; z-index: 1;
+}
 .pcard-banner::after {
   content: ''; position: absolute; inset: 0;
   background: radial-gradient(circle at 20% 80%, var(--cyan-dim), transparent 50%),
@@ -768,3 +821,75 @@ input, textarea { font: inherit; }
 .notif-msg strong { color: var(--text); font-weight: 800; }
 .notif-ts { font-size: 10px; color: var(--text3); margin-top: 2px; font-family: "SF Mono", monospace; }
 .notif-pip { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); flex-shrink: 0; margin-top: 5px; }
+
+/* ============================================================
+   CAISTERPLAYZ BRAND ACCENTS
+============================================================ */
+.brand-empty-mark {
+  width: 72px; height: 72px; border-radius: 20px;
+  background: var(--caister-grad);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--caister-glow);
+  margin-bottom: 12px;
+  animation: cpPulse 3s ease-in-out infinite;
+}
+.brand-empty-mark svg { width: 40px; height: 40px; }
+
+.brand-footer {
+  text-align: center; padding: 6px 0 2px;
+  font-size: 8px; font-weight: 800;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: "SF Mono", monospace;
+  background: linear-gradient(90deg, #00e5ff, #a78bfa, #f43f5e);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; opacity: 0.35;
+}
+
+/* Ambient scanline on HUD */
+.hud::after {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 229, 255, 0.015) 2px,
+    rgba(0, 229, 255, 0.015) 4px
+  );
+  pointer-events: none; z-index: -1;
+}
+
+/* ============================================================
+   CAISTERPLAYZ BRAND ACCENTS
+============================================================ */
+.brand-empty-mark {
+  width: 72px; height: 72px; border-radius: 20px;
+  background: var(--caister-grad);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--caister-glow);
+  margin-bottom: 12px;
+  animation: cpPulse 3s ease-in-out infinite;
+}
+.brand-empty-mark svg { width: 40px; height: 40px; }
+
+.brand-footer {
+  text-align: center; padding: 6px 0 2px;
+  font-size: 8px; font-weight: 800;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: "SF Mono", monospace;
+  background: linear-gradient(90deg, #00e5ff, #a78bfa, #f43f5e);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; opacity: 0.35;
+}
+
+/* Ambient scanline on HUD */
+.hud::after {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 229, 255, 0.015) 2px,
+    rgba(0, 229, 255, 0.015) 4px
+  );
+  pointer-events: none; z-index: -1;
+}

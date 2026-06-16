@@ -30,7 +30,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
       <div className="arena-search">
         <div className="arena-box">
           <Search size={14} />
-          <input placeholder="Search broadcasts, players, #tags…" value={q} onChange={e => setQ(e.target.value)} />
+          <input placeholder="Search the CaisterPlayz arena…" value={q} onChange={e => setQ(e.target.value)} />
         </div>
       </div>
 
@@ -38,7 +38,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
         <>
           <div className="sec"><span className="sec-label">Results</span><span className="sec-badge">{filtered.length}</span></div>
           {filtered.length === 0
-            ? <div className="empty"><div className="empty-ico">🔍</div><h3>No matches</h3></div>
+            ? <div className="empty"><div className="empty-ico">🔍</div><h3>No matches</h3><p>Try a different search in the CaisterPlayz arena.</p></div>
             : <div className="grid">{filtered.map(p => <GridCard key={p.id} post={p} users={users} onClick={setExpanded} />)}</div>
           }
         </>
@@ -61,7 +61,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
               <div className="media-wall">{media.map(p => <div key={p.id} className="media-cell"><img src={p.imageUrl} alt="" loading="lazy" /></div>)}</div>
             </>
           )}
-          {hashtags.length===0 && media.length===0 && <div className="empty"><div className="empty-ico">🌐</div><h3>Nothing yet</h3><p>Start broadcasting!</p></div>}
+          {hashtags.length===0 && media.length===0 && <div className="empty"><div className="empty-ico">🌐</div><h3>Nothing yet</h3><p>Be the first to broadcast on CaisterPlayz!</p></div>}
         </>
       )}
 

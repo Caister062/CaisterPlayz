@@ -92,9 +92,11 @@ export default function FeedView({ posts, loading, users, currentUserId, notific
 
       {posts.length === 0 ? (
         <div className="empty">
-          <div className="empty-ico">📡</div>
-          <h3>No broadcasts yet</h3>
-          <p>Drop the first broadcast for the community.</p>
+          <div className="brand-empty-mark">
+            <svg width="40" height="40" viewBox="0 0 512 512" fill="none"><text x="256" y="390" textAnchor="middle" fontFamily="'Arial Black','Impact',sans-serif" fontWeight="900" fontSize="340" fill="white" letterSpacing="-20">CP</text></svg>
+          </div>
+          <h3>The arena is quiet</h3>
+          <p>Drop the first broadcast and own the CaisterPlayz feed.</p>
         </div>
       ) : (
         <>

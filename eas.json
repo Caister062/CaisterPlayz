@@ -4,21 +4,6 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "ios": {
-        "scheme": "App",
-        "projectPath": "ios/App/App.xcodeproj"
-      }
-    },
-    "preview": {
-      "distribution": "internal",
-      "ios": {
-        "scheme": "App",
-        "projectPath": "ios/App/App.xcodeproj"
-      }
-    },
     "production": {
       "autoIncrement": true,
       "ios": {

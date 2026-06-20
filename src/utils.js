@@ -70,10 +70,10 @@ export function formatTime(timestamp) {
 
 export function formatCount(n) {
   if (!n || n === 0) return '0';
-  if (n >= 1e12) return (n / 1e12).toFixed(1).replace(/\.0$/, '') + 'T';
-  if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
-  if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  if (n >= 1e12) return (n / 1e12).toFixed(1).replace(/\.0$/, '') + 't';
+  if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'b';
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
   return String(n);
 }
 

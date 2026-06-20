@@ -3,6 +3,7 @@ import { Camera, Check, X, Loader } from 'lucide-react';
 import { GridCard, Hex, timeAgo } from './PostCard';
 import ExpandedBroadcast from './PostCard';
 import { updateProfile } from '../hooks';
+import { formatCount } from '../utils';
 
 function compressAv(file) {
   return new Promise((res, rej) => {
@@ -29,9 +30,10 @@ export default function ProfileView({ profile, posts, users, currentUserId, foll
   const mediaPosts = myPosts.filter(p => p.imageUrl);
   const boostedPosts = posts.filter(p => (p.likedBy||[]).includes(profile.id));
   const tabData = tab === 'broadcasts' ? myPosts : tab === 'media' ? mediaPosts : boostedPosts;
-  const totalBoosts = myPosts.reduce((s,p) => s + (p.likedBy?.length||0), 0);
-  const totalViews = myPosts.reduce((s,p) => s + (p.viewedBy?.length||0), 0);
-  const totalEchoes = myPosts.reduce((s,p) => s + (p.repostedBy?.length||0), 0);
+  const rc = (arr, authorId) => (arr || []).filter(id => id !== authorId).length;
+  const totalBoosts = myPosts.reduce((s,p) => s + rc(p.likedBy, p.userId), 0);
+  const totalViews = myPosts.reduce((s,p) => s + rc(p.viewedBy, p.userId), 0);
+  const totalEchoes = myPosts.reduce((s,p) => s + rc(p.repostedBy, p.userId), 0);
   const initial = (profile.displayName||'?')[0].toUpperCase();
 
   const startEdit = () => { setEName(profile.displayName||''); setEBio(profile.bio||''); setEditing(true); };
@@ -94,13 +96,13 @@ export default function ProfileView({ profile, posts, users, currentUserId, foll
           </>
         )}
 
-        <div className="rank-badge">{rank} · {eng} engagement</div>
+        <div className="rank-badge">{rank} · {formatCount(eng)} engagement</div>
 
         <div className="stat-grid">
-          <div className="stat-cell"><div className="stat-val">{myPosts.length}</div><div className="stat-key">Drops</div></div>
-          <div className="stat-cell"><div className="stat-val">{totalBoosts}</div><div className="stat-key">Zaps</div></div>
-          <div className="stat-cell"><div className="stat-val">{totalViews}</div><div className="stat-key">Views</div></div>
-          <div className="stat-cell"><div className="stat-val">{totalEchoes}</div><div className="stat-key">Echoes</div></div>
+          <div className="stat-cell"><div className="stat-val">{formatCount(myPosts.length)}</div><div className="stat-key">Drops</div></div>
+          <div className="stat-cell"><div className="stat-val">{formatCount(totalBoosts)}</div><div className="stat-key">Zaps</div></div>
+          <div className="stat-cell"><div className="stat-val">{formatCount(totalViews)}</div><div className="stat-key">Views</div></div>
+          <div className="stat-cell"><div className="stat-val">{formatCount(totalEchoes)}</div><div className="stat-key">Echoes</div></div>
         </div>
       </div>
 
@@ -115,6 +117,25 @@ export default function ProfileView({ profile, posts, users, currentUserId, foll
       ) : (
         <div className="grid" style={{ padding: '10px 10px' }}>
           {tabData.map(p => <GridCard key={p.id} post={p} users={users} onClick={setExpanded} />)}
+        </div>
+      )}
+
+      {isOwn && (
+        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <button
+            className="admin-login-btn"
+            onClick={() => {
+              const email = prompt('Enter Admin Email:');
+              if (email === 'caismoretton@gmail.com' || email === 'nexusnpc0@gmail') {
+                localStorage.setItem('caister_admin', email);
+                window.location.reload();
+              } else if (email) {
+                alert('Unauthorized.');
+              }
+            }}
+          >
+            🛡️ Admin Access
+          </button>
         </div>
       )}
 

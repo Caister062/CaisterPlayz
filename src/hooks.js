@@ -273,20 +273,24 @@ async function debouncedToggle(key, fn, delay = 500) {
 export async function toggleLike(postId, userId, isLiked) {
   return debouncedToggle(`like:${postId}:${userId}`, async () => {
     const post = await pb.collection('cplayz_posts').getOne(postId);
+    if (post.userId === userId) return; // Author can't zap their own post
     const likedBy = isLiked
       ? (post.likedBy || []).filter(id => id !== userId)
       : uniqueList([...(post.likedBy || []), userId]);
     await pb.collection('cplayz_posts').update(postId, { likedBy });
+    if (!isLiked) sendNotification(post.userId, userId, 'like', postId);
   });
 }
 
 export async function toggleRepost(postId, userId, isReposted) {
   return debouncedToggle(`repost:${postId}:${userId}`, async () => {
     const post = await pb.collection('cplayz_posts').getOne(postId);
+    if (post.userId === userId) return; // Author can't echo their own post
     const repostedBy = isReposted
       ? (post.repostedBy || []).filter(id => id !== userId)
       : uniqueList([...(post.repostedBy || []), userId]);
     await pb.collection('cplayz_posts').update(postId, { repostedBy });
+    if (!isReposted) sendNotification(post.userId, userId, 'repost', postId);
   });
 }
 
@@ -303,6 +307,7 @@ export async function toggleBookmark(postId, userId, isBookmarked) {
 export async function addView(postId, userId) {
   try {
     const post = await pb.collection('cplayz_posts').getOne(postId);
+    if (post.userId === userId) return; // Author's actions (view, like, etc.) do not count as views
     if ((post.viewedBy || []).includes(userId)) return;
     const viewedBy = uniqueList([...(post.viewedBy || []), userId]);
     await pb.collection('cplayz_posts').update(postId, { viewedBy });
@@ -333,7 +338,11 @@ export async function deletePost(postId, userId) {
 }
 
 export async function addComment(postId, userId, text) {
-  return pb.collection('cplayz_comments').create({ postId, userId, text });
+  const c = await pb.collection('cplayz_comments').create({ postId, userId, text });
+  pb.collection('cplayz_posts').getOne(postId).then(post => {
+    if (post.userId !== userId) sendNotification(post.userId, userId, 'comment', postId);
+  }).catch(()=>{});
+  return c;
 }
 
 export async function deleteComment(commentId, userId) {
@@ -350,7 +359,9 @@ export async function followUser(followerId, followingId) {
     filter: `followerId="${followerId}" && followingId="${followingId}"`
   });
   if (existing.items.length) return existing.items[0];
-  return pb.collection('cplayz_follows').create({ followerId, followingId });
+  const f = await pb.collection('cplayz_follows').create({ followerId, followingId });
+  sendNotification(followingId, followerId, 'follow', '');
+  return f;
 }
 
 export async function unfollowUser(followerId, followingId) {
@@ -378,4 +389,24 @@ export async function markAllNotificationsRead(userId) {
       pb.collection('cplayz_notifications').update(n.id, { read: true })
     ));
   } catch {}
+}
+
+export async function sendNotification(recipientId, senderId, type, targetId) {
+  if (!recipientId || !senderId || recipientId === senderId) return;
+  try {
+    // Basic debounce check
+    const recent = await pb.collection('cplayz_notifications').getList(1, 1, {
+      filter: `recipientId="${recipientId}" && senderId="${senderId}" && type="${type}" && created >= @now-1h`
+    });
+    if (recent.items.length > 0) return;
+    await pb.collection('cplayz_notifications').create({
+      recipientId,
+      senderId,
+      type,
+      targetId,
+      read: false
+    });
+  } catch(e) {
+    console.error('Notification failed:', e);
+  }
 }

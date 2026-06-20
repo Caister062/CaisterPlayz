@@ -65,8 +65,9 @@ export default function FeedView({ posts, loading, users, currentUserId, notific
   // Sort by engagement for "Hot" deck
   const hotPosts = useMemo(() =>
     [...posts].sort((a, b) => {
-      const pa = (a.likedBy?.length || 0) + (a.repostedBy?.length || 0) + (a.viewedBy?.length || 0);
-      const pb = (b.likedBy?.length || 0) + (b.repostedBy?.length || 0) + (b.viewedBy?.length || 0);
+      const rc = (arr, authorId) => (arr || []).filter(id => id !== authorId).length;
+      const pa = rc(a.likedBy, a.userId) + rc(a.repostedBy, a.userId) + rc(a.viewedBy, a.userId);
+      const pb = rc(b.likedBy, b.userId) + rc(b.repostedBy, b.userId) + rc(b.viewedBy, b.userId);
       return pb - pa;
     }).slice(0, 10), [posts]);
 
@@ -117,7 +118,7 @@ export default function FeedView({ posts, loading, users, currentUserId, notific
 
           {/* Latest Drops — 2-column grid */}
           <div className="sec">
-            <span className="sec-label">📡 Latest Drops</span>
+            <span className="sec-label">📡 Signal Drops</span>
             <span className="sec-badge">{recentPosts.length}</span>
           </div>
           <div className="grid">

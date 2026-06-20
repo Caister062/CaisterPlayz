@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Home, Search, Lock, User, Plus, Swords, Bell, Loader } from 'lucide-react';
+import { Home, Search, Lock, User, Plus, Swords, Bell, Loader, ShieldAlert } from 'lucide-react';
 import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, ensureGuestUser } from './hooks';
 import FeedView from './components/FeedView';
 import ExploreView from './components/ExploreView';
 import NotificationsView from './components/NotificationsView';
 import ProfileView from './components/ProfileView';
 import VaultView from './components/VaultView';
-import SquadsView from './components/SquadsView';
+import AdminView from './components/AdminView';
 import Composer from './components/Composer';
 
 /* ─── CP Monogram SVG ─── */
@@ -24,8 +24,13 @@ export default function App() {
   const [userId, setUserId] = useState(null);
   const [booting, setBooting] = useState(true);
   const [viewProfile, setViewProfile] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    const adminEmail = localStorage.getItem('caister_admin');
+    if (adminEmail === 'caismoretton@gmail.com' || adminEmail === 'nexusnpc0@gmail') {
+      setIsAdmin(true);
+    }
     ensureGuestUser().then(u => setUserId(u.id)).catch(console.error).finally(() => setBooting(false));
   }, []);
 
@@ -57,7 +62,6 @@ export default function App() {
   const NAV = [
     { id: 'home',    icon: Home,   label: 'Base' },
     { id: 'explore', icon: Search, label: 'Arena' },
-    { id: 'squads',  icon: Swords, label: 'Squads' },
     { id: 'vault',   icon: Lock,   label: 'Vault' },
     { id: 'profile', icon: User,   label: 'Me' },
   ];
@@ -70,10 +74,23 @@ export default function App() {
           <div className="cp-mark">
             <CpMark size={18} />
           </div>
-          <span className="hud-name">CaisterPlayz</span>
+          <span className="hud-name" style={{ display: 'none' }}>CaisterPlayz</span>
         </div>
         <div className="hud-actions">
-          <button className={`hud-btn${tab==='notifications'?' lit':''}`} onClick={() => goTab('notifications')}>
+          {NAV.map(n => (
+            <button key={n.id} className={`hud-btn${tab===n.id?' lit':''}`} onClick={() => goTab(n.id)} title={n.label}>
+              <n.icon size={18} fill={tab===n.id?'currentColor':'none'} />
+            </button>
+          ))}
+          {isAdmin && (
+            <button className={`hud-btn${tab==='admin'?' lit':''}`} onClick={() => goTab('admin')} title="Admin" style={{ color: '#f43f5e' }}>
+              <ShieldAlert size={18} />
+            </button>
+          )}
+          <button className="hud-btn" onClick={() => setShowCompose(true)} title="Compose">
+            <Plus size={18} strokeWidth={2.5} />
+          </button>
+          <button className={`hud-btn${tab==='notifications'?' lit':''}`} onClick={() => goTab('notifications')} title="Notifications">
             <Bell size={18} />
             {unreadCount > 0 && <span className="hud-pip" />}
           </button>
@@ -84,29 +101,14 @@ export default function App() {
       <main className="main">
         {tab==='home' && <FeedView posts={posts} loading={loading} users={users} currentUserId={userId} notifications={notifications} onProfileClick={goProfile} />}
         {tab==='explore' && <ExploreView posts={posts} users={users} currentUserId={userId} onProfileClick={goProfile} />}
-        {tab==='squads' && <SquadsView posts={posts} users={users} currentUserId={userId} />}
         {tab==='vault' && <VaultView posts={posts} currentUserId={userId} users={users} onProfileClick={goProfile} />}
         {tab==='notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} onProfileClick={goProfile} />}
         {tab==='profile' && <ProfileView profile={pUser||me} posts={posts} users={users} currentUserId={userId} followData={viewProfile?{}:followData} onProfileClick={goProfile} onRefresh={refMe} />}
+        {tab==='admin' && isAdmin && <AdminView posts={posts} users={users} currentUserId={userId} />}
+        
+        {/* ─ Brand Footer ─ */}
+        <div className="brand-footer">Powered by CaisterPlayz</div>
       </main>
-
-      {/* ─ Brand Footer ─ */}
-      <div className="brand-footer">Powered by CaisterPlayz</div>
-
-      {/* ─ Bottom Nav ─ */}
-      <nav className="bnav">
-        {NAV.map(n => (
-          <button key={n.id} className={`bnav-item${tab===n.id?' on':''}`} onClick={() => goTab(n.id)}>
-            <n.icon size={20} fill={tab===n.id?'currentColor':'none'} />
-            <span>{n.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      {/* ─ FAB ─ */}
-      <button className="fab" onClick={() => setShowCompose(true)}>
-        <Plus size={20} strokeWidth={2.5} />
-      </button>
 
       {/* ─ Composer ─ */}
       {showCompose && userId && <Composer currentUserId={userId} currentUser={me} onClose={() => setShowCompose(false)} />}

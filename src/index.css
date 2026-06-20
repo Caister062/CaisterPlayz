@@ -59,7 +59,11 @@ input, textarea { font: inherit; }
   margin: 0 auto;
   min-height: 100dvh;
   display: flex; flex-direction: column;
-  background: var(--bg);
+  background: 
+    linear-gradient(rgba(4,6,14,0.85), rgba(4,6,14,0.95)),
+    repeating-linear-gradient(to right, rgba(0,229,255,0.03) 0px, rgba(0,229,255,0.03) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(to bottom, rgba(0,229,255,0.03) 0px, rgba(0,229,255,0.03) 1px, transparent 1px, transparent 40px);
+  background-color: var(--bg);
   position: relative;
 }
 
@@ -118,7 +122,7 @@ input, textarea { font: inherit; }
 }
 
 /* Main scroll area */
-.main { flex: 1; overflow-y: auto; padding-bottom: 104px; overscroll-behavior: contain; }
+.main { flex: 1; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom); overscroll-behavior: contain; }
 
 /* Bottom Nav */
 .bnav {
@@ -296,8 +300,8 @@ input, textarea { font: inherit; }
 ============================================================ */
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: 1fr;
+  gap: 12px;
   padding: 4px 10px 14px;
 }
 .g-card {
@@ -544,59 +548,7 @@ input, textarea { font: inherit; }
 /* ============================================================
    SQUADS (mini cards in dashboard)
 ============================================================ */
-.sq-row {
-  display: flex; gap: 8px; overflow-x: auto;
-  padding: 4px 14px 14px; scrollbar-width: none;
-}
-.sq-row::-webkit-scrollbar { display: none; }
-.sq-mini {
-  flex: 0 0 160px; padding: 10px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; cursor: pointer;
-  transition: border-color 0.2s;
-}
-.sq-mini:hover { border-color: var(--violet); }
-.sq-mini-icon { font-size: 20px; margin-bottom: 6px; }
-.sq-mini-name { font-size: 12px; font-weight: 900; color: var(--text); margin-bottom: 2px; }
-.sq-mini-count { font-size: 10px; color: var(--text3); font-family: "SF Mono", monospace; }
 
-/* Full squad page cards */
-.sq-card {
-  margin: 8px 10px; padding: 14px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 16px; transition: all 0.2s;
-}
-.sq-card:hover { border-color: var(--violet); }
-.sq-top { display: flex; gap: 10px; align-items: flex-start; }
-.sq-icon {
-  width: 44px; height: 44px; border-radius: 12px;
-  background: linear-gradient(135deg, var(--violet-dim), rgba(124,58,237,0.3));
-  border: 1px solid rgba(124,58,237,0.25);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0;
-}
-.sq-name { font-size: 14px; font-weight: 900; color: var(--text); }
-.sq-desc { font-size: 11px; color: var(--text3); line-height: 1.4; margin-top: 2px; }
-.sq-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-.sq-tag {
-  font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 6px;
-  background: var(--bg3); border: 1px solid var(--border-b);
-  color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em;
-  font-family: "SF Mono", monospace;
-}
-.sq-tag.hot { background: var(--hot-dim); border-color: rgba(244,63,94,0.25); color: var(--hot); }
-.sq-tag.open { background: var(--lime-dim); border-color: rgba(163,230,53,0.25); color: var(--lime); }
-.sq-actions { display: flex; gap: 6px; margin-top: 12px; }
-.sq-join {
-  flex: 1; padding: 9px; border-radius: 10px;
-  background: linear-gradient(90deg, var(--violet), #a855f7);
-  color: #fff; font-size: 11px; font-weight: 900;
-  text-transform: uppercase; letter-spacing: 0.06em; text-align: center;
-  font-family: "SF Mono", monospace;
-  box-shadow: 0 4px 14px rgba(124,58,237,0.3);
-}
-.sq-join:hover { opacity: 0.85; }
-.sq-join.in { background: var(--bg3); border: 1px solid var(--border-b); color: var(--text2); box-shadow: none; }
 
 /* Filters */
 .filters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 12px 10px; }
@@ -617,7 +569,7 @@ input, textarea { font: inherit; }
 .pcard-banner {
   height: 90px;
   background: linear-gradient(135deg, #050a1e, #0d0a30, #040e20);
-  position: relative; overflow: hidden;
+  position: relative;
   border-bottom: 1px solid var(--border);
 }
 .pcard-banner::before {
@@ -836,7 +788,7 @@ input, textarea { font: inherit; }
 .brand-empty-mark svg { width: 40px; height: 40px; }
 
 .brand-footer {
-  text-align: center; padding: 6px 0 2px;
+  text-align: center; padding: 20px 0 80px;
   font-size: 8px; font-weight: 800;
   letter-spacing: 0.14em; text-transform: uppercase;
   font-family: "SF Mono", monospace;
@@ -859,37 +811,92 @@ input, textarea { font: inherit; }
 }
 
 /* ============================================================
-   CAISTERPLAYZ BRAND ACCENTS
+   ADMIN COMMAND CENTER
 ============================================================ */
-.brand-empty-mark {
-  width: 72px; height: 72px; border-radius: 20px;
-  background: var(--caister-grad);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: var(--caister-glow);
-  margin-bottom: 12px;
-  animation: cpPulse 3s ease-in-out infinite;
+.admin-view {
+  padding: 14px 0 80px;
 }
-.brand-empty-mark svg { width: 40px; height: 40px; }
+.admin-hero {
+  padding: 20px 14px; text-align: center;
+}
+.admin-title {
+  font-size: 20px; font-weight: 900; color: #f43f5e;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  text-shadow: 0 0 20px rgba(244,63,94,0.4);
+}
+.admin-subtitle {
+  font-size: 11px; color: var(--text3); margin-top: 6px;
+}
 
-.brand-footer {
-  text-align: center; padding: 6px 0 2px;
-  font-size: 8px; font-weight: 800;
-  letter-spacing: 0.14em; text-transform: uppercase;
+.admin-stats {
+  display: flex; gap: 10px; padding: 0 14px 20px;
+}
+.stat-box {
+  flex: 1; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; text-align: center;
+}
+.stat-icon {
+  color: var(--cyan); margin-bottom: 8px;
+}
+.stat-val {
+  font-size: 24px; font-weight: 900; color: var(--text);
   font-family: "SF Mono", monospace;
-  background: linear-gradient(90deg, #00e5ff, #a78bfa, #f43f5e);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text; opacity: 0.35;
+}
+.stat-lbl {
+  font-size: 9px; color: var(--text3); text-transform: uppercase;
+  letter-spacing: 0.05em; margin-top: 4px;
 }
 
-/* Ambient scanline on HUD */
-.hud::after {
-  content: ''; position: absolute; inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 229, 255, 0.015) 2px,
-    rgba(0, 229, 255, 0.015) 4px
-  );
-  pointer-events: none; z-index: -1;
+.admin-tabs {
+  display: flex; padding: 0 14px; gap: 8px; margin-bottom: 14px;
+}
+.admin-tab {
+  flex: 1; padding: 10px; border-radius: 8px;
+  background: var(--bg3); border: 1px solid var(--border-b);
+  color: var(--text3); font-size: 11px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  transition: all 0.2s;
+}
+.admin-tab.on {
+  background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.3);
+  color: #f43f5e;
+}
+
+.admin-list {
+  display: flex; flex-direction: column; gap: 8px; padding: 0 14px;
+}
+.admin-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px;
+}
+.admin-item-meta {
+  font-size: 11px; color: var(--text3); margin-bottom: 4px;
+}
+.admin-item-text {
+  font-size: 13px; color: var(--text2); line-height: 1.4;
+}
+.admin-item-media {
+  font-size: 10px; color: var(--cyan); margin-top: 6px;
+  font-weight: 800; text-transform: uppercase;
+}
+.admin-del-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: rgba(244,63,94,0.1); color: #f43f5e;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(244,63,94,0.2); transition: all 0.2s;
+}
+.admin-del-btn:hover {
+  background: #f43f5e; color: #fff;
+}
+
+.admin-login-btn {
+  padding: 10px 16px; border-radius: 10px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text3); font-size: 10px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  transition: all 0.2s;
+}
+.admin-login-btn:hover {
+  border-color: #f43f5e; color: #f43f5e;
 }

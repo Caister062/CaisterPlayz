@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Eye, MoreHorizontal, Trash2, Share2, Loader } from 'lucide-react';
 import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, deleteComment } from '../hooks';
+import { formatCount } from '../utils';
 
 export function timeAgo(ts) {
   if (!ts) return '';
@@ -45,25 +46,30 @@ function RichBody({ text, cls = 'expand-text' }) {
   );
 }
 
+/* Filter author out of engagement arrays so only real engagement counts */
+function realCount(arr, authorId) {
+  return (arr || []).filter(id => id !== authorId).length;
+}
+
 /* ─── Grid Card (compact, shown in dashboard) ─── */
 export function GridCard({ post, users, onClick }) {
   const author = users.find(u => u.id === post.userId);
   if (!author) return null;
-  const power = (post.likedBy?.length || 0) + (post.repostedBy?.length || 0);
+  const power = realCount(post.likedBy, post.userId) + realCount(post.repostedBy, post.userId);
 
   return (
     <div className="g-card" onClick={() => onClick(post)}>
       <div className="g-card-head">
         <Hex src={author.avatarUrl} name={author.displayName} size="sm" />
-        <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text)' }}>{author.displayName}</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '0.01em' }}>{author.displayName}</span>
       </div>
       {post.imageUrl && (
         <div className="g-card-media"><img src={post.imageUrl} alt="" loading="lazy" /></div>
       )}
       <div className="g-card-text">{post.text}</div>
       <div className="g-card-power">
-        {power > 0 && <span className="power-chip">⚡ {power}</span>}
-        {(post.viewedBy?.length || 0) > 0 && <span className="power-chip">👁 {post.viewedBy.length}</span>}
+        {power > 0 && <span className="power-chip">⚡ {formatCount(power)}</span>}
+        {realCount(post.viewedBy, post.userId) > 0 && <span className="power-chip">👁 {formatCount(realCount(post.viewedBy, post.userId))}</span>}
       </div>
     </div>
   );
@@ -73,14 +79,14 @@ export function GridCard({ post, users, onClick }) {
 export function DeckCard({ post, users, onClick }) {
   const author = users.find(u => u.id === post.userId);
   if (!author) return null;
-  const power = (post.likedBy?.length || 0) + (post.repostedBy?.length || 0);
+  const power = realCount(post.likedBy, post.userId) + realCount(post.repostedBy, post.userId);
 
   return (
     <div className="deck-card" onClick={() => onClick(post)}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <Hex src={author.avatarUrl} name={author.displayName} size="sm" />
         <div>
-          <div style={{ fontSize: 11, fontWeight: 900 }}>{author.displayName}</div>
+          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.01em' }}>{author.displayName}</div>
           <div style={{ fontSize: 9, color: 'var(--text3)' }}>{timeAgo(post.created)}</div>
         </div>
       </div>
@@ -89,8 +95,8 @@ export function DeckCard({ post, users, onClick }) {
       )}
       <div className="deck-card-text">{post.text}</div>
       <div className="deck-card-foot">
-        <span className="deck-power">⚡ {power}</span>
-        {(post.viewedBy?.length || 0) > 0 && <span className="deck-views">👁 {post.viewedBy.length}</span>}
+        <span className="deck-power">⚡ {formatCount(power)}</span>
+        {realCount(post.viewedBy, post.userId) > 0 && <span className="deck-views">👁 {formatCount(realCount(post.viewedBy, post.userId))}</span>}
       </div>
     </div>
   );
@@ -119,11 +125,11 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
   const author = users.find(u => u.id === post.userId);
 
   const liked = oLiked !== null ? oLiked : (post.likedBy || []).includes(currentUserId);
-  const likeN = oLikeN !== null ? oLikeN : (post.likedBy || []).length;
+  const likeN = oLikeN !== null ? oLikeN : realCount(post.likedBy, post.userId);
   const reposted = oReposted !== null ? oReposted : (post.repostedBy || []).includes(currentUserId);
-  const repostN = oRepostN !== null ? oRepostN : (post.repostedBy || []).length;
+  const repostN = oRepostN !== null ? oRepostN : realCount(post.repostedBy, post.userId);
   const pinned = oPinned !== null ? oPinned : (post.favoritedBy || []).includes(currentUserId);
-  const viewN = (post.viewedBy || []).length;
+  const viewN = realCount(post.viewedBy, post.userId);
 
   // View on open (not own post)
   useEffect(() => {
@@ -236,15 +242,15 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
                 style={r.disabled ? { opacity: 0.4, cursor: 'default' } : {}}
               >
                 <span className="remoji">{r.emoji}</span>
-                {r.count > 0 ? r.count : r.label}
+                {r.count > 0 ? formatCount(r.count) : r.label}
               </button>
             ))}
           </div>
 
           {/* Meta */}
           <div className="react-meta">
-            {viewN > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Eye size={13} /> {viewN} views</span>}
-            <span>{comments.length} replies</span>
+            {viewN > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Eye size={13} /> {formatCount(viewN)} views</span>}
+            <span>{formatCount(comments.length)} replies</span>
           </div>
 
           {/* Thread */}

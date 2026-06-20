@@ -7,6 +7,7 @@ import pb from './pocketbase';
 
 export async function toggleLike(postId, userId, isLiked) {
   const post = await pb.collection('cplayz_posts').getOne(postId);
+  if (post.userId === userId) return; // Author can't zap their own post
 
   let likedBy = post.likedBy || [];
 
@@ -21,6 +22,7 @@ export async function toggleLike(postId, userId, isLiked) {
 
 export async function toggleRepost(postId, userId, isReposted) {
   const post = await pb.collection('cplayz_posts').getOne(postId);
+  if (post.userId === userId) return; // Author can't echo their own post
 
   let repostedBy = post.repostedBy || [];
 

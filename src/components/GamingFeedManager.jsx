@@ -44,9 +44,10 @@ export default function GamingFeedManager({
 
   // Calculate engagement scores for trending
   const getEngagementScore = useCallback((post) => {
-    const likes = (post.likedBy || []).length;
-    const reposts = (post.repostedBy || []).length;
-    const views = (post.viewedBy || []).length * 0.1;
+    const rc = (arr) => (arr || []).filter(id => id !== post.userId).length;
+    const likes = rc(post.likedBy);
+    const reposts = rc(post.repostedBy);
+    const views = rc(post.viewedBy) * 0.1;
     return likes * 10 + reposts * 20 + views;
   }, []);
 

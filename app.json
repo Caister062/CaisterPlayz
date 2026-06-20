@@ -1,5 +1,11 @@
 {
   "expo": {
+    "name": "CaisterPlayz",
+    "slug": "caimo",
+    "version": "1.0.0",
+    "ios": {
+      "bundleIdentifier": "com.caisterplayz200.caimo"
+    },
     "extra": {
       "eas": {
         "projectId": "e8f79292-26c0-423c-9f08-04a3f46be75f"

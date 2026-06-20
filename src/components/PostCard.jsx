@@ -32,14 +32,23 @@ function RichBody({ text, cls = 'expand-text' }) {
   let m;
 
   while ((m = rx.exec(text)) !== null) {
-    if (m.index > last) parts.push({ t: 'x', v: text.slice(last, m.index) });
+    if (m.index > last) {
+      parts.push({ t: 'x', v: text.slice(last, m.index) });
+    }
 
     const w = m[0];
-    parts.push({ t: w[0] === '#' ? 'h' : w[0] === '@' ? 'a' : 'l', v: w });
+
+    parts.push({
+      t: w[0] === '#' ? 'h' : w[0] === '@' ? 'a' : 'l',
+      v: w
+    });
+
     last = m.index + w.length;
   }
 
-  if (last < text.length) parts.push({ t: 'x', v: text.slice(last) });
+  if (last < text.length) {
+    parts.push({ t: 'x', v: text.slice(last) });
+  }
 
   return (
     <div className={cls}>
@@ -49,7 +58,13 @@ function RichBody({ text, cls = 'expand-text' }) {
         ) : p.t === 'a' ? (
           <span key={i} className="at">{p.v}</span>
         ) : p.t === 'l' ? (
-          <a key={i} href={p.v} target="_blank" rel="noreferrer" className="lnk">
+          <a
+            key={i}
+            href={p.v}
+            target="_blank"
+            rel="noreferrer"
+            className="lnk"
+          >
             {p.v.replace(/^https?:\/\/(www\.)?/, '').slice(0, 35)}
           </a>
         ) : (
@@ -67,10 +82,10 @@ function realCount(arr, authorId) {
 function getSignalStrength(power, views) {
   const total = power + views;
 
-  if (total >= 100) return 'Extreme';
-  if (total >= 50) return 'High';
-  if (total >= 15) return 'Rising';
-  return 'Fresh';
+  if (total >= 100) return 'Overload';
+  if (total >= 50) return 'Charged';
+  if (total >= 15) return 'Active';
+  return 'Dormant';
 }
 
 export function GridCard({ post, users, onClick }) {
@@ -82,6 +97,7 @@ export function GridCard({ post, users, onClick }) {
     realCount(post.repostedBy, post.userId);
 
   const views = realCount(post.viewedBy, post.userId);
+
   const isVerified = window.cplayz_config?.verifiedUsers?.includes(author.id);
   const isFeatured = window.cplayz_config?.featuredPosts?.includes(post.id);
 
@@ -111,7 +127,11 @@ export function GridCard({ post, users, onClick }) {
         <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>
           {author.displayName}
           {isVerified && (
-            <CheckCircle size={12} color="#00e5ff" style={{ marginLeft: 4, display: 'inline' }} />
+            <CheckCircle
+              size={12}
+              color="#00e5ff"
+              style={{ marginLeft: 4, display: 'inline' }}
+            />
           )}
         </span>
       </div>
@@ -125,9 +145,21 @@ export function GridCard({ post, users, onClick }) {
       <div className="g-card-text">{post.text}</div>
 
       <div className="g-card-power">
-        <span className="power-chip">📡 {getSignalStrength(power, views)}</span>
-        {power > 0 && <span className="power-chip">⚡ {formatCount(power)}</span>}
-        {views > 0 && <span className="power-chip">◉ {formatCount(views)}</span>}
+        <span className="power-chip">
+          📡 {getSignalStrength(power, views)}
+        </span>
+
+        {power > 0 && (
+          <span className="power-chip">
+            ⚡ {formatCount(power)}
+          </span>
+        )}
+
+        {views > 0 && (
+          <span className="power-chip">
+            ◉ {formatCount(views)}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -149,7 +181,10 @@ export function DeckCard({ post, users, onClick }) {
         <Hex src={author.avatarUrl} name={author.displayName} size="sm" />
 
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800 }}>{author.displayName}</div>
+          <div style={{ fontSize: 13, fontWeight: 800 }}>
+            {author.displayName}
+          </div>
+
           <div style={{ fontSize: 9, color: 'var(--text3)' }}>
             Signal Strength: {getSignalStrength(power, views)}
           </div>
@@ -165,14 +200,26 @@ export function DeckCard({ post, users, onClick }) {
       <div className="deck-card-text">{post.text}</div>
 
       <div className="deck-card-foot">
-        <span className="deck-power">⚡ {formatCount(power)}</span>
-        {views > 0 && <span className="deck-views">📡 {formatCount(views)}</span>}
+        <span className="deck-power">
+          ⚡ {formatCount(power)}
+        </span>
+
+        {views > 0 && (
+          <span className="deck-views">
+            📡 {formatCount(views)}
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
-export default function ExpandedBroadcast({ post, currentUserId, users, onClose }) {
+export default function ExpandedBroadcast({
+  post,
+  currentUserId,
+  users,
+  onClose
+}) {
   const [echoText, setEchoText] = useState('');
   const [sending, setSending] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -196,13 +243,31 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
   const isVerified = window.cplayz_config?.verifiedUsers?.includes(author?.id);
   const isFeatured = window.cplayz_config?.featuredPosts?.includes(post.id);
 
-  const liked = oLiked !== null ? oLiked : (post.likedBy || []).includes(currentUserId);
-  const likeN = oLikeN !== null ? oLikeN : realCount(post.likedBy, post.userId);
+  const liked =
+    oLiked !== null
+      ? oLiked
+      : (post.likedBy || []).includes(currentUserId);
 
-  const reposted = oReposted !== null ? oReposted : (post.repostedBy || []).includes(currentUserId);
-  const repostN = oRepostN !== null ? oRepostN : realCount(post.repostedBy, post.userId);
+  const likeN =
+    oLikeN !== null
+      ? oLikeN
+      : realCount(post.likedBy, post.userId);
 
-  const pinned = oPinned !== null ? oPinned : (post.favoritedBy || []).includes(currentUserId);
+  const reposted =
+    oReposted !== null
+      ? oReposted
+      : (post.repostedBy || []).includes(currentUserId);
+
+  const repostN =
+    oRepostN !== null
+      ? oRepostN
+      : realCount(post.repostedBy, post.userId);
+
+  const pinned =
+    oPinned !== null
+      ? oPinned
+      : (post.favoritedBy || []).includes(currentUserId);
+
   const viewN = realCount(post.viewedBy, post.userId);
 
   const signalStrength = getSignalStrength(likeN + repostN, viewN);
@@ -231,6 +296,7 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
 
       if (type === 'boost') {
         const next = !liked;
+
         setOLiked(next);
         setOLikeN(Math.max(0, likeN + (next ? 1 : -1)));
 
@@ -247,8 +313,9 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
         }, 500);
       }
 
-      if (type === 'pulse') {
+      if (type === 'relay') {
         const next = !reposted;
+
         setOReposted(next);
         setORepostN(Math.max(0, repostN + (next ? 1 : -1)));
 
@@ -267,16 +334,29 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
 
       if (type === 'anchor') {
         const next = !pinned;
+
         setOPinned(next);
-        toggleBookmark(post.id, currentUserId, !next).catch(() => setOPinned(pinned));
+
+        toggleBookmark(post.id, currentUserId, !next).catch(() =>
+          setOPinned(pinned)
+        );
       }
     },
-    [liked, likeN, reposted, repostN, pinned, post.id, currentUserId]
+    [
+      liked,
+      likeN,
+      reposted,
+      repostN,
+      pinned,
+      post.id,
+      currentUserId
+    ]
   );
 
   const doEcho = useCallback(
     async e => {
       e.preventDefault();
+
       if (!echoText.trim() || sending) return;
 
       setSending(true);
@@ -294,7 +374,7 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
   );
 
   const doDel = useCallback(async () => {
-    if (!confirm('Delete this broadcast?')) return;
+    if (!confirm('Purge this signal?')) return;
 
     setDeleting(true);
 
@@ -319,9 +399,9 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
       cls: 'active-zap'
     },
     {
-      key: 'pulse',
-      emoji: '🔥',
-      label: 'Pulse',
+      key: 'relay',
+      emoji: '📡',
+      label: 'Relay',
       count: repostN,
       active: reposted,
       cls: 'active-fire'
@@ -365,11 +445,15 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
         <div className="expand-card" onClick={e => e.stopPropagation()}>
           <div className="expand-header" style={{ position: 'relative' }}>
             <div className="expand-author">
-              <Hex src={author.avatarUrl} name={author.displayName} size="lg" />
+              <Hex
+                src={author.avatarUrl}
+                name={author.displayName}
+                size="lg"
+              />
 
               <div className="expand-meta">
                 <div className="expand-name">
-                  {author?.displayName || 'Unknown'}
+                  {author?.displayName || 'Unknown Operator'}
 
                   {isVerified && (
                     <CheckCircle
@@ -428,7 +512,7 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
                       navigator.clipboard?.writeText(location.href);
                   }}
                 >
-                  <Share2 size={12} /> Relay Signal
+                  <Share2 size={12} /> Transmit Signal
                 </button>
 
                 {post.userId === currentUserId && (
@@ -439,8 +523,12 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
                     }}
                     style={{ color: 'var(--hot)' }}
                   >
-                    {deleting ? <Loader size={12} className="spin" /> : <Trash2 size={12} />}
-                    Delete
+                    {deleting ? (
+                      <Loader size={12} className="spin" />
+                    ) : (
+                      <Trash2 size={12} />
+                    )}
+                    Purge Signal
                   </button>
                 )}
               </div>
@@ -476,7 +564,7 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
           <div className="react-meta">
             {viewN > 0 && (
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Eye size={13} /> {formatCount(viewN)} detections
+                <Eye size={13} /> {formatCount(viewN)} signal scans
               </span>
             )}
 
@@ -484,7 +572,7 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
           </div>
 
           <div className="thread">
-            <div className="thread-title">Echo Chain</div>
+            <div className="thread-title">Signal Thread</div>
 
             <form className="thread-form" onSubmit={doEcho}>
               <Hex
@@ -497,7 +585,7 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
                 className="thread-input"
                 value={echoText}
                 onChange={e => setEchoText(e.target.value)}
-                placeholder="Send an Echo..."
+                placeholder="Transmit Echo..."
                 maxLength={280}
               />
 
@@ -506,7 +594,11 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
                 className="thread-send"
                 disabled={!echoText.trim() || sending}
               >
-                {sending ? <Loader size={11} className="spin" /> : 'SEND'}
+                {sending ? (
+                  <Loader size={11} className="spin" />
+                ) : (
+                  'SEND'
+                )}
               </button>
             </form>
 
@@ -519,7 +611,7 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
                   padding: '2px 0 6px'
                 }}
               >
-                No echoes yet
+                No signal echoes detected
               </p>
             )}
 
@@ -528,7 +620,11 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
 
               return (
                 <div key={c.id} className="reply-item">
-                  <Hex src={cu?.avatarUrl} name={cu?.displayName || '?'} size="sm" />
+                  <Hex
+                    src={cu?.avatarUrl}
+                    name={cu?.displayName || '?'}
+                    size="sm"
+                  />
 
                   <div className="reply-bubble">
                     <div
@@ -538,13 +634,15 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
                         justifyContent: 'space-between'
                       }}
                     >
-                      <div className="reply-who">{cu?.displayName || 'User'}</div>
+                      <div className="reply-who">
+                        {cu?.displayName || 'Operator'}
+                      </div>
 
                       {c.userId === currentUserId && (
                         <button
                           className="reply-del"
                           onClick={() => {
-                            if (confirm('Delete echo?')) {
+                            if (confirm('Remove this echo?')) {
                               deleteComment(c.id, currentUserId).catch(console.error);
                             }
                           }}
@@ -570,7 +668,11 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
             ✕
           </button>
 
-          <img src={post.imageUrl} alt="" onClick={e => e.stopPropagation()} />
+          <img
+            src={post.imageUrl}
+            alt=""
+            onClick={e => e.stopPropagation()}
+          />
         </div>
       )}
 

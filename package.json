@@ -27,7 +27,8 @@
     "pocketbase": "^0.26.8",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "tailwindcss": "^4.2.4"
+    "tailwindcss": "^4.2.4",
+    "react-native": "0.85.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.1",

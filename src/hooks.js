@@ -55,7 +55,8 @@ export function useRealtimePosts() {
   const fetchAll = useCallback(async () => {
     try {
       const res = await pb.collection('cplayz_posts').getList(1, 50, {
-        sort: '-created'
+        sort: '-created',
+        filter: 'type != "system_config"'
       });
       setPosts(res.items);
     } catch (err) {
@@ -72,6 +73,7 @@ export function useRealtimePosts() {
     (async () => {
       try {
         unsub = await pb.collection('cplayz_posts').subscribe('*', (e) => {
+          if (e.record.type === 'system_config') return;
           if (e.action === 'create') {
             setPosts(prev => [e.record, ...prev]);
           } else if (e.action === 'update') {
@@ -101,6 +103,50 @@ export function useRealtimePosts() {
   }, [fetchAll]);
 
   return { posts, loading, refresh: fetchAll };
+}
+
+/* ─────────────────────────────
+   SYSTEM CONFIG
+───────────────────────────── */
+export function useSystemConfig() {
+  const [config, setConfig] = useState({ bannedWords: [], verifiedUsers: [], featuredPosts: [], lockdown: false });
+  const [configId, setConfigId] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await pb.collection('cplayz_posts').getList(1, 1, { filter: 'type="system_config"' });
+        if (res.items.length > 0) {
+          const rec = res.items[0];
+          setConfigId(rec.id);
+          try {
+            const parsed = JSON.parse(rec.text);
+            setConfig(parsed);
+          } catch(e) {}
+        } else {
+          // Create the config record if it doesn't exist. Admin only feature but we just create it as a global post.
+          const userId = localStorage.getItem('cplayz_user_id');
+          if (userId) {
+            const newConf = await pb.collection('cplayz_posts').create({
+              userId,
+              type: 'system_config',
+              text: JSON.stringify({ bannedWords: [], verifiedUsers: [], featuredPosts: [], lockdown: false })
+            });
+            setConfigId(newConf.id);
+          }
+        }
+      } catch(e) {
+        console.error('Config fetch failed:', e);
+      }
+    })();
+  }, []);
+
+  return { config, configId };
+}
+
+export async function updateSystemConfig(configId, newConfigObj) {
+  if (!configId) return;
+  await pb.collection('cplayz_posts').update(configId, { text: JSON.stringify(newConfigObj) });
 }
 
 /* ─────────────────────────────

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Camera, Check, X, Loader } from 'lucide-react';
+import { Camera, Check, X, Loader, CheckCircle } from 'lucide-react';
 import { GridCard, Hex, timeAgo } from './PostCard';
 import ExpandedBroadcast from './PostCard';
 import { updateProfile } from '../hooks';
@@ -90,7 +90,10 @@ export default function ProfileView({ profile, posts, users, currentUserId, foll
           </div>
         ) : (
           <>
-            <div className="pcard-name">{profile.displayName}</div>
+            <div className="pcard-name">
+              {profile.displayName}
+              {window.cplayz_config?.verifiedUsers?.includes(profile.id) && <CheckCircle size={18} color="#00e5ff" style={{ marginLeft: 6, display: 'inline' }} />}
+            </div>
             <div className="pcard-joined">Joined {timeAgo(profile.created)}</div>
             {profile.bio && <div className="pcard-bio">{profile.bio}</div>}
           </>

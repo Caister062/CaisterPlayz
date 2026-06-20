@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Eye, MoreHorizontal, Trash2, Share2, Loader } from 'lucide-react';
+import { Eye, MoreHorizontal, Trash2, Share2, Loader, CheckCircle, Pin } from 'lucide-react';
 import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, deleteComment } from '../hooks';
 import { formatCount } from '../utils';
 
@@ -56,12 +56,18 @@ export function GridCard({ post, users, onClick }) {
   const author = users.find(u => u.id === post.userId);
   if (!author) return null;
   const power = realCount(post.likedBy, post.userId) + realCount(post.repostedBy, post.userId);
+  const isVerified = window.cplayz_config?.verifiedUsers?.includes(author.id);
+  const isFeatured = window.cplayz_config?.featuredPosts?.includes(post.id);
 
   return (
     <div className="g-card" onClick={() => onClick(post)}>
+      {isFeatured && <div style={{ position: 'absolute', top: -8, right: -8, background: 'var(--hot)', color: '#fff', borderRadius: '50%', padding: 4, zIndex: 10, boxShadow: '0 0 10px rgba(244,63,94,0.5)' }}><Pin size={12} fill="currentColor" /></div>}
       <div className="g-card-head">
         <Hex src={author.avatarUrl} name={author.displayName} size="sm" />
-        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '0.01em' }}>{author.displayName}</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '0.01em' }}>
+          {author.displayName}
+          {isVerified && <CheckCircle size={12} color="#00e5ff" style={{ marginLeft: 4, display: 'inline' }} />}
+        </span>
       </div>
       {post.imageUrl && (
         <div className="g-card-media"><img src={post.imageUrl} alt="" loading="lazy" /></div>
@@ -123,6 +129,8 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
 
   const { comments } = useComments(post.id);
   const author = users.find(u => u.id === post.userId);
+  const isVerified = window.cplayz_config?.verifiedUsers?.includes(author?.id);
+  const isFeatured = window.cplayz_config?.featuredPosts?.includes(post.id);
 
   const liked = oLiked !== null ? oLiked : (post.likedBy || []).includes(currentUserId);
   const likeN = oLikeN !== null ? oLikeN : realCount(post.likedBy, post.userId);
@@ -197,8 +205,12 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
           <div className="expand-header" style={{ position: 'relative' }}>
             <div className="expand-author">
               <Hex src={author.avatarUrl} name={author.displayName} size="lg" />
-              <div>
-                <div className="expand-name">{author.displayName}</div>
+              <div className="expand-meta">
+                <div className="expand-name">
+                  {author?.displayName || 'Unknown'}
+                  {isVerified && <CheckCircle size={16} color="#00e5ff" style={{ marginLeft: 6, display: 'inline' }} />}
+                  {isFeatured && <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(244,63,94,0.1)', color: 'var(--hot)', padding: '2px 6px', borderRadius: 6, marginLeft: 6, fontSize: 10, border: '1px solid rgba(244,63,94,0.2)' }}><Pin size={10} style={{ marginRight: 4 }}/> Featured</div>}
+                </div>
                 <div className="expand-time">{timeAgo(post.created)}</div>
               </div>
             </div>

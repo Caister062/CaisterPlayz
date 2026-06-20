@@ -24,6 +24,11 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
   }, [posts]);
 
   const media = useMemo(() => posts.filter(p => p.imageUrl).slice(0,24), [posts]);
+  
+  const featured = useMemo(() => {
+    const ids = window.cplayz_config?.featuredPosts || [];
+    return posts.filter(p => ids.includes(p.id));
+  }, [posts]);
 
   return (
     <div>
@@ -44,6 +49,12 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
         </>
       ) : (
         <>
+          {featured.length > 0 && (
+            <>
+              <div className="sec"><span className="sec-label">Arena Features</span></div>
+              <div className="grid" style={{ marginBottom: 20 }}>{featured.map(p => <GridCard key={p.id} post={p} users={users} onClick={setExpanded} />)}</div>
+            </>
+          )}
           {hashtags.length > 0 && (
             <>
               <div className="sec"><span className="sec-label">Trending Tags</span></div>

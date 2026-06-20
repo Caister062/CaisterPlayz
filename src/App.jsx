@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Home, Search, Lock, User, Plus, Swords, Bell, Loader, ShieldAlert } from 'lucide-react';
-import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, ensureGuestUser } from './hooks';
+import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, ensureGuestUser, useSystemConfig } from './hooks';
 import FeedView from './components/FeedView';
 import ExploreView from './components/ExploreView';
 import NotificationsView from './components/NotificationsView';
@@ -40,7 +40,10 @@ export default function App() {
   const followData = useFollows(userId);
   const { profile: me, refresh: refMe } = useUserProfile(userId);
 
-  const pUser = viewProfile ? users.find(u => u.id === viewProfile) : me;
+  const pUser = viewProfile ? users.find(u => u.id === viewProfile) : null;
+  const meUser = users.find(u => u.id === userId);
+  const { config } = useSystemConfig();
+  if (config) window.cplayz_config = config;
 
   const goProfile = (uid) => { setViewProfile(uid); setTab('profile'); };
   const goTab = (t) => { if (t === 'profile') setViewProfile(null); setTab(t); };
@@ -68,8 +71,16 @@ export default function App() {
 
   return (
     <div className="console">
-      {/* ─ HUD ─ */}
-      <header className="hud">
+      {config.lockdown && !isAdmin ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 20, textAlign: 'center' }}>
+          <ShieldAlert size={64} color="#f43f5e" style={{ marginBottom: 20 }} />
+          <h1 style={{ fontSize: 24, fontWeight: 900, color: '#f43f5e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Platform Lockdown</h1>
+          <p style={{ marginTop: 10, color: 'var(--text2)', fontSize: 14 }}>CaisterPlayz is currently undergoing emergency maintenance. Please check back later.</p>
+        </div>
+      ) : (
+        <>
+          {/* ─ HUD ─ */}
+          <header className="hud">
         <div className="hud-logo">
           <div className="cp-mark">
             <CpMark size={18} />
@@ -82,11 +93,22 @@ export default function App() {
               <n.icon size={18} fill={tab===n.id?'currentColor':'none'} />
             </button>
           ))}
-          {isAdmin && (
-            <button className={`hud-btn${tab==='admin'?' lit':''}`} onClick={() => goTab('admin')} title="Admin" style={{ color: '#f43f5e' }}>
-              <ShieldAlert size={18} />
-            </button>
-          )}
+          <button className={`hud-btn${tab==='admin'?' lit':''}`} onClick={() => {
+            if (isAdmin) {
+              goTab('admin');
+            } else {
+              const email = prompt('Enter Admin Email:');
+              if (email === 'caismoretton@gmail.com' || email === 'nexusnpc0@gmail' || email === 'nexusnpc0@gmail.com') {
+                localStorage.setItem('caister_admin', email);
+                setIsAdmin(true);
+                goTab('admin');
+              } else if (email) {
+                alert('Unauthorized.');
+              }
+            }
+          }} title="Admin" style={{ color: '#f43f5e' }}>
+            <ShieldAlert size={18} />
+          </button>
           <button className="hud-btn" onClick={() => setShowCompose(true)} title="Compose">
             <Plus size={18} strokeWidth={2.5} />
           </button>
@@ -99,11 +121,11 @@ export default function App() {
 
       {/* ─ Main ─ */}
       <main className="main">
-        {tab==='home' && <FeedView posts={posts} loading={loading} users={users} currentUserId={userId} notifications={notifications} onProfileClick={goProfile} />}
-        {tab==='explore' && <ExploreView posts={posts} users={users} currentUserId={userId} onProfileClick={goProfile} />}
-        {tab==='vault' && <VaultView posts={posts} currentUserId={userId} users={users} onProfileClick={goProfile} />}
+        {tab==='home' && <FeedView posts={posts} loading={loading} users={users} currentUserId={userId} notifications={notifications} onProfileClick={goProfile} config={config} />}
+        {tab==='explore' && <ExploreView posts={posts} users={users} currentUserId={userId} onProfileClick={goProfile} config={config} />}
+        {tab==='vault' && <VaultView posts={posts} currentUserId={userId} users={users} onProfileClick={goProfile} config={config} />}
         {tab==='notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} onProfileClick={goProfile} />}
-        {tab==='profile' && <ProfileView profile={pUser||me} posts={posts} users={users} currentUserId={userId} followData={viewProfile?{}:followData} onProfileClick={goProfile} onRefresh={refMe} />}
+        {tab==='profile' && <ProfileView profile={pUser||me} posts={posts} users={users} currentUserId={userId} followData={viewProfile?{}:followData} onProfileClick={goProfile} onRefresh={refMe} config={config} />}
         {tab==='admin' && isAdmin && <AdminView posts={posts} users={users} currentUserId={userId} />}
         
         {/* ─ Brand Footer ─ */}
@@ -112,6 +134,8 @@ export default function App() {
 
       {/* ─ Composer ─ */}
       {showCompose && userId && <Composer currentUserId={userId} currentUser={me} onClose={() => setShowCompose(false)} />}
+      </>
+      )}
     </div>
   );
 }

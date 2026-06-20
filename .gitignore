@@ -42,3 +42,18 @@ deploy_ec2.cjs
 *hf*.js
 test_free_tier.cjs
 scratch/
+
+# Build / Capacitor
+ios/
+android/
+.capacitor/
+
+# Expo
+.expo/
+.dev-expack/
+expo/
+app.json
+eas.json
+
+# Dev dist
+dev-dist/

@@ -6,15 +6,24 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {
+        "scheme": "App",
+        "projectPath": "ios/App/App.xcodeproj"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {
+        "scheme": "App",
+        "projectPath": "ios/App/App.xcodeproj"
+      }
     },
     "production": {
       "autoIncrement": true,
       "ios": {
-        "scheme": "App"
+        "scheme": "App",
+        "projectPath": "ios/App/App.xcodeproj"
       }
     }
   },

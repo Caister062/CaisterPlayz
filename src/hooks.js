@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import pb from './pocketbase';
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    DEVICE / GUEST AUTH
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 function getDeviceId() {
   let id = localStorage.getItem('cplayz_device_id');
 
@@ -54,9 +54,9 @@ export async function ensureGuestUser() {
   return user;
 }
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    REALTIME SIGNALS
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 export function useRealtimePosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,9 +124,9 @@ export function useRealtimePosts() {
   return { posts, loading, refresh: fetchAll };
 }
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    SYSTEM CONFIG
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 export function useSystemConfig() {
   const [config, setConfig] = useState({
     bannedWords: [],
@@ -186,9 +186,9 @@ export async function updateSystemConfig(configId, newConfigObj) {
   });
 }
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    OPERATORS
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 export function useAllUsers() {
   const [users, setUsers] = useState([]);
 
@@ -253,9 +253,9 @@ export function useUserProfile(userId) {
   return { profile, refresh: fetchProfile };
 }
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    ECHOES
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 export function useComments(postId) {
   const [comments, setComments] = useState([]);
 
@@ -305,9 +305,9 @@ export function useComments(postId) {
   return { comments, refreshComments: fetchComments };
 }
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    SIGNAL ALERTS
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 export function useNotifications(userId) {
   const [notifications, setNotifications] = useState([]);
 
@@ -365,9 +365,9 @@ export function useNotifications(userId) {
   };
 }
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    CONNECTIONS
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 export function useFollows(userId) {
   const [following, setFollowing] = useState([]);
   const [followers, setFollowers] = useState([]);
@@ -397,9 +397,9 @@ export function useFollows(userId) {
   return { following, followers, refresh: fetchFollows };
 }
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    WRITE HELPERS
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 function uniqueList(arr) {
   return [...new Set((arr || []).filter(Boolean))];
 }
@@ -418,9 +418,9 @@ async function debouncedToggle(key, fn, delay = 500) {
   }
 }
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    SIGNAL ACTIONS
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 export async function toggleBoost(postId, userId, isBoosted) {
   return debouncedToggle(`boost:${postId}:${userId}`, async () => {
     const post = await pb.collection('cplayz_posts').getOne(postId);
@@ -579,9 +579,9 @@ export async function updateProfile(userId, data) {
   return pb.collection('cplayz_users').update(userId, data);
 }
 
-/* ─────────────────────────────
+/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    ALERT READ STATE
-───────────────────────────── */
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 export async function markNotificationRead(notificationId) {
   return pb.collection('cplayz_notifications').update(notificationId, {
     read: true
@@ -623,3 +623,15 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId) {
     console.error('Signal alert failed:', e);
   }
 }
+
+/* ─── Compatibility aliases for pre-fitness imports ─── */
+export const toggleLike = toggleBoost;
+export const toggleRepost = toggleRelay;
+export const toggleBookmark = toggleAnchor;
+export const createPost = createSignal;
+export const deletePost = purgeSignal;
+export const addComment = addEcho;
+export const deleteComment = removeEcho;
+export const followUser = connectCore;
+export const unfollowUser = disconnectCore;
+export const sendNotification = sendSignalAlert;

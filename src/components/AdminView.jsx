@@ -42,15 +42,15 @@ export default function AdminView({ posts, users, currentUserId }) {
     setDeleting(null);
   };
 
-  // F1: Global Announcement
   const handleGlobalAnnounce = () => {
-    const msg = prompt('Enter global announcement message (sends to all users):');
-    if (!msg) return;
-    if (!window.confirm(`Send "${msg}" to ${totalUsers} users?`)) return;
-    users.forEach(u => {
-      sendNotification(u.id, currentUserId, 'follow', ''); // Hijacking follow type for now or add custom
+    const msg = prompt('Enter global announcement message:');
+    if (!msg || !msg.trim()) return;
+    const nonAdmins = users.filter(u => u.id !== currentUserId);
+    if (!window.confirm(`Send "${msg}" to ${nonAdmins.length} users?`)) return;
+    nonAdmins.forEach(u => {
+      sendNotification(u.id, currentUserId, 'announcement', msg.trim());
     });
-    alert('Announcements dispatched!');
+    alert(`Announcement dispatched to ${nonAdmins.length} users.`);
   };
 
   // F2: Auto-Mod Sweeper

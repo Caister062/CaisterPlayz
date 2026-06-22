@@ -4,7 +4,10 @@ import {
   Radio,
   Trophy,
   DoorOpen,
-  Zap
+  Zap,
+  Activity,
+  Waves,
+  Sparkles
 } from 'lucide-react';
 
 import PostCard from './PostCard';
@@ -29,14 +32,6 @@ export default function HomeTab({
   onClearQuote,
   communities = []
 }) {
-
-  /* ───────── Derived UI Data ───────── */
-
-  const onlineUsers = useMemo(
-    () => users.slice(0, 12),
-    [users]
-  );
-
   const rooms = useMemo(
     () => communities.slice(0, 6),
     [communities]
@@ -63,7 +58,6 @@ export default function HomeTab({
       return highlights;
     }
 
-    // following feed
     return posts.filter(p =>
       followingIds.includes(p.userId) ||
       p.userId === currentUserId
@@ -76,8 +70,6 @@ export default function HomeTab({
     currentUserId
   ]);
 
-  /* ───────── UI ───────── */
-
   return (
     <div>
 
@@ -89,98 +81,104 @@ export default function HomeTab({
             active={subTab === 'live'}
             onClick={() => setSubTab('live')}
             icon={Radio}
-            label="Live"
+            label="Pulse"
           />
 
           <NavTab
             active={subTab === 'rooms'}
             onClick={() => setSubTab('rooms')}
             icon={DoorOpen}
-            label="Rooms"
+            label="Portals"
           />
 
           <NavTab
             active={subTab === 'highlights'}
             onClick={() => setSubTab('highlights')}
             icon={Trophy}
-            label="Clips"
+            label="Moments"
           />
 
           <NavTab
             active={subTab === 'following'}
             onClick={() => setSubTab('following')}
             icon={Users}
-            label="Friends"
+            label="Circle"
           />
 
         </div>
       </div>
 
-      {/* LIVE DASHBOARD */}
-      <div className="p-4 border-b border-dark-border grid grid-cols-3 gap-3">
+      {/* SIGNAL DASHBOARD */}
+      <div className="p-4 border-b border-dark-border">
+        <div className="rounded-3xl bg-dark-card border border-brand-primary/20 p-5 overflow-hidden relative">
 
-        <Stat label="Players" value={users.length} />
-        <Stat label="Rooms" value={communities.length} />
-        <Stat label="Clips" value={highlights.length} />
+          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-brand-primary/10 blur-2xl" />
+          <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-green-500/10 blur-2xl" />
 
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="w-5 h-5 text-brand-primary" />
+              <h3 className="font-black text-lg">Caister Signal Core</h3>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Signal label="Heat" value="92%" />
+              <Signal label="Echoes" value={posts.length} />
+              <Signal label="Portals" value={communities.length} />
+            </div>
+          </div>
+
+        </div>
       </div>
 
-      {/* ONLINE PLAYERS */}
-      <div className="px-4 py-3 border-b border-dark-border">
+      {/* PULSE RADAR */}
+      <div className="px-4 py-4 border-b border-dark-border">
 
         <div className="flex items-center gap-2 mb-3">
-          <Zap className="w-4 h-4 text-green-500" />
-          <h3 className="font-bold">Active Players</h3>
+          <Zap className="w-4 h-4 text-brand-primary" />
+          <h3 className="font-bold">Signal Pulse</h3>
         </div>
 
-        <div className="flex gap-3 overflow-x-auto pb-1">
-          {onlineUsers.map(user => (
-            <button
-              key={user.id}
-              onClick={() => onProfileClick(user.id)}
-              className="flex flex-col items-center min-w-[64px]"
-            >
-              <div className="relative">
-                <img
-                  src={user.avatarUrl || '/default-avatar.png'}
-                  className="w-14 h-14 rounded-2xl object-cover border border-dark-border"
-                  alt=""
-                />
+        <div className="grid grid-cols-2 gap-3">
 
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-dark-bg" />
-              </div>
+          <PulseCard
+            icon={Waves}
+            title="Broadcast Heat"
+            subtitle={`${users.length} signals active`}
+          />
 
-              <span className="text-[10px] text-dark-muted mt-1 truncate w-full">
-                {user.displayName}
-              </span>
-            </button>
-          ))}
+          <PulseCard
+            icon={Sparkles}
+            title="Creator Energy"
+            subtitle={`${highlights.length} moments glowing`}
+          />
+
         </div>
 
       </div>
 
-      {/* ROOMS */}
+      {/* PORTALS */}
       <div className="p-4 border-b border-dark-border">
 
-        <h3 className="font-bold mb-3">Active Rooms</h3>
+        <h3 className="font-bold mb-3">Open Portals</h3>
 
         <div className="space-y-2">
           {rooms.map(room => (
             <div
               key={room.id}
-              className="bg-dark-card rounded-2xl p-4 border border-dark-border"
+              className="bg-dark-card rounded-3xl p-4 border border-dark-border"
             >
               <div className="flex items-center justify-between">
 
                 <div>
                   <div className="font-bold">{room.name}</div>
                   <div className="text-xs text-dark-muted">
-                    {(room.members || []).length} players inside
+                    {(room.members || []).length} signals inside
                   </div>
                 </div>
 
                 <button className="px-3 py-2 rounded-xl bg-brand-primary/10 text-brand-primary text-sm">
-                  Join
+                  Enter
                 </button>
 
               </div>
@@ -226,22 +224,20 @@ export default function HomeTab({
 
           {!hasMore && (
             <p className="text-center py-6 text-xs text-dark-muted">
-              End of radar feed
+              Signal stream complete
             </p>
           )}
         </>
       ) : (
         <EmptyState
-          title="Nothing live right now"
-          subtitle="Start a room or share a signal."
+          title="No signals yet"
+          subtitle="Start a portal or release the first signal."
         />
       )}
 
     </div>
   );
 }
-
-/* ───────── Small UI Components ───────── */
 
 function NavTab({ active, onClick, icon: Icon, label }) {
   return (
@@ -261,13 +257,28 @@ function NavTab({ active, onClick, icon: Icon, label }) {
   );
 }
 
-function Stat({ label, value }) {
+function Signal({ label, value }) {
   return (
-    <div className="bg-dark-card rounded-2xl p-4">
-      <div className="text-2xl font-black text-brand-primary">
+    <div className="bg-dark-bg/60 rounded-2xl p-4 border border-dark-border text-center">
+      <div className="text-xl font-black text-brand-primary">
         {value}
       </div>
       <div className="text-xs text-dark-muted">{label}</div>
+    </div>
+  );
+}
+
+function PulseCard({ icon: Icon, title, subtitle }) {
+  return (
+    <div className="bg-dark-card rounded-3xl p-4 border border-dark-border">
+      <div className="w-10 h-10 rounded-2xl bg-brand-primary/10 flex items-center justify-center mb-3">
+        <Icon className="w-5 h-5 text-brand-primary" />
+      </div>
+
+      <div className="font-bold">{title}</div>
+      <div className="text-xs text-dark-muted mt-1">
+        {subtitle}
+      </div>
     </div>
   );
 }

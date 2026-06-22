@@ -15,6 +15,7 @@ export function timeAgo(ts) {
 
 export function Hex({ src, name, size = '', onClick }) {
   const i = (name || '?')[0].toUpperCase();
+
   return (
     <div className={`hex${size ? ` ${size}` : ''}`} onClick={onClick}>
       {src ? <img src={src} alt={name} loading="lazy" /> : i}
@@ -24,93 +25,202 @@ export function Hex({ src, name, size = '', onClick }) {
 
 function RichBody({ text, cls = 'expand-text' }) {
   if (!text) return null;
+
   const parts = [];
   const rx = /(#\w+|@\w+|https?:\/\/[^\s]+)/g;
-  let last = 0, m;
+  let last = 0;
+  let m;
+
   while ((m = rx.exec(text)) !== null) {
-    if (m.index > last) parts.push({ t: 'x', v: text.slice(last, m.index) });
+    if (m.index > last) {
+      parts.push({ t: 'x', v: text.slice(last, m.index) });
+    }
+
     const w = m[0];
-    parts.push({ t: w[0] === '#' ? 'h' : w[0] === '@' ? 'a' : 'l', v: w });
+
+    parts.push({
+      t: w[0] === '#' ? 'h' : w[0] === '@' ? 'a' : 'l',
+      v: w
+    });
+
     last = m.index + w.length;
   }
-  if (last < text.length) parts.push({ t: 'x', v: text.slice(last) });
+
+  if (last < text.length) {
+    parts.push({ t: 'x', v: text.slice(last) });
+  }
+
   return (
     <div className={cls}>
       {parts.map((p, i) =>
-        p.t === 'h' ? <span key={i} className="tag">{p.v}</span> :
-        p.t === 'a' ? <span key={i} className="at">{p.v}</span> :
-        p.t === 'l' ? <a key={i} href={p.v} target="_blank" rel="noreferrer" className="lnk">{p.v.replace(/^https?:\/\/(www\.)?/, '').slice(0, 35)}</a> :
-        <span key={i}>{p.v}</span>
+        p.t === 'h' ? (
+          <span key={i} className="tag">{p.v}</span>
+        ) : p.t === 'a' ? (
+          <span key={i} className="at">{p.v}</span>
+        ) : p.t === 'l' ? (
+          <a
+            key={i}
+            href={p.v}
+            target="_blank"
+            rel="noreferrer"
+            className="lnk"
+          >
+            {p.v.replace(/^https?:\/\/(www\.)?/, '').slice(0, 35)}
+          </a>
+        ) : (
+          <span key={i}>{p.v}</span>
+        )
       )}
     </div>
   );
 }
 
-/* Filter author out of engagement arrays so only real engagement counts */
 function realCount(arr, authorId) {
   return (arr || []).filter(id => id !== authorId).length;
 }
 
-/* ─── Grid Card (compact, shown in dashboard) ─── */
+function getSignalStrength(power, views) {
+  const total = power + views;
+
+  if (total >= 100) return 'Overload';
+  if (total >= 50) return 'Charged';
+  if (total >= 15) return 'Active';
+  return 'Dormant';
+}
+
 export function GridCard({ post, users, onClick }) {
   const author = users.find(u => u.id === post.userId);
   if (!author) return null;
-  const power = realCount(post.likedBy, post.userId) + realCount(post.repostedBy, post.userId);
+
+  const power =
+    realCount(post.likedBy, post.userId) +
+    realCount(post.repostedBy, post.userId);
+
+  const views = realCount(post.viewedBy, post.userId);
+
   const isVerified = window.cplayz_config?.verifiedUsers?.includes(author.id);
   const isFeatured = window.cplayz_config?.featuredPosts?.includes(post.id);
 
   return (
     <div className="g-card" onClick={() => onClick(post)}>
-      {isFeatured && <div style={{ position: 'absolute', top: -8, right: -8, background: 'var(--hot)', color: '#fff', borderRadius: '50%', padding: 4, zIndex: 10, boxShadow: '0 0 10px rgba(244,63,94,0.5)' }}><Pin size={12} fill="currentColor" /></div>}
+      {isFeatured && (
+        <div
+          style={{
+            position: 'absolute',
+            top: -8,
+            right: -8,
+            background: 'var(--hot)',
+            color: '#fff',
+            borderRadius: '50%',
+            padding: 4,
+            zIndex: 10,
+            boxShadow: '0 0 10px rgba(244,63,94,0.5)'
+          }}
+        >
+          <Pin size={12} fill="currentColor" />
+        </div>
+      )}
+
       <div className="g-card-head">
         <Hex src={author.avatarUrl} name={author.displayName} size="sm" />
-        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '0.01em' }}>
+
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>
           {author.displayName}
-          {isVerified && <CheckCircle size={12} color="#00e5ff" style={{ marginLeft: 4, display: 'inline' }} />}
+          {isVerified && (
+            <CheckCircle
+              size={12}
+              color="#00e5ff"
+              style={{ marginLeft: 4, display: 'inline' }}
+            />
+          )}
         </span>
       </div>
+
       {post.imageUrl && (
-        <div className="g-card-media"><img src={post.imageUrl} alt="" loading="lazy" /></div>
+        <div className="g-card-media">
+          <img src={post.imageUrl} alt="" loading="lazy" />
+        </div>
       )}
+
       <div className="g-card-text">{post.text}</div>
+
       <div className="g-card-power">
-        {power > 0 && <span className="power-chip">⚡ {formatCount(power)}</span>}
-        {realCount(post.viewedBy, post.userId) > 0 && <span className="power-chip">👁 {formatCount(realCount(post.viewedBy, post.userId))}</span>}
+        <span className="power-chip">
+          📡 {getSignalStrength(power, views)}
+        </span>
+
+        {power > 0 && (
+          <span className="power-chip">
+            ⚡ {formatCount(power)}
+          </span>
+        )}
+
+        {views > 0 && (
+          <span className="power-chip">
+            ◉ {formatCount(views)}
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
-/* ─── Deck Card (horizontal scrollable, shown in "Hot" section) ─── */
 export function DeckCard({ post, users, onClick }) {
   const author = users.find(u => u.id === post.userId);
   if (!author) return null;
-  const power = realCount(post.likedBy, post.userId) + realCount(post.repostedBy, post.userId);
+
+  const power =
+    realCount(post.likedBy, post.userId) +
+    realCount(post.repostedBy, post.userId);
+
+  const views = realCount(post.viewedBy, post.userId);
 
   return (
     <div className="deck-card" onClick={() => onClick(post)}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <Hex src={author.avatarUrl} name={author.displayName} size="sm" />
+
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.01em' }}>{author.displayName}</div>
-          <div style={{ fontSize: 9, color: 'var(--text3)' }}>{timeAgo(post.created)}</div>
+          <div style={{ fontSize: 13, fontWeight: 800 }}>
+            {author.displayName}
+          </div>
+
+          <div style={{ fontSize: 9, color: 'var(--text3)' }}>
+            Signal Strength: {getSignalStrength(power, views)}
+          </div>
         </div>
       </div>
+
       {post.imageUrl && (
-        <div className="deck-card-media"><img src={post.imageUrl} alt="" loading="lazy" /></div>
+        <div className="deck-card-media">
+          <img src={post.imageUrl} alt="" loading="lazy" />
+        </div>
       )}
+
       <div className="deck-card-text">{post.text}</div>
+
       <div className="deck-card-foot">
-        <span className="deck-power">⚡ {formatCount(power)}</span>
-        {realCount(post.viewedBy, post.userId) > 0 && <span className="deck-views">👁 {formatCount(realCount(post.viewedBy, post.userId))}</span>}
+        <span className="deck-power">
+          ⚡ {formatCount(power)}
+        </span>
+
+        {views > 0 && (
+          <span className="deck-views">
+            📡 {formatCount(views)}
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
-/* ─── Expanded Broadcast (full overlay) ─── */
-export default function ExpandedBroadcast({ post, currentUserId, users, onClose }) {
-  const [replyText, setReplyText] = useState('');
+export default function ExpandedBroadcast({
+  post,
+  currentUserId,
+  users,
+  onClose
+}) {
+  const [echoText, setEchoText] = useState('');
   const [sending, setSending] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -129,114 +239,305 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
 
   const { comments } = useComments(post.id);
   const author = users.find(u => u.id === post.userId);
+
   const isVerified = window.cplayz_config?.verifiedUsers?.includes(author?.id);
   const isFeatured = window.cplayz_config?.featuredPosts?.includes(post.id);
 
-  const liked = oLiked !== null ? oLiked : (post.likedBy || []).includes(currentUserId);
-  const likeN = oLikeN !== null ? oLikeN : realCount(post.likedBy, post.userId);
-  const reposted = oReposted !== null ? oReposted : (post.repostedBy || []).includes(currentUserId);
-  const repostN = oRepostN !== null ? oRepostN : realCount(post.repostedBy, post.userId);
-  const pinned = oPinned !== null ? oPinned : (post.favoritedBy || []).includes(currentUserId);
+  const liked =
+    oLiked !== null
+      ? oLiked
+      : (post.likedBy || []).includes(currentUserId);
+
+  const likeN =
+    oLikeN !== null
+      ? oLikeN
+      : realCount(post.likedBy, post.userId);
+
+  const reposted =
+    oReposted !== null
+      ? oReposted
+      : (post.repostedBy || []).includes(currentUserId);
+
+  const repostN =
+    oRepostN !== null
+      ? oRepostN
+      : realCount(post.repostedBy, post.userId);
+
+  const pinned =
+    oPinned !== null
+      ? oPinned
+      : (post.favoritedBy || []).includes(currentUserId);
+
   const viewN = realCount(post.viewedBy, post.userId);
 
-  // View on open (not own post)
+  const signalStrength = getSignalStrength(likeN + repostN, viewN);
+
   useEffect(() => {
     if (!currentUserId || viewedR.current) return;
-    if (post.userId === currentUserId) { viewedR.current = true; return; }
-    if ((post.viewedBy || []).includes(currentUserId)) { viewedR.current = true; return; }
+
+    if (post.userId === currentUserId) {
+      viewedR.current = true;
+      return;
+    }
+
+    if ((post.viewedBy || []).includes(currentUserId)) {
+      viewedR.current = true;
+      return;
+    }
+
     viewedR.current = true;
     addView(post.id, currentUserId).catch(() => {});
-  }, [post.id, currentUserId]);
+  }, [post.id, post.userId, post.viewedBy, currentUserId]);
 
-  const doReact = useCallback((type) => {
-    setChipPop(type);
-    setTimeout(() => setChipPop(''), 350);
+  const doReact = useCallback(
+    type => {
+      setChipPop(type);
+      setTimeout(() => setChipPop(''), 350);
 
-    if (type === 'zap') {
-      const next = !liked;
-      setOLiked(next); setOLikeN(Math.max(0, likeN + (next ? 1 : -1)));
-      if (likeT.current) clearTimeout(likeT.current);
-      const sL = liked, sN = likeN;
-      likeT.current = setTimeout(() => { toggleLike(post.id, currentUserId, !next).catch(() => { setOLiked(sL); setOLikeN(sN); }); }, 500);
-    } else if (type === 'fire') {
-      const next = !reposted;
-      setOReposted(next); setORepostN(Math.max(0, repostN + (next ? 1 : -1)));
-      if (repostT.current) clearTimeout(repostT.current);
-      const sR = reposted, sN = repostN;
-      repostT.current = setTimeout(() => { toggleRepost(post.id, currentUserId, !next).catch(() => { setOReposted(sR); setORepostN(sN); }); }, 500);
-    } else if (type === 'pin') {
-      const next = !pinned;
-      setOPinned(next);
-      toggleBookmark(post.id, currentUserId, !next).catch(() => setOPinned(pinned));
-    }
-  }, [liked, likeN, reposted, repostN, pinned, post.id, currentUserId]);
+      if (type === 'boost') {
+        const next = !liked;
 
-  const doReply = useCallback(async (e) => {
-    e.preventDefault();
-    if (!replyText.trim() || sending) return;
-    setSending(true);
-    try { await addComment(post.id, currentUserId, replyText.trim()); setReplyText(''); }
-    catch (err) { console.error(err); }
-    finally { setSending(false); }
-  }, [replyText, sending, post.id, currentUserId]);
+        setOLiked(next);
+        setOLikeN(Math.max(0, likeN + (next ? 1 : -1)));
+
+        if (likeT.current) clearTimeout(likeT.current);
+
+        const sL = liked;
+        const sN = likeN;
+
+        likeT.current = setTimeout(() => {
+          toggleLike(post.id, currentUserId, !next).catch(() => {
+            setOLiked(sL);
+            setOLikeN(sN);
+          });
+        }, 500);
+      }
+
+      if (type === 'relay') {
+        const next = !reposted;
+
+        setOReposted(next);
+        setORepostN(Math.max(0, repostN + (next ? 1 : -1)));
+
+        if (repostT.current) clearTimeout(repostT.current);
+
+        const sR = reposted;
+        const sN = repostN;
+
+        repostT.current = setTimeout(() => {
+          toggleRepost(post.id, currentUserId, !next).catch(() => {
+            setOReposted(sR);
+            setORepostN(sN);
+          });
+        }, 500);
+      }
+
+      if (type === 'anchor') {
+        const next = !pinned;
+
+        setOPinned(next);
+
+        toggleBookmark(post.id, currentUserId, !next).catch(() =>
+          setOPinned(pinned)
+        );
+      }
+    },
+    [
+      liked,
+      likeN,
+      reposted,
+      repostN,
+      pinned,
+      post.id,
+      currentUserId
+    ]
+  );
+
+  const doEcho = useCallback(
+    async e => {
+      e.preventDefault();
+
+      if (!echoText.trim() || sending) return;
+
+      setSending(true);
+
+      try {
+        await addComment(post.id, currentUserId, echoText.trim());
+        setEchoText('');
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setSending(false);
+      }
+    },
+    [echoText, sending, post.id, currentUserId]
+  );
 
   const doDel = useCallback(async () => {
-    if (!confirm('Delete this broadcast?')) return;
+    if (!confirm('Purge this signal?')) return;
+
     setDeleting(true);
-    try { await deletePost(post.id, currentUserId); onClose(); }
-    catch (err) { console.error(err); setDeleting(false); }
+
+    try {
+      await deletePost(post.id, currentUserId);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setDeleting(false);
+    }
   }, [post.id, currentUserId, onClose]);
 
   if (!author) return null;
 
   const REACTIONS = [
-    { key: 'zap',   emoji: '⚡', label: 'Zap',    count: likeN,   active: liked,    cls: 'active-zap' },
-    { key: 'fire',  emoji: '🔥', label: 'Echo',   count: repostN, active: reposted, cls: 'active-fire' },
-    { key: 'skull', emoji: '💀', label: 'Skull',  count: 0,       active: false,    cls: 'active-skull', disabled: true },
-    { key: 'clutch',emoji: '🎯', label: 'Clutch', count: 0,       active: false,    cls: 'active-clutch', disabled: true },
-    { key: 'pin',   emoji: '📌', label: 'Pin',    count: 0,       active: pinned,   cls: 'active-pin' },
+    {
+      key: 'boost',
+      emoji: '⚡',
+      label: 'Boost',
+      count: likeN,
+      active: liked,
+      cls: 'active-zap'
+    },
+    {
+      key: 'relay',
+      emoji: '📡',
+      label: 'Relay',
+      count: repostN,
+      active: reposted,
+      cls: 'active-fire'
+    },
+    {
+      key: 'surge',
+      emoji: '💥',
+      label: 'Surge',
+      count: 0,
+      active: false,
+      cls: 'active-skull',
+      disabled: true
+    },
+    {
+      key: 'lock',
+      emoji: '🎯',
+      label: 'Lock',
+      count: 0,
+      active: false,
+      cls: 'active-clutch',
+      disabled: true
+    },
+    {
+      key: 'anchor',
+      emoji: '📌',
+      label: 'Anchor',
+      count: 0,
+      active: pinned,
+      cls: 'active-pin'
+    }
   ];
 
   return (
     <>
-      <div className="expand-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div
+        className="expand-overlay"
+        onClick={e => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
         <div className="expand-card" onClick={e => e.stopPropagation()}>
-          {/* Header */}
           <div className="expand-header" style={{ position: 'relative' }}>
             <div className="expand-author">
-              <Hex src={author.avatarUrl} name={author.displayName} size="lg" />
+              <Hex
+                src={author.avatarUrl}
+                name={author.displayName}
+                size="lg"
+              />
+
               <div className="expand-meta">
                 <div className="expand-name">
-                  {author?.displayName || 'Unknown'}
-                  {isVerified && <CheckCircle size={16} color="#00e5ff" style={{ marginLeft: 6, display: 'inline' }} />}
-                  {isFeatured && <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(244,63,94,0.1)', color: 'var(--hot)', padding: '2px 6px', borderRadius: 6, marginLeft: 6, fontSize: 10, border: '1px solid rgba(244,63,94,0.2)' }}><Pin size={10} style={{ marginRight: 4 }}/> Featured</div>}
+                  {author?.displayName || 'Unknown Operator'}
+
+                  {isVerified && (
+                    <CheckCircle
+                      size={16}
+                      color="#00e5ff"
+                      style={{ marginLeft: 6, display: 'inline' }}
+                    />
+                  )}
+
+                  {isFeatured && (
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        background: 'rgba(244,63,94,0.1)',
+                        color: 'var(--hot)',
+                        padding: '2px 6px',
+                        borderRadius: 6,
+                        marginLeft: 6,
+                        fontSize: 10,
+                        border: '1px solid rgba(244,63,94,0.2)'
+                      }}
+                    >
+                      <Pin size={10} style={{ marginRight: 4 }} />
+                      Prime Signal
+                    </div>
+                  )}
                 </div>
-                <div className="expand-time">{timeAgo(post.created)}</div>
+
+                <div className="expand-time">
+                  Signal Strength: {signalStrength}
+                </div>
               </div>
             </div>
+
             <div style={{ display: 'flex', gap: 4 }}>
-              <button className="hud-btn" onClick={() => setShowMenu(v => !v)} style={{ width: 28, height: 28 }}>
+              <button
+                className="hud-btn"
+                onClick={() => setShowMenu(v => !v)}
+                style={{ width: 28, height: 28 }}
+              >
                 <MoreHorizontal size={14} />
               </button>
-              <button className="expand-close" onClick={onClose}>✕</button>
+
+              <button className="expand-close" onClick={onClose}>
+                ✕
+              </button>
             </div>
+
             {showMenu && (
               <div className="expand-menu">
-                <button onClick={() => { setShowMenu(false); navigator.share?.({ text: post.text }) || navigator.clipboard?.writeText(location.href); }}>
-                  <Share2 size={12} /> Share
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    navigator.share?.({ text: post.text }) ||
+                      navigator.clipboard?.writeText(location.href);
+                  }}
+                >
+                  <Share2 size={12} /> Transmit Signal
                 </button>
+
                 {post.userId === currentUserId && (
-                  <button onClick={() => { setShowMenu(false); doDel(); }} style={{ color: 'var(--hot)' }}>
-                    {deleting ? <Loader size={12} className="spin" /> : <Trash2 size={12} />} Delete
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      doDel();
+                    }}
+                    style={{ color: 'var(--hot)' }}
+                  >
+                    {deleting ? (
+                      <Loader size={12} className="spin" />
+                    ) : (
+                      <Trash2 size={12} />
+                    )}
+                    Purge Signal
                   </button>
                 )}
               </div>
             )}
           </div>
 
-          {/* Content */}
           <div className="expand-body">
             <RichBody text={post.text} />
+
             {post.imageUrl && (
               <div className="expand-media" onClick={() => setShowLB(true)}>
                 <img src={post.imageUrl} alt="" loading="lazy" />
@@ -244,12 +545,13 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
             )}
           </div>
 
-          {/* Reaction Chips */}
           <div className="react-row">
             {REACTIONS.map(r => (
               <button
                 key={r.key}
-                className={`react-chip${r.active ? ` ${r.cls}` : ''}${chipPop === r.key ? ' chip-pop' : ''}`}
+                className={`react-chip${r.active ? ` ${r.cls}` : ''}${
+                  chipPop === r.key ? ' chip-pop' : ''
+                }`}
                 onClick={() => !r.disabled && doReact(r.key)}
                 style={r.disabled ? { opacity: 0.4, cursor: 'default' } : {}}
               >
@@ -259,37 +561,97 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
             ))}
           </div>
 
-          {/* Meta */}
           <div className="react-meta">
-            {viewN > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Eye size={13} /> {formatCount(viewN)} views</span>}
-            <span>{formatCount(comments.length)} replies</span>
+            {viewN > 0 && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Eye size={13} /> {formatCount(viewN)} signal scans
+              </span>
+            )}
+
+            <span>{formatCount(comments.length)} echoes</span>
           </div>
 
-          {/* Thread */}
           <div className="thread">
-            <div className="thread-title">Replies</div>
-            <form className="thread-form" onSubmit={doReply}>
-              <Hex src={users.find(u => u.id === currentUserId)?.avatarUrl} name="Me" size="sm" />
-              <input className="thread-input" value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Reply…" maxLength={280} />
-              <button type="submit" className="thread-send" disabled={!replyText.trim() || sending}>
-                {sending ? <Loader size={11} className="spin" /> : 'SEND'}
+            <div className="thread-title">Signal Thread</div>
+
+            <form className="thread-form" onSubmit={doEcho}>
+              <Hex
+                src={users.find(u => u.id === currentUserId)?.avatarUrl}
+                name="Me"
+                size="sm"
+              />
+
+              <input
+                className="thread-input"
+                value={echoText}
+                onChange={e => setEchoText(e.target.value)}
+                placeholder="Transmit Echo..."
+                maxLength={280}
+              />
+
+              <button
+                type="submit"
+                className="thread-send"
+                disabled={!echoText.trim() || sending}
+              >
+                {sending ? (
+                  <Loader size={11} className="spin" />
+                ) : (
+                  'SEND'
+                )}
               </button>
             </form>
-            {comments.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 11, padding: '2px 0 6px' }}>No replies yet</p>}
+
+            {comments.length === 0 && (
+              <p
+                style={{
+                  textAlign: 'center',
+                  color: 'var(--text3)',
+                  fontSize: 11,
+                  padding: '2px 0 6px'
+                }}
+              >
+                No signal echoes detected
+              </p>
+            )}
+
             {comments.map(c => {
               const cu = users.find(u => u.id === c.userId);
+
               return (
                 <div key={c.id} className="reply-item">
-                  <Hex src={cu?.avatarUrl} name={cu?.displayName || '?'} size="sm" />
+                  <Hex
+                    src={cu?.avatarUrl}
+                    name={cu?.displayName || '?'}
+                    size="sm"
+                  />
+
                   <div className="reply-bubble">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div className="reply-who">{cu?.displayName || 'User'}</div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <div className="reply-who">
+                        {cu?.displayName || 'Operator'}
+                      </div>
+
                       {c.userId === currentUserId && (
-                        <button className="reply-del" onClick={() => { if (confirm('Delete?')) deleteComment(c.id, currentUserId).catch(console.error); }}>
+                        <button
+                          className="reply-del"
+                          onClick={() => {
+                            if (confirm('Remove this echo?')) {
+                              deleteComment(c.id, currentUserId).catch(console.error);
+                            }
+                          }}
+                        >
                           <Trash2 size={10} />
                         </button>
                       )}
                     </div>
+
                     <div className="reply-msg">{c.text}</div>
                     <div className="reply-ts">{timeAgo(c.created)}</div>
                   </div>
@@ -300,8 +662,26 @@ export default function ExpandedBroadcast({ post, currentUserId, users, onClose 
         </div>
       </div>
 
-      {showLB && <div className="lb" onClick={() => setShowLB(false)}><button className="lb-x" onClick={() => setShowLB(false)}>✕</button><img src={post.imageUrl} alt="" onClick={e => e.stopPropagation()} /></div>}
-      {showMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 79 }} onClick={() => setShowMenu(false)} />}
+      {showLB && (
+        <div className="lb" onClick={() => setShowLB(false)}>
+          <button className="lb-x" onClick={() => setShowLB(false)}>
+            ✕
+          </button>
+
+          <img
+            src={post.imageUrl}
+            alt=""
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
+
+      {showMenu && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 79 }}
+          onClick={() => setShowMenu(false)}
+        />
+      )}
     </>
   );
 }

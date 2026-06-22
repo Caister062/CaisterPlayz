@@ -1,14 +1,9 @@
 {
-  "cli": {
-    "appVersionSource": "remote"
-  },
   "build": {
     "production": {
       "ios": {
-        "buildConfiguration": "Release"
-      },
-      "env": {
-        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
+        "buildConfiguration": "Release",
+        "scheme": "App" 
       }
     }
   }

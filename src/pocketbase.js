@@ -4,7 +4,7 @@ const PB_URL =
   import.meta.env.VITE_PB_URL ||
   'https://caisterplayz-caisterplayz-backend.hf.space';
 
-console.log('PocketBase URL:', PB_URL);
+console.log('Signal Core URL:', PB_URL);
 
 const pb = new PocketBase(PB_URL);
 

@@ -64,7 +64,7 @@ function Ticker({ notifications, users }) {
         {doubled.map((item, i) => (
           <span key={`${item.id}-${i}`} className="ticker-item">
             <span className="ticker-emoji">{item.emoji}</span>
-            <strong>{item.name}</strong> {item.msg} a signal
+            <strong>{item.name}</strong> {item.msg} a post
             <span className="ticker-dot" />
           </span>
         ))}
@@ -159,8 +159,8 @@ export default function FeedView({
             </svg>
           </div>
 
-          <h3>The Signal Core is quiet</h3>
-          <p>Release the first signal and activate the CaisterPlayz stream.</p>
+          <h3>The drop zone is empty</h3>
+          <p>Be the first to drop a post about Fortnite or Fitness!</p>
         </div>
       ) : (
         <>
@@ -168,7 +168,7 @@ export default function FeedView({
           {primeSignals.length > 0 && (
             <>
               <div className="sec">
-                <span className="sec-label">⚡ Prime Signals</span>
+                <span className="sec-label">⚡ Top Drops</span>
                 <span className="sec-badge">{primeSignals.length}</span>
               </div>
 
@@ -187,7 +187,7 @@ export default function FeedView({
 
           {/* SIGNAL DROPS */}
           <div className="sec">
-            <span className="sec-label">📡 Signal Drops</span>
+            <span className="sec-label">📡 Latest Drops</span>
             <span className="sec-badge">{signalDrops.length}</span>
           </div>
 

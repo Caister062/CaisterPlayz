@@ -91,7 +91,7 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Signal failed.');
+      alert('Post failed.');
     } finally {
       setPosting(false);
     }
@@ -114,13 +114,13 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
             <X size={12} />
           </button>
 
-          <span className="sheet-title">Broadcast Console</span>
+          <span className="sheet-title">Drop a Post</span>
 
           <button className="go-btn" onClick={go} disabled={!ok}>
             {posting ? (
               <Loader size={12} className="spin" style={{ display: 'block' }} />
             ) : (
-              'RELEASE'
+              'DROP'
             )}
           </button>
         </div>
@@ -132,9 +132,9 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
             </div>
 
             <div>
-              <div className="text-sm font-black">Signal Mode Active</div>
+              <div className="text-sm font-black">Ready to Drop</div>
               <div className="text-xs text-dark-muted">
-                Create a live signal for your arena.
+                Share your Fortnite wins or fitness gains.
               </div>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
 
           <textarea
             className="sheet-ta"
-            placeholder="Release a signal into the stream..."
+            placeholder="What's your drop? Fortnite clips, gym PRs, grind updates..."
             value={text}
             onChange={e => setText(e.target.value.slice(0, MAX))}
             rows={4}

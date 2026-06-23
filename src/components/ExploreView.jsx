@@ -54,7 +54,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
         <div className="arena-box">
           <Radar size={14} />
           <input
-            placeholder="Scan the Signal Radar..."
+            placeholder="Search posts, players, tags..."
             value={q}
             onChange={e => setQ(e.target.value)}
           />
@@ -64,15 +64,15 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
       {isScanning ? (
         <>
           <div className="sec">
-            <span className="sec-label">Radar Detections</span>
+            <span className="sec-label">Search Results</span>
             <span className="sec-badge">{filtered.length}</span>
           </div>
 
           {filtered.length === 0 ? (
             <div className="empty">
               <div className="empty-ico">📡</div>
-              <h3>No signals detected</h3>
-              <p>Try scanning a different word, tag, or operator.</p>
+              <h3>No results found</h3>
+              <p>Try a different keyword, tag, or player name.</p>
             </div>
           ) : (
             <div className="grid">
@@ -93,7 +93,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
           {featured.length > 0 && (
             <>
               <div className="sec">
-                <span className="sec-label">Prime Signals</span>
+                <span className="sec-label">Featured Drops</span>
               </div>
 
               <div className="grid" style={{ marginBottom: 20 }}>
@@ -113,7 +113,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
           {signalTags.length > 0 && (
             <>
               <div className="sec">
-                <span className="sec-label">Signal Heat</span>
+                <span className="sec-label">Trending Tags</span>
               </div>
 
               {signalTags.map(({ tag, count }) => (
@@ -125,7 +125,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
                   <div>
                     <div className="trending-name">{tag}</div>
                     <div className="trending-count">
-                      {count} signal{count !== 1 ? 's' : ''} detected
+                      {count} post{count !== 1 ? 's' : ''}
                     </div>
                   </div>
 
@@ -141,7 +141,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
           {media.length > 0 && (
             <>
               <div className="sec">
-                <span className="sec-label">Visual Signals</span>
+                <span className="sec-label">Media Wall</span>
               </div>
 
               <div className="media-wall">
@@ -161,8 +161,8 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
           {signalTags.length === 0 && media.length === 0 && (
             <div className="empty">
               <div className="empty-ico">🌐</div>
-              <h3>Radar is quiet</h3>
-              <p>Release the first signal into CaisterPlayz.</p>
+              <h3>Nothing here yet</h3>
+              <p>Drop the first post about Fortnite or Fitness!</p>
             </div>
           )}
         </>

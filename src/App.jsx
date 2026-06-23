@@ -71,7 +71,7 @@ export default function App() {
         </div>
 
         <div style={{ fontSize:10,color:'#475569',letterSpacing:'0.1em',textTransform:'uppercase' }}>
-          Warming Signal Core…
+          Loading the Drop Zone…
         </div>
 
         <Loader size={16} style={{ color:'#00e5ff',animation:'bootSpin 0.8s linear infinite' }} />
@@ -95,11 +95,11 @@ export default function App() {
           <ShieldAlert size={64} color="#f43f5e" style={{ marginBottom:20 }} />
 
           <h1 style={{ fontSize:24,fontWeight:900,color:'#f43f5e',textTransform:'uppercase',letterSpacing:'0.1em' }}>
-            Signal Lockdown
+            Drop Zone Locked
           </h1>
 
           <p style={{ marginTop:10,color:'var(--text2)',fontSize:14 }}>
-            CaisterPlayz is recalibrating the Signal Core. Please reconnect later.
+            CaisterPlayz is under maintenance. Drop back in later.
           </p>
         </div>
       ) : (
@@ -156,7 +156,7 @@ export default function App() {
               <button
                 className="hud-btn"
                 onClick={() => setShowCompose(true)}
-                title="Release Signal"
+                title="Drop a Post"
               >
                 <Plus size={18} strokeWidth={2.5} />
               </button>
@@ -237,7 +237,7 @@ export default function App() {
             )}
 
             <div className="brand-footer">
-              Powered by CaisterPlayz Signal Core
+              Powered by CaisterPlayz — Fortnite & Fitness
             </div>
           </main>
 

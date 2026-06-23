@@ -606,13 +606,6 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId) {
   if (!recipientId || !senderId || recipientId === senderId) return;
 
   try {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString().replace('T', ' ');
-    const recent = await pb.collection('cplayz_notifications').getList(1, 1, {
-      filter: `recipientId="${recipientId}" && senderId="${senderId}" && type="${type}" && created >= "${oneHourAgo}"`
-    });
-
-    if (recent.items.length > 0) return;
-
     await pb.collection('cplayz_notifications').create({
       recipientId,
       senderId,

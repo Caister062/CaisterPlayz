@@ -24,10 +24,10 @@ export default defineConfig({
       ],
 
       manifest: {
-        name: 'CaisterPlayz Gaming Platform',
+        name: 'CaisterPlayz — Fortnite & Fitness',
         short_name: 'CaisterPlayz',
         description:
-          'CaisterPlayz — The ultimate gaming community platform with challenges, squads, and achievements',
+          'The social network for Fortnite gamers and fitness grinders. Share wins, track gains, find squads.',
         theme_color: '#0a0e27',
         background_color: '#0a0e27',
         display: 'standalone',
@@ -43,6 +43,9 @@ export default defineConfig({
       },
 
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+
         globPatterns: [
           '**/*.{js,css,html,ico,png,svg,woff2,ttf}'
         ],

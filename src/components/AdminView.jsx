@@ -19,7 +19,7 @@ import { Hex, timeAgo } from './PostCard';
 import {
   deletePost,
   updateProfile,
-
+  sendNotification,
   useSystemConfig,
   updateSystemConfig
 } from '../hooks';
@@ -108,10 +108,11 @@ export default function AdminView({ posts, users, currentUserId }) {
     const msg = prompt('Enter Core broadcast alert:');
     if (!msg || !msg.trim()) return;
     const nonAdmins = users.filter(u => u.id !== currentUserId);
-    if (!window.confirm(`[SIMULATED] Broadcast "${msg}" to ${nonAdmins.length} operators?`)) return;
-    // Simulation only — no real notifications are sent
-    console.log(`[ADMIN SIM] Broadcast "${msg.trim()}" would reach ${nonAdmins.length} operators.`);
-    alert(`[SIMULATED] Core broadcast dispatched to ${nonAdmins.length} operators.\n\nNo real notifications were sent.`);
+    if (!window.confirm(`Broadcast "${msg}" to ${nonAdmins.length} operators?`)) return;
+    nonAdmins.forEach(u => {
+      sendNotification(u.id, currentUserId, 'announcement', msg.trim());
+    });
+    alert(`Core broadcast dispatched to ${nonAdmins.length} operators.`);
   };
 
   const handleSweep = async () => {

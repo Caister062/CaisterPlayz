@@ -6,7 +6,8 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "build": "vite build"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.1",

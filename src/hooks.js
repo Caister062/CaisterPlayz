@@ -68,7 +68,7 @@ export function useRealtimePosts() {
         sort: '-created'
       });
 
-      const validPosts = res.items.filter(p => p.type !== 'system_config');
+      const validPosts = res.items.filter(p => p.type !== 'system_config' && p.type !== 'pending');
       setPosts(validPosts);
     } catch (err) {
       console.error('fetchSignals:', err);
@@ -85,7 +85,7 @@ export function useRealtimePosts() {
     (async () => {
       try {
         unsub = await pb.collection('cplayz_posts').subscribe('*', e => {
-          if (e.record.type === 'system_config') return;
+          if (e.record.type === 'system_config' || e.record.type === 'pending') return;
 
           if (e.action === 'create') {
             setPosts(prev => [e.record, ...prev]);
@@ -495,7 +495,8 @@ export async function addView(postId, userId) {
   } catch {}
 }
 
-export async function createSignal(userId, text, imageUrl = '', communityId = '') {
+export async function createPost(userId, text, imageUrl, communityId) {
+  const isAdmin = !!localStorage.getItem('caister_admin');
   const data = {
     userId,
     text: text || '',
@@ -504,7 +505,7 @@ export async function createSignal(userId, text, imageUrl = '', communityId = ''
     viewedBy: [],
     repostedBy: [],
     favoritedBy: [],
-    type: 'post'
+    type: isAdmin ? 'post' : 'pending'
   };
 
   if (communityId) data.communityId = communityId;
@@ -635,7 +636,6 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId) {
 export const toggleLike = toggleBoost;
 export const toggleRepost = toggleRelay;
 export const toggleBookmark = toggleAnchor;
-export const createPost = createSignal;
 export const deletePost = purgeSignal;
 export const addComment = addEcho;
 export const deleteComment = removeEcho;

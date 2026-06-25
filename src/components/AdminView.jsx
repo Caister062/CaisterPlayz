@@ -30,6 +30,7 @@ export default function AdminView({ posts, users, currentUserId }) {
   const [deleting, setDeleting] = useState(null);
   const [radarEvents, setRadarEvents] = useState([]);
   const [bannedWordInput, setBannedWordInput] = useState('');
+  const [pendingPosts, setPendingPosts] = useState([]);
 
   const { config, configId } = useSystemConfig();
 
@@ -81,6 +82,31 @@ export default function AdminView({ posts, users, currentUserId }) {
 
     return () => unsub && unsub();
   }, [activeTab, users]);
+
+  useEffect(() => {
+    if (activeTab === 'approvals') {
+      pb.collection('cplayz_posts').getList(1, 100, { filter: 'type="pending"', sort: '-created' })
+        .then(res => setPendingPosts(res.items))
+        .catch(console.error);
+    }
+  }, [activeTab]);
+
+  const handleApprove = async (post) => {
+    try {
+      await pb.collection('cplayz_posts').update(post.id, { type: 'post' });
+      setPendingPosts(prev => prev.filter(p => p.id !== post.id));
+    } catch(e) {
+      alert('Failed to approve');
+    }
+  };
+
+  const handleReject = async (post) => {
+    if(!window.confirm('Reject and delete this post?')) return;
+    try {
+      await pb.collection('cplayz_posts').delete(post.id);
+      setPendingPosts(prev => prev.filter(p => p.id !== post.id));
+    } catch(e) {}
+  };
 
   const handleDeleteSignal = async signal => {
     const author = users.find(u => u.id === signal.userId);
@@ -356,6 +382,13 @@ export default function AdminView({ posts, users, currentUserId }) {
         </button>
 
         <button
+          className={`admin-tab${activeTab === 'approvals' ? ' on' : ''}`}
+          onClick={() => setActiveTab('approvals')}
+        >
+          Approvals
+        </button>
+
+        <button
           className={`admin-tab${activeTab === 'config' ? ' on' : ''}`}
           onClick={() => setActiveTab('config')}
         >
@@ -418,6 +451,58 @@ export default function AdminView({ posts, users, currentUserId }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {activeTab === 'approvals' && (
+        <div className="admin-list">
+          {pendingPosts.length === 0 ? (
+            <div style={{ padding: 20, textAlign: 'center', color: 'var(--text3)' }}>
+              No pending drops. The queue is clean.
+            </div>
+          ) : (
+            pendingPosts.map(signal => {
+              const author = users.find(u => u.id === signal.userId);
+
+              return (
+                <div key={signal.id} className="admin-item">
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <Hex src={author?.avatarUrl} name={author?.displayName || '?'} size="sm" />
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="admin-item-meta">
+                        <strong>{author?.displayName || 'Unknown Operator'}</strong>{' '}
+                        • {timeAgo(signal.created)}
+                      </div>
+
+                      <div className="admin-item-text">{signal.text}</div>
+
+                      {signal.imageUrl && (
+                        <div className="admin-item-media">Visual Signal Attached</div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                        <button
+                          className="admin-micro-btn"
+                          style={{ borderColor: 'var(--lime)', color: 'var(--lime)' }}
+                          onClick={() => handleApprove(signal)}
+                        >
+                          <CheckCircle size={12} /> Approve Drop
+                        </button>
+
+                        <button
+                          className="admin-micro-btn danger"
+                          onClick={() => handleReject(signal)}
+                        >
+                          <Trash2 size={12} /> Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       )}
 

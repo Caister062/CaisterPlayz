@@ -77,6 +77,8 @@ input, textarea { font: inherit; }
   animation: stormRotate 40s linear infinite;
   pointer-events: none;
   z-index: 0;
+  will-change: transform;
+  transform: translateZ(0);
 }
 @keyframes stormRotate {
   0% { transform: rotate(0deg); }
@@ -285,6 +287,8 @@ input, textarea { font: inherit; }
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
 }
 .deck-card:hover {
   transform: scale(1.05) translateY(-5px);
@@ -341,6 +345,8 @@ input, textarea { font: inherit; }
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
 }
 .g-card:hover { 
   transform: scale(1.03) translateY(-4px); 
@@ -629,6 +635,8 @@ input, textarea { font: inherit; }
   background-size: 200% 200%;
   animation: auraPulse 3s ease infinite;
   box-shadow: 0 0 30px var(--cyan), 0 0 60px var(--violet);
+  will-change: background-position, box-shadow;
+  transform: translateZ(0);
 }
 @keyframes auraPulse {
   0% { background-position: 0% 50%; box-shadow: 0 0 30px var(--cyan), 0 0 60px var(--violet); }

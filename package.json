@@ -2,6 +2,7 @@
   "name": "caisterplayz",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -27,8 +28,12 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@eslint/js": "^10.0.1",
     "@types/react": "~18.2.45",
-    "eslint": "^8.57.0"
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0"
   },
   "private": true
 }

@@ -64,12 +64,12 @@ export function useRealtimePosts() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const res = await pb.collection('cplayz_posts').getList(1, 50, {
-        sort: '-created',
-        filter: 'type != "system_config"'
+      const res = await pb.collection('cplayz_posts').getList(1, 100, {
+        sort: '-created'
       });
 
-      setPosts(res.items);
+      const validPosts = res.items.filter(p => p.type !== 'system_config');
+      setPosts(validPosts);
     } catch (err) {
       console.error('fetchSignals:', err);
     } finally {

@@ -19,6 +19,7 @@ function CpMark({ size = 18 }) {
 
 export default function App() {
   const [tab, setTab] = useState('home');
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
   const [userId, setUserId] = useState(null);
   const [booting, setBooting] = useState(true);
@@ -56,28 +57,28 @@ export default function App() {
   };
 
   const goTab = t => {
-    if (t === 'profile') setViewProfile(null);
-    setTab(t);
+    if (tab === t) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      if (t === 'profile') setViewProfile(null);
+      setTab(t);
+      setTimeout(() => setIsTransitioning(false), 200);
+    }, 200);
   };
 
   if (booting) {
     return (
-      <div style={{ minHeight:'100dvh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:18,background:'#04060e' }}>
-        <div style={{ width:60,height:60,borderRadius:16,background:'linear-gradient(135deg,#00e5ff,#7c3aed,#f43f5e)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 40px rgba(0,229,255,0.35), 0 0 60px rgba(124,58,237,0.15)',animation:'bootFloat 2s ease-in-out infinite' }}>
-          <CpMark size={34} />
+      <div style={{ minHeight:'100dvh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24,background:'var(--bg)' }}>
+        <div className="slurp-shield-container">
+          <div className="slurp-shield-outline">
+            <div className="slurp-shield-fill" />
+          </div>
+          <ShieldAlert size={40} color="#fff" style={{ position: 'absolute', zIndex: 10 }} />
         </div>
 
-        <div style={{ fontSize:13,fontWeight:900,letterSpacing:'0.12em',background:'linear-gradient(90deg,#00e5ff,#a78bfa,#f43f5e)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',textTransform:'uppercase' }}>
-          CaisterPlayz
-        </div>
-
-        <div style={{ fontSize:10,color:'#475569',letterSpacing:'0.1em',textTransform:'uppercase' }}>
+        <div style={{ fontSize:16,fontWeight:900,letterSpacing:'0.12em',color:'var(--cyan)',fontFamily:'"Anton", sans-serif',textTransform:'uppercase' }}>
           Loading the Drop Zone…
         </div>
-
-        <Loader size={16} style={{ color:'#00e5ff',animation:'bootSpin 0.8s linear infinite' }} />
-
-        <style>{`@keyframes bootFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes bootSpin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
@@ -105,6 +106,7 @@ export default function App() {
         </div>
       ) : (
         <>
+          <div className="rift-flash-overlay" />
           <header className="hud">
             <div className="hud-logo">
               <div className="cp-mark">
@@ -173,72 +175,77 @@ export default function App() {
             </div>
           </header>
 
-          <main className="main">
-            {tab === 'home' && (
-              <FeedView
-                posts={posts}
-                loading={loading}
-                users={users}
-                currentUserId={userId}
-                notifications={notifications}
-                onProfileClick={goProfile}
-                config={config}
-              />
-            )}
+          <main className="main tab-container">
+            <div className={`rift-wipe ${isTransitioning ? 'active' : ''}`} />
+            <div className={`tab-content ${isTransitioning ? 'transitioning' : ''}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1 }}>
+                {tab === 'home' && (
+                  <FeedView
+                    posts={posts}
+                    loading={loading}
+                    users={users}
+                    currentUserId={userId}
+                    notifications={notifications}
+                    onProfileClick={goProfile}
+                    config={config}
+                  />
+                )}
 
-            {tab === 'explore' && (
-              <ExploreView
-                posts={posts}
-                users={users}
-                currentUserId={userId}
-                onProfileClick={goProfile}
-                config={config}
-              />
-            )}
+                {tab === 'explore' && (
+                  <ExploreView
+                    posts={posts}
+                    users={users}
+                    currentUserId={userId}
+                    onProfileClick={goProfile}
+                    config={config}
+                  />
+                )}
 
-            {tab === 'vault' && (
-              <VaultView
-                posts={posts}
-                currentUserId={userId}
-                users={users}
-                onProfileClick={goProfile}
-                config={config}
-              />
-            )}
+                {tab === 'vault' && (
+                  <VaultView
+                    posts={posts}
+                    currentUserId={userId}
+                    users={users}
+                    onProfileClick={goProfile}
+                    config={config}
+                  />
+                )}
 
-            {tab === 'notifications' && (
-              <NotificationsView
-                notifications={notifications}
-                users={users}
-                currentUserId={userId}
-                onRefresh={refNotif}
-                onProfileClick={goProfile}
-              />
-            )}
+                {tab === 'notifications' && (
+                  <NotificationsView
+                    notifications={notifications}
+                    users={users}
+                    currentUserId={userId}
+                    onRefresh={refNotif}
+                    onProfileClick={goProfile}
+                  />
+                )}
 
-            {tab === 'profile' && (
-              <ProfileView
-                profile={pUser || me}
-                posts={posts}
-                users={users}
-                currentUserId={userId}
-                followData={viewProfile ? {} : followData}
-                onProfileClick={goProfile}
-                onRefresh={refMe}
-                config={config}
-              />
-            )}
+                {tab === 'profile' && (
+                  <ProfileView
+                    profile={pUser || me}
+                    posts={posts}
+                    users={users}
+                    currentUserId={userId}
+                    followData={viewProfile ? {} : followData}
+                    onProfileClick={goProfile}
+                    onRefresh={refMe}
+                    config={config}
+                  />
+                )}
 
-            {tab === 'admin' && isAdmin && (
-              <AdminView
-                posts={posts}
-                users={users}
-                currentUserId={userId}
-              />
-            )}
+                {tab === 'admin' && isAdmin && (
+                  <AdminView
+                    posts={posts}
+                    users={users}
+                    currentUserId={userId}
+                  />
+                )}
+              </div>
 
-            <div className="brand-footer">
-              Powered by CaisterPlayz — Fortnite & Fitness
+              <div className="brand-footer">
+                Powered by CaisterPlayz — Fortnite & Fitness
+              </div>
             </div>
           </main>
 

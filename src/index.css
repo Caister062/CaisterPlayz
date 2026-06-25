@@ -961,3 +961,86 @@ input, textarea { font: inherit; }
 .admin-login-btn:hover {
   border-color: #f43f5e; color: #f43f5e;
 }
+
+/* ============================================================
+   ANIMATIONS: INTRO & TAB TRANSITION
+============================================================ */
+
+/* Slurp Shield Boot */
+.slurp-shield-container {
+  width: 80px; height: 100px;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  animation: shieldPulse 1.2s ease-in-out infinite alternate;
+}
+.slurp-shield-outline {
+  position: absolute; inset: 0;
+  border: 4px solid var(--cyan);
+  border-radius: 20px 20px 40px 40px;
+  box-shadow: 0 0 20px var(--cyan-glow);
+  overflow: hidden;
+}
+.slurp-shield-fill {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: var(--cyan);
+  box-shadow: 0 0 30px var(--cyan);
+  animation: slurpFill 2s ease-in forwards;
+}
+
+@keyframes slurpFill {
+  0% { height: 0%; opacity: 0.5; }
+  50% { height: 50%; opacity: 0.8; }
+  100% { height: 100%; opacity: 1; }
+}
+
+@keyframes shieldPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 10px var(--cyan)); }
+  100% { transform: scale(1.1); filter: drop-shadow(0 0 25px var(--cyan)); }
+}
+
+.rift-flash-overlay {
+  position: fixed; inset: 0;
+  background: #fff;
+  z-index: 9999;
+  animation: riftFlash 1s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes riftFlash {
+  0% { opacity: 0; background: var(--cyan); }
+  20% { opacity: 1; background: #fff; }
+  100% { opacity: 0; background: transparent; }
+}
+
+/* Tab Rift Wipe Transition */
+.tab-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+.tab-content {
+  transition: opacity 0.2s;
+}
+.tab-content.transitioning {
+  opacity: 0;
+}
+
+.rift-wipe {
+  position: fixed;
+  top: 0; bottom: 0; left: -100%; width: 100%;
+  background: linear-gradient(90deg, transparent, var(--cyan), var(--violet), transparent);
+  z-index: 900;
+  pointer-events: none;
+  opacity: 0.8;
+  filter: blur(8px);
+}
+.rift-wipe.active {
+  animation: riftSweep 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes riftSweep {
+  0% { left: -100%; }
+  50% { left: 0%; }
+  100% { left: 100%; }
+}

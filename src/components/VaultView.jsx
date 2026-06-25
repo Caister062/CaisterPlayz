@@ -12,17 +12,17 @@ export default function VaultView({ posts, currentUserId, users }) {
   return (
     <div>
       <div className="vault-head">
-        <div className="vault-title">🔒 Signal Vault</div>
+        <div className="vault-title">🔒 Personal Locker</div>
         <div className="vault-sub">
-          {anchored.length} anchored signal{anchored.length !== 1 ? 's' : ''}
+          {anchored.length} pinned item{anchored.length !== 1 ? 's' : ''}
         </div>
       </div>
 
       {anchored.length === 0 ? (
         <div className="empty">
-          <div className="empty-ico">📡</div>
-          <h3>Vault is quiet</h3>
-          <p>Anchor signals to store them in your Core Archive.</p>
+          <div className="empty-ico">🎒</div>
+          <h3>Locker is empty</h3>
+          <p>Pin posts to store them in your Locker.</p>
         </div>
       ) : (
         <div className="grid" style={{ padding: '10px 10px' }}>

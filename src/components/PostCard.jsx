@@ -79,13 +79,13 @@ function realCount(arr, authorId) {
   return (arr || []).filter(id => id !== authorId).length;
 }
 
-function getSignalStrength(power, views) {
+function getPRLevel(power, views) {
   const total = power + views;
 
-  if (total >= 100) return 'Overload';
-  if (total >= 50) return 'Charged';
-  if (total >= 15) return 'Active';
-  return 'Dormant';
+  if (total >= 100) return 'Unreal';
+  if (total >= 50) return 'Champion';
+  if (total >= 15) return 'Elite';
+  return 'Bronze';
 }
 
 export function GridCard({ post, users, onClick }) {
@@ -146,18 +146,18 @@ export function GridCard({ post, users, onClick }) {
 
       <div className="g-card-power">
         <span className="power-chip">
-          📡 {getSignalStrength(power, views)}
+          🏆 {getPRLevel(power, views)}
         </span>
 
         {power > 0 && (
           <span className="power-chip">
-            ⚡ {formatCount(power)}
+            🔥 {formatCount(power)}
           </span>
         )}
 
         {views > 0 && (
           <span className="power-chip">
-            ◉ {formatCount(views)}
+            👁️ {formatCount(views)}
           </span>
         )}
       </div>
@@ -186,7 +186,7 @@ export function DeckCard({ post, users, onClick }) {
           </div>
 
           <div style={{ fontSize: 9, color: 'var(--text3)' }}>
-            Signal Strength: {getSignalStrength(power, views)}
+            Rank: {getPRLevel(power, views)}
           </div>
         </div>
       </div>
@@ -201,12 +201,12 @@ export function DeckCard({ post, users, onClick }) {
 
       <div className="deck-card-foot">
         <span className="deck-power">
-          ⚡ {formatCount(power)}
+          🔥 {formatCount(power)}
         </span>
 
         {views > 0 && (
           <span className="deck-views">
-            📡 {formatCount(views)}
+            👁️ {formatCount(views)}
           </span>
         )}
       </div>
@@ -270,7 +270,7 @@ export default function ExpandedBroadcast({
 
   const viewN = realCount(post.viewedBy, post.userId);
 
-  const signalStrength = getSignalStrength(likeN + repostN, viewN);
+  const rankLevel = getPRLevel(likeN + repostN, viewN);
 
   useEffect(() => {
     if (!currentUserId || viewedR.current) return;
@@ -392,24 +392,24 @@ export default function ExpandedBroadcast({
   const REACTIONS = [
     {
       key: 'boost',
-      emoji: '⚡',
-      label: 'Boost',
+      emoji: '🔥',
+      label: 'Hype',
       count: likeN,
       active: liked,
       cls: 'active-zap'
     },
     {
       key: 'relay',
-      emoji: '📡',
-      label: 'Relay',
+      emoji: '🔁',
+      label: 'Share',
       count: repostN,
       active: reposted,
       cls: 'active-fire'
     },
     {
       key: 'surge',
-      emoji: '💥',
-      label: 'Surge',
+      emoji: '🧪',
+      label: 'Slurp',
       count: 0,
       active: false,
       cls: 'active-skull',
@@ -417,8 +417,8 @@ export default function ExpandedBroadcast({
     },
     {
       key: 'lock',
-      emoji: '🎯',
-      label: 'Lock',
+      emoji: '🏋️',
+      label: 'Iron',
       count: 0,
       active: false,
       cls: 'active-clutch',
@@ -427,7 +427,7 @@ export default function ExpandedBroadcast({
     {
       key: 'anchor',
       emoji: '📌',
-      label: 'Anchor',
+      label: 'Pin',
       count: 0,
       active: pinned,
       cls: 'active-pin'
@@ -484,7 +484,7 @@ export default function ExpandedBroadcast({
                 </div>
 
                 <div className="expand-time">
-                  Signal Strength: {signalStrength}
+                  Rank: {rankLevel}
                 </div>
               </div>
             </div>

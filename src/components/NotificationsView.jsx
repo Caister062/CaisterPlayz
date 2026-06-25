@@ -3,18 +3,18 @@ import { markAllNotificationsRead } from '../hooks';
 import { Hex, timeAgo } from './PostCard';
 
 const ICONS = {
-  like: { e: '⚡', c: 'boost' },
+  like: { e: '🔥', c: 'boost' },
   comment: { e: '💬', c: 'reply' },
-  repost: { e: '📡', c: 'echo' },
-  follow: { e: '🔗', c: 'ally' },
+  repost: { e: '🔁', c: 'echo' },
+  follow: { e: '🤝', c: 'ally' },
   announcement: { e: '📢', c: 'boost' }
 };
 
 const MSGS = {
-  like: 'boosted your signal',
-  comment: 'sent an echo',
-  repost: 'relayed your broadcast',
-  follow: 'connected to your core'
+  like: 'hyped your post',
+  comment: 'replied to you',
+  repost: 'shared your post',
+  follow: 'squaded up with you'
 };
 
 export default function NotificationsView({
@@ -35,9 +35,9 @@ export default function NotificationsView({
   if (notifications.length === 0) {
     return (
       <div className="empty">
-        <div className="empty-ico">📡</div>
-        <h3>No echo alerts yet</h3>
-        <p>Boosts, echoes, relays, and core connections appear here.</p>
+        <div className="empty-ico">🔔</div>
+        <h3>No alerts yet</h3>
+        <p>Hypes, replies, shares, and squad invites appear here.</p>
       </div>
     );
   }
@@ -45,7 +45,7 @@ export default function NotificationsView({
   return (
     <div>
       <div className="sec">
-        <span className="sec-label">Echo Alerts</span>
+        <span className="sec-label">Alerts</span>
       </div>
 
       {notifications.map(n => {
@@ -70,12 +70,12 @@ export default function NotificationsView({
 
             <div className="notif-body">
               <div className="notif-msg">
-                <strong>{n.type === 'announcement' ? 'System Admin' : (s?.displayName || 'Someone')}</strong>{' '}
-                {n.type === 'announcement' ? <span style={{ color: '#00e5ff' }}>broadcasted: "{n.targetId}"</span> : (MSGS[n.type] || 'triggered your signal')}
+                <strong>{n.type === 'announcement' ? 'Battle Bus' : (s?.displayName || 'Someone')}</strong>{' '}
+                {n.type === 'announcement' ? <span style={{ color: 'var(--cyan)' }}>broadcasted: "{n.targetId}"</span> : (MSGS[n.type] || 'interacted with you')}
               </div>
 
               <div className="notif-ts">
-                Signal ping · {timeAgo(n.created)}
+                Alert · {timeAgo(n.created)}
               </div>
             </div>
 

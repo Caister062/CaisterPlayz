@@ -83,10 +83,10 @@ export default function App() {
   }
 
   const NAV = [
-    { id: 'home', icon: Radio, label: 'Pulse' },
-    { id: 'explore', icon: Search, label: 'Radar' },
-    { id: 'vault', icon: Lock, label: 'Vault' },
-    { id: 'profile', icon: User, label: 'Core' },
+    { id: 'home', icon: Radio, label: 'Feed' },
+    { id: 'explore', icon: Search, label: 'Island' },
+    { id: 'vault', icon: Lock, label: 'Locker' },
+    { id: 'profile', icon: User, label: 'Stats' },
   ];
 
   return (
@@ -254,10 +254,10 @@ export default function App() {
           {/* ─ Global Announcement Modal ─ */}
           {config?.globalAnnouncement && !isAdmin && String(config.globalAnnouncement.timestamp) !== dismissedAnnounce && (
             <div className="modal-backdrop">
-              <div className="modal" style={{ border: '2px solid #00e5ff', boxShadow: '0 0 30px rgba(0, 229, 255, 0.2)' }}>
-                <div className="modal-head" style={{ color: '#00e5ff' }}>
+              <div className="modal" style={{ border: '2px solid var(--cyan)', boxShadow: '0 0 30px var(--cyan-glow)' }}>
+                <div className="modal-head" style={{ color: 'var(--cyan)' }}>
                   <ShieldAlert size={20} />
-                  SYSTEM BROADCAST
+                  BATTLE BUS BROADCAST
                 </div>
                 <div className="modal-body" style={{ textAlign: 'center', padding: '20px 10px', fontSize: 16 }}>
                   {config.globalAnnouncement.text}

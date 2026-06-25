@@ -93,7 +93,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
           {featured.length > 0 && (
             <>
               <div className="sec">
-                <span className="sec-label">Featured Drops</span>
+                <span className="sec-label">Featured Items</span>
               </div>
 
               <div className="grid" style={{ marginBottom: 20 }}>
@@ -141,7 +141,7 @@ export default function ExploreView({ posts, users, currentUserId, onProfileClic
           {media.length > 0 && (
             <>
               <div className="sec">
-                <span className="sec-label">Media Wall</span>
+                <span className="sec-label">Locker Media</span>
               </div>
 
               <div className="media-wall">

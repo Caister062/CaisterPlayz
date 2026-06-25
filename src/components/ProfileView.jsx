@@ -49,7 +49,7 @@ export default function ProfileView({
     return (
       <div className="empty">
         <div className="empty-ico">⏳</div>
-        <h3>Loading Core…</h3>
+        <h3>Loading Stats…</h3>
       </div>
     );
   }
@@ -139,12 +139,12 @@ export default function ProfileView({
 
   const rank =
     energy >= 50
-      ? '🏆 PRIME CORE'
+      ? '🏆 UNREAL'
       : energy >= 20
-        ? '⚡ HIGH SIGNAL'
+        ? '⚡ CHAMPION'
         : energy >= 5
-          ? '📡 RISING SIGNAL'
-          : '🌱 NEW SIGNAL';
+          ? '📡 ELITE'
+          : '🌱 BRONZE';
 
   return (
     <div>
@@ -203,7 +203,7 @@ export default function ProfileView({
 
           {isOwn && !editing && (
             <button className="edit-btn" onClick={startEdit}>
-              Edit Core
+              Edit Profile
             </button>
           )}
 
@@ -247,7 +247,7 @@ export default function ProfileView({
               onChange={e => setEBio(e.target.value)}
               maxLength={160}
               rows={2}
-              placeholder="Signal description..."
+              placeholder="Profile description..."
               style={{ resize: 'none', lineHeight: 1.5 }}
             />
           </div>
@@ -278,37 +278,37 @@ export default function ProfileView({
         )}
 
         <div className="rank-badge">
-          {rank} · {formatCount(energy)} core energy
+          {rank} · {formatCount(energy)} V-Bucks & PRs
         </div>
 
         <div className="stat-grid">
           <div className="stat-cell">
             <div className="stat-val">{formatCount(myPosts.length)}</div>
-            <div className="stat-key">Signals</div>
+            <div className="stat-key">Posts</div>
           </div>
 
           <div className="stat-cell">
             <div className="stat-val">{formatCount(totalBoosts)}</div>
-            <div className="stat-key">Boosts</div>
+            <div className="stat-key">Hypes</div>
           </div>
 
           <div className="stat-cell">
             <div className="stat-val">{formatCount(totalDetections)}</div>
-            <div className="stat-key">Detections</div>
+            <div className="stat-key">Views</div>
           </div>
 
           <div className="stat-cell">
             <div className="stat-val">{formatCount(totalRelays)}</div>
-            <div className="stat-key">Relays</div>
+            <div className="stat-key">Shares</div>
           </div>
         </div>
       </div>
 
       <div className="ptabs">
         {[
-          ['broadcasts', '📡', 'Signals'],
-          ['visuals', '🖼️', 'Visuals'],
-          ['boosted', '⚡', 'Boosted']
+          ['broadcasts', '🏆', 'Posts'],
+          ['visuals', '🖼️', 'Media'],
+          ['boosted', '🔥', 'Hyped']
         ].map(([k, icon, label]) => (
           <button
             key={k}
@@ -359,7 +359,7 @@ export default function ProfileView({
               }
             }}
           >
-            🛡️ Control Core Access
+            🛡️ Control Center Access
           </button>
         </div>
       )}

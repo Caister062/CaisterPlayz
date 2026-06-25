@@ -20,7 +20,7 @@ function Radar({ users, currentUserId }) {
           </div>
 
           <span className="radar-tag">
-            {(u.displayName || 'Signal').split(' ')[0]}
+            {(u.displayName || 'Player').split(' ')[0]}
           </span>
         </div>
       ))}
@@ -32,17 +32,17 @@ function Ticker({ notifications, users }) {
   if (!notifications || notifications.length === 0) return null;
 
   const MSGS = {
-    like: 'boosted',
-    comment: 'echoed',
-    repost: 'relayed',
-    follow: 'connected with'
+    like: 'hyped',
+    comment: 'replied to',
+    repost: 'shared',
+    follow: 'squaded up with'
   };
 
   const EMOJIS = {
-    like: '⚡',
+    like: '🔥',
     comment: '💬',
-    repost: '📡',
-    follow: '🔗'
+    repost: '🔁',
+    follow: '🤝'
   };
 
   const items = notifications.slice(0, 20).map(n => {
@@ -159,8 +159,8 @@ export default function FeedView({
             </svg>
           </div>
 
-          <h3>The drop zone is empty</h3>
-          <p>Be the first to drop a post about Fortnite or Fitness!</p>
+          <h3>The Island is empty</h3>
+          <p>Drop the first post about your latest workout or Victory Royale!</p>
         </div>
       ) : (
         <>
@@ -168,7 +168,7 @@ export default function FeedView({
           {primeSignals.length > 0 && (
             <>
               <div className="sec">
-                <span className="sec-label">⚡ Top Drops</span>
+                <span className="sec-label">🏆 Top PRs & Wins</span>
                 <span className="sec-badge">{primeSignals.length}</span>
               </div>
 
@@ -185,9 +185,9 @@ export default function FeedView({
             </>
           )}
 
-          {/* SIGNAL DROPS */}
+          {/* LATEST POSTS */}
           <div className="sec">
-            <span className="sec-label">📡 Latest Drops</span>
+            <span className="sec-label">⚡ Latest Posts</span>
             <span className="sec-badge">{signalDrops.length}</span>
           </div>
 

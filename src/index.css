@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
 @import "tailwindcss";
 
 /* ============================================================
@@ -6,31 +7,31 @@
 ============================================================ */
 
 :root {
-  --cyan:       #00e5ff;
-  --cyan-dim:   rgba(0, 229, 255, 0.10);
-  --cyan-glow:  0 0 20px rgba(0,229,255,0.25);
-  --violet:     #7c3aed;
-  --violet-dim: rgba(124, 58, 237, 0.10);
-  --lime:       #a3e635;
-  --lime-dim:   rgba(163, 230, 53, 0.08);
-  --hot:        #f43f5e;
-  --hot-dim:    rgba(244, 63, 94, 0.08);
-  --amber:      #fbbf24;
-  --amber-dim:  rgba(251, 191, 36, 0.08);
+  --cyan:       #00f0ff;
+  --cyan-dim:   rgba(0, 240, 255, 0.10);
+  --cyan-glow:  0 0 20px rgba(0,240,255,0.25);
+  --violet:     #b042ff;
+  --violet-dim: rgba(176, 66, 255, 0.10);
+  --lime:       #39ff14;
+  --lime-dim:   rgba(57, 255, 20, 0.08);
+  --hot:        #ff2a2a;
+  --hot-dim:    rgba(255, 42, 42, 0.08);
+  --amber:      #ffd700;
+  --amber-dim:  rgba(255, 215, 0, 0.08);
 
-  --bg:         #04060e;
-  --bg2:        #080c1a;
-  --bg3:        #0e1529;
-  --surface:    #111a2e;
-  --surface2:   #162038;
+  --bg:         #050811;
+  --bg2:        #090d1c;
+  --bg3:        #0f172a;
+  --surface:    #131b2f;
+  --surface2:   #1a243d;
   --border:     rgba(255,255,255,0.06);
   --border-b:   rgba(255,255,255,0.1);
-  --text:       #eef2ff;
+  --text:       #f8fafc;
   --text2:      #94a3b8;
   --text3:      #475569;
   --glow-line:  linear-gradient(90deg, transparent, var(--cyan), transparent);
-  --caister-grad: linear-gradient(135deg, #00e5ff, #7c3aed, #f43f5e);
-  --caister-glow: 0 0 24px rgba(0,229,255,0.3), 0 0 48px rgba(124,58,237,0.15);
+  --caister-grad: linear-gradient(135deg, #00f0ff, #b042ff, #ffd700);
+  --caister-glow: 0 0 24px rgba(0,240,255,0.3), 0 0 48px rgba(176,66,255,0.15);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -84,10 +85,10 @@ input, textarea { font: inherit; }
   font-size: 14px; box-shadow: var(--cyan-glow);
 }
 .hud-name {
-  font-size: 13px; font-weight: 900;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  font-family: "SF Mono", "JetBrains Mono", monospace;
-  background: linear-gradient(90deg, #00e5ff, #a78bfa, #f43f5e);
+  font-size: 14px; font-weight: normal;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  font-family: "Anton", sans-serif;
+  background: linear-gradient(90deg, #00f0ff, #b042ff, #ffd700);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
@@ -192,10 +193,10 @@ input, textarea { font: inherit; }
   display: flex; align-items: center; justify-content: space-between;
 }
 .sec-label {
-  font-size: 11px; font-weight: 900;
-  text-transform: uppercase; letter-spacing: 0.1em;
-  color: var(--text3);
-  font-family: "SF Mono", monospace;
+  font-size: 13px; font-weight: normal;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text);
+  font-family: "Anton", sans-serif;
   display: flex; align-items: center; gap: 6px;
 }
 .sec-label::before {

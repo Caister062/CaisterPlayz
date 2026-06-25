@@ -138,41 +138,54 @@ export function useSystemConfig() {
   const [configId, setConfigId] = useState(null);
 
   useEffect(() => {
+    let unsub;
     (async () => {
       try {
-        const res = await pb.collection('cplayz_posts').getList(1, 1, {
-          filter: 'type="system_config"'
-        });
-
+        const res = await pb.collection('cplayz_posts').getList(1, 1, { filter: 'type="system_config"' });
+        let currentConfigId = null;
         if (res.items.length > 0) {
           const rec = res.items[0];
-          setConfigId(rec.id);
-
+          currentConfigId = rec.id;
+          setConfigId(currentConfigId);
           try {
-            setConfig(JSON.parse(rec.text));
-          } catch {}
+            const parsed = JSON.parse(rec.text);
+            setConfig(parsed);
+          } catch(e) {}
         } else {
+          // Create the config record if it doesn't exist.
           const userId = localStorage.getItem('cplayz_user_id');
-
           if (userId) {
             const newConf = await pb.collection('cplayz_posts').create({
               userId,
               type: 'system_config',
-              text: JSON.stringify({
-                bannedWords: [],
-                verifiedUsers: [],
-                featuredPosts: [],
-                lockdown: false
-              })
+              text: JSON.stringify({ bannedWords: [], verifiedUsers: [], featuredPosts: [], lockdown: false })
             });
-
-            setConfigId(newConf.id);
+            currentConfigId = newConf.id;
+            setConfigId(currentConfigId);
           }
         }
-      } catch (e) {
-        console.error('Core config fetch failed:', e);
+
+        // Subscribe to changes
+        if (currentConfigId) {
+          unsub = await pb.collection('cplayz_posts').subscribe(currentConfigId, (e) => {
+            if (e.action === 'update') {
+              try {
+                const parsed = JSON.parse(e.record.text);
+                setConfig(parsed);
+              } catch(err) {}
+            }
+          });
+        }
+      } catch(e) {
+        console.error('Config fetch failed:', e);
       }
     })();
+
+    return () => {
+      if (unsub) {
+        try { unsub(); } catch {}
+      }
+    };
   }, []);
 
   return { config, configId };

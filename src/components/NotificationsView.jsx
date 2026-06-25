@@ -6,7 +6,8 @@ const ICONS = {
   like: { e: '⚡', c: 'boost' },
   comment: { e: '💬', c: 'reply' },
   repost: { e: '📡', c: 'echo' },
-  follow: { e: '🔗', c: 'ally' }
+  follow: { e: '🔗', c: 'ally' },
+  announcement: { e: '📢', c: 'boost' }
 };
 
 const MSGS = {
@@ -69,8 +70,8 @@ export default function NotificationsView({
 
             <div className="notif-body">
               <div className="notif-msg">
-                <strong>{s?.displayName || 'Someone'}</strong>{' '}
-                {MSGS[n.type] || 'triggered your signal'}
+                <strong>{n.type === 'announcement' ? 'System Admin' : (s?.displayName || 'Someone')}</strong>{' '}
+                {n.type === 'announcement' ? <span style={{ color: '#00e5ff' }}>broadcasted: "{n.targetId}"</span> : (MSGS[n.type] || 'triggered your signal')}
               </div>
 
               <div className="notif-ts">

@@ -104,14 +104,18 @@ export default function AdminView({ posts, users, currentUserId }) {
     setDeleting(null);
   };
 
-  const handleGlobalAnnounce = () => {
+  const handleGlobalAnnounce = async () => {
     const msg = prompt('Enter Core broadcast alert:');
     if (!msg || !msg.trim()) return;
     const nonAdmins = users.filter(u => u.id !== currentUserId);
-    if (!window.confirm(`Broadcast "${msg}" to ${nonAdmins.length} operators?`)) return;
-    nonAdmins.forEach(u => {
-      sendNotification(u.id, currentUserId, 'announcement', msg.trim());
+    if (!window.confirm(`Broadcast "${msg}" as a popup to all operators?`)) return;
+    
+    // Save to global config to trigger the popup for active users
+    await updateSystemConfig(configId, { 
+      ...config, 
+      globalAnnouncement: { text: msg.trim(), timestamp: Date.now() } 
     });
+
     alert(`Core broadcast dispatched to ${nonAdmins.length} operators.`);
   };
 

@@ -24,6 +24,7 @@ export default function App() {
   const [booting, setBooting] = useState(true);
   const [viewProfile, setViewProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [dismissedAnnounce, setDismissedAnnounce] = useState(localStorage.getItem('cp_dismissed_announce'));
 
   useEffect(() => {
     const adminEmail = localStorage.getItem('caister_admin');
@@ -241,12 +242,39 @@ export default function App() {
             </div>
           </main>
 
+          {/* ─ Composer ─ */}
           {showCompose && userId && (
             <Composer
               currentUserId={userId}
               currentUser={me}
               onClose={() => setShowCompose(false)}
             />
+          )}
+
+          {/* ─ Global Announcement Modal ─ */}
+          {config?.globalAnnouncement && !isAdmin && String(config.globalAnnouncement.timestamp) !== dismissedAnnounce && (
+            <div className="modal-backdrop">
+              <div className="modal" style={{ border: '2px solid #00e5ff', boxShadow: '0 0 30px rgba(0, 229, 255, 0.2)' }}>
+                <div className="modal-head" style={{ color: '#00e5ff' }}>
+                  <ShieldAlert size={20} />
+                  SYSTEM BROADCAST
+                </div>
+                <div className="modal-body" style={{ textAlign: 'center', padding: '20px 10px', fontSize: 16 }}>
+                  {config.globalAnnouncement.text}
+                </div>
+                <div className="modal-actions" style={{ justifyContent: 'center' }}>
+                  <button 
+                    className="btn primary" 
+                    onClick={() => {
+                      localStorage.setItem('cp_dismissed_announce', String(config.globalAnnouncement.timestamp));
+                      setDismissedAnnounce(String(config.globalAnnouncement.timestamp));
+                    }}
+                  >
+                    Acknowledge
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </>
       )}

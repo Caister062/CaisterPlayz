@@ -621,7 +621,41 @@ input, textarea { font: inherit; }
   font-size: 10px; font-weight: 900; color: var(--text); text-transform: uppercase;
   letter-spacing: 0.06em; font-family: "SF Mono", monospace;
 }
-.edit-btn:hover { background: var(--bg3); }
+.admin-login-btn:hover { background: var(--border); }
+
+.modal-backdrop {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+  z-index: 9999; display: flex; align-items: center; justify-content: center;
+  animation: cpFade 0.3s forwards;
+}
+
+.modal {
+  background: #0b0f19; border-radius: 20px; width: 90%; max-width: 400px;
+  padding: 24px; display: flex; flexDirection: column; gap: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  animation: cpPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.modal-head {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;
+}
+
+.modal-body {
+  font-size: 16px; line-height: 1.5; color: var(--text); text-align: center;
+}
+
+.modal-actions {
+  display: flex; justify-content: center; margin-top: 10px;
+}
+
+.modal-actions .btn {
+  background: #00e5ff; color: #000; padding: 12px 24px; border-radius: 12px;
+  font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; border: none; cursor: pointer;
+  transition: all 0.2s; box-shadow: 0 0 20px rgba(0,229,255,0.4);
+}
+.modal-actions .btn:hover { background: #fff; box-shadow: 0 0 30px rgba(0,229,255,0.6); transform: translateY(-2px); }
 .edit-box {
   background: var(--bg3); border: 1px solid var(--border-b); border-radius: 8px;
   padding: 7px 10px; color: var(--text); font-size: 13px;

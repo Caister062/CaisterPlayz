@@ -11,6 +11,7 @@ const GoogleIcon = ({ size }) => (
   </svg>
 );
 
+<<<<<<< HEAD
 function getAuthDisplayName(authRecord) {
   return (
     authRecord?.name ||
@@ -52,6 +53,9 @@ async function getOrCreateAppProfile(authRecord) {
   localStorage.setItem('cplayz_user_id', profile.id);
   return profile;
 }
+=======
+import pb from '../pocketbase';
+>>>>>>> 2650ac1 (Implement actual pocketbase authentication)
 
 export default function AuthView({ onAuthSuccess }) {
   const [loadingApple, setLoadingApple] = useState(false);
@@ -62,7 +66,9 @@ export default function AuthView({ onAuthSuccess }) {
   const [recoverySent, setRecoverySent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isRegister, setIsRegister] = useState(false);
 
+<<<<<<< HEAD
   const finishRealAuth = async (authRecord) => {
     const profile = await getOrCreateAppProfile(authRecord || pb.authStore.record);
     onAuthSuccess(profile.id);
@@ -83,11 +89,25 @@ export default function AuthView({ onAuthSuccess }) {
         err?.message ||
           `${provider} sign in failed. Make sure ${provider} is enabled in PocketBase Auth Providers.`
       );
+=======
+  const handleAppleAuth = async () => {
+    setLoadingApple(true);
+    try {
+      const authData = await pb.collection('users').authWithOAuth2({ provider: 'apple' });
+      if (!authData.record.displayName) {
+        await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name || 'Apple_Operator' });
+      }
+      onAuthSuccess(authData.record.id);
+    } catch (e) {
+      console.error(e);
+      alert('Apple authentication failed.');
+>>>>>>> 2650ac1 (Implement actual pocketbase authentication)
     } finally {
-      setter(false);
+      setLoadingApple(false);
     }
   };
 
+<<<<<<< HEAD
   const handleAppleAuth = () => {
     handleProviderAuth('apple', setLoadingApple);
   };
@@ -133,13 +153,70 @@ export default function AuthView({ onAuthSuccess }) {
 
       setRecoverySent(true);
 
+=======
+  const handleGoogleAuth = async () => {
+    setLoadingGoogle(true);
+    try {
+      const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
+      if (!authData.record.displayName) {
+        await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name || 'Google_Operator' });
+      }
+      onAuthSuccess(authData.record.id);
+    } catch (e) {
+      console.error(e);
+      alert('Google authentication failed.');
+    } finally {
+      setLoadingGoogle(false);
+    }
+  };
+
+  const handleEmailAuth = async (e) => {
+    e.preventDefault();
+    if (!email || !password) return alert('Please enter both email and password.');
+    
+    setLoadingEmail(true);
+    try {
+      if (isRegister) {
+        const user = await pb.collection('users').create({
+          email,
+          password,
+          passwordConfirm: password,
+          displayName: email.split('@')[0] || 'Operator',
+          bio: ''
+        });
+        const authData = await pb.collection('users').authWithPassword(email, password);
+        onAuthSuccess(authData.record.id);
+      } else {
+        const authData = await pb.collection('users').authWithPassword(email, password);
+        onAuthSuccess(authData.record.id);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(isRegister ? 'Registration failed. Email might be taken or password too short.' : 'Login failed. Check your credentials.');
+    } finally {
+      setLoadingEmail(false);
+    }
+  };
+
+  const handleRecovery = async (e) => {
+    e.preventDefault();
+    if (!email) return alert('Please enter your email address.');
+    try {
+      await pb.collection('users').requestPasswordReset(email);
+      setRecoverySent(true);
+>>>>>>> 2650ac1 (Implement actual pocketbase authentication)
       setTimeout(() => {
         setShowRecovery(false);
         setRecoverySent(false);
       }, 3000);
+<<<<<<< HEAD
     } catch (err) {
       console.error('Password reset failed:', err);
       alert(err?.message || 'Could not send a recovery email.');
+=======
+    } catch(err) {
+      alert('Failed to send recovery email.');
+>>>>>>> 2650ac1 (Implement actual pocketbase authentication)
     }
   };
 
@@ -293,8 +370,14 @@ export default function AuthView({ onAuthSuccess }) {
                 boxShadow: '0 0 20px rgba(0,240,255,0.4)',
               }}
             >
-              {loadingEmail ? <Loader size={20} className="spin" /> : 'Log In'}
+              {loadingEmail ? <Loader size={20} className="spin" /> : (isRegister ? 'Create Account' : 'Log In')}
             </button>
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+              <button type="button" onClick={() => setIsRegister(!isRegister)} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}>
+                {isRegister ? 'Already have an account? Log In' : 'Need an account? Register'}
+              </button>
+            </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
               <button
@@ -304,14 +387,11 @@ export default function AuthView({ onAuthSuccess }) {
               >
                 Back
               </button>
-
-              <button
-                type="button"
-                onClick={() => setShowRecovery(true)}
-                style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-              >
-                Forgot Password?
-              </button>
+              {!isRegister && (
+                <button type="button" onClick={() => setShowRecovery(true)} style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                  Forgot Password?
+                </button>
+              )}
             </div>
           </form>
         )}

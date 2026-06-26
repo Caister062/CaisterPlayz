@@ -4,61 +4,7 @@ import pb from './pocketbase';
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    DEVICE / GUEST AUTH
 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
-function getDeviceId() {
-  let id = localStorage.getItem('cplayz_device_id');
 
-  if (!id) {
-    const uuid =
-      typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : Date.now().toString(36) + Math.random().toString(36).slice(2);
-
-    id = 'dev_' + uuid;
-    localStorage.setItem('cplayz_device_id', id);
-  }
-
-  return id;
-}
-
-export async function ensureGuestUser(customTag) {
-  const existing = localStorage.getItem('cplayz_user_id');
-
-  if (existing) {
-    try {
-      const profile = await pb.collection('cplayz_users').getOne(existing);
-      if (customTag && profile.displayName !== customTag) {
-        return await pb.collection('cplayz_users').update(profile.id, { displayName: customTag }).catch(() => profile);
-      }
-      return profile;
-    } catch {
-      localStorage.removeItem('cplayz_user_id');
-    }
-  }
-
-  const deviceId = getDeviceId();
-
-  const list = await pb.collection('cplayz_users').getList(1, 1, {
-    filter: `deviceId="${deviceId}"`
-  });
-
-  let user;
-
-  if (list.items.length > 0) {
-    user = list.items[0];
-    if (customTag && user.displayName !== customTag) {
-      user = await pb.collection('cplayz_users').update(user.id, { displayName: customTag }).catch(() => user);
-    }
-  } else {
-    user = await pb.collection('cplayz_users').create({
-      displayName: customTag || `Operator_${deviceId.slice(4, 10)}`,
-      bio: '',
-      deviceId
-    });
-  }
-
-  localStorage.setItem('cplayz_user_id', user.id);
-  return user;
-}
 
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    REALTIME SIGNALS
@@ -213,7 +159,7 @@ export function useAllUsers() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await pb.collection('cplayz_users').getList(1, 200);
+      const res = await pb.collection('users').getList(1, 200);
       setUsers(res.items);
     } catch (err) {
       console.error('fetchOperators:', err);
@@ -227,7 +173,7 @@ export function useAllUsers() {
 
     (async () => {
       try {
-        unsub = await pb.collection('cplayz_users').subscribe('*', e => {
+        unsub = await pb.collection('users').subscribe('*', e => {
           if (e.action === 'create') {
             setUsers(prev => [...prev, e.record]);
           } else if (e.action === 'update') {
@@ -263,7 +209,7 @@ export function useUserProfile(userId) {
     if (!userId) return;
 
     try {
-      const res = await pb.collection('cplayz_users').getOne(userId);
+      const res = await pb.collection('users').getOne(userId);
       setProfile(res);
     } catch {
       if (localStorage.getItem('cplayz_user_id') === userId) {
@@ -603,7 +549,7 @@ export async function disconnectCore(followerId, followingId) {
 }
 
 export async function updateProfile(userId, data) {
-  return pb.collection('cplayz_users').update(userId, data);
+  return pb.collection('users').update(userId, data);
 }
 
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ

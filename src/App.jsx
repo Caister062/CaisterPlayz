@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert } from 'lucide-react';
 import pb from './pocketbase';
-import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, ensureGuestUser, useSystemConfig } from './hooks';
+import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig } from './hooks';
 import FeedView from './components/FeedView';
 import ExploreView from './components/ExploreView';
 import NotificationsView from './components/NotificationsView';
@@ -24,7 +24,7 @@ export default function App() {
   const [tab, setTab] = useState('home');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
-  const [userId, setUserId] = useState(localStorage.getItem('cplayz_user_id'));
+  const [userId, setUserId] = useState(pb.authStore.model?.id || null);
   const [booting, setBooting] = useState(true);
   const [viewProfile, setViewProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -37,15 +37,15 @@ export default function App() {
       setIsAdmin(true);
     }
 
-    const currentId = localStorage.getItem('cplayz_user_id');
-    if (currentId) {
-      pb.collection('cplayz_users').getOne(currentId).catch(() => {
-        localStorage.removeItem('cplayz_user_id');
-        setUserId(null);
-      });
-    }
+    const unsub = pb.authStore.onChange((token, model) => {
+      setUserId(model?.id || null);
+    }, true);
 
     setTimeout(() => setBooting(false), 500); // Small boot delay for the Slurp Shield animation
+    
+    return () => {
+      unsub();
+    };
   }, []);
 
   const { posts, loading } = useRealtimePosts();

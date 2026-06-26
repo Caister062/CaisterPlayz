@@ -1,16 +1,57 @@
 import { useState } from 'react';
 import { Mail, Lock, Apple, KeyRound, Loader, X, ShieldAlert } from 'lucide-react';
-// We'll use a simple SVG for Google since Lucide doesn't have brand icons
+import pb from '../pocketbase';
+
 const GoogleIcon = ({ size }) => (
   <svg width={size} height={size} viewBox="0 0 24 24">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
   </svg>
 );
 
-import { ensureGuestUser } from '../hooks';
+function getAuthDisplayName(authRecord) {
+  return (
+    authRecord?.name ||
+    authRecord?.username ||
+    authRecord?.email?.split('@')[0] ||
+    'Operator'
+  );
+}
+
+async function getOrCreateAppProfile(authRecord) {
+  if (!authRecord?.id) {
+    throw new Error('No authenticated user was returned.');
+  }
+
+  const deviceId = `auth_${authRecord.id}`;
+  const displayName = getAuthDisplayName(authRecord);
+
+  const list = await pb.collection('cplayz_users').getList(1, 1, {
+    filter: `deviceId="${deviceId}"`,
+  });
+
+  let profile = list.items[0];
+
+  if (profile) {
+    if (displayName && profile.displayName !== displayName) {
+      profile = await pb
+        .collection('cplayz_users')
+        .update(profile.id, { displayName })
+        .catch(() => profile);
+    }
+  } else {
+    profile = await pb.collection('cplayz_users').create({
+      displayName,
+      bio: '',
+      deviceId,
+    });
+  }
+
+  localStorage.setItem('cplayz_user_id', profile.id);
+  return profile;
+}
 
 export default function AuthView({ onAuthSuccess }) {
   const [loadingApple, setLoadingApple] = useState(false);
@@ -22,42 +63,84 @@ export default function AuthView({ onAuthSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleAuth = async (setter, customTag) => {
+  const finishRealAuth = async (authRecord) => {
+    const profile = await getOrCreateAppProfile(authRecord || pb.authStore.record);
+    onAuthSuccess(profile.id);
+  };
+
+  const handleProviderAuth = async (provider, setter) => {
     setter(true);
+
     try {
-      await new Promise(r => setTimeout(r, 800));
-      const user = await ensureGuestUser(customTag);
-      onAuthSuccess(user.id);
-    } catch (e) {
-      alert('Authentication failed. Please try again.');
+      const authData = await pb.collection('users').authWithOAuth2({
+        provider,
+      });
+
+      await finishRealAuth(authData.record);
+    } catch (err) {
+      console.error(`${provider} auth failed:`, err);
+      alert(
+        err?.message ||
+          `${provider} sign in failed. Make sure ${provider} is enabled in PocketBase Auth Providers.`
+      );
     } finally {
       setter(false);
     }
   };
 
   const handleAppleAuth = () => {
-    const tag = prompt('Sign in with Apple\n\nConfirm your CaisterPlayz Battle Tag:', 'Apple_Operator');
-    if (tag) handleAuth(setLoadingApple, tag.trim());
-  };
-  const handleGoogleAuth = () => {
-    const tag = prompt('Sign in with Google\n\nConfirm your CaisterPlayz Battle Tag:', 'Google_Operator');
-    if (tag) handleAuth(setLoadingGoogle, tag.trim());
-  };
-  const handleEmailAuth = (e) => {
-    e.preventDefault();
-    if (!email || !password) return alert('Please enter both email and password.');
-    const tag = email.split('@')[0] || 'Operator';
-    handleAuth(setLoadingEmail, tag);
+    handleProviderAuth('apple', setLoadingApple);
   };
 
-  const handleRecovery = (e) => {
+  const handleGoogleAuth = () => {
+    handleProviderAuth('google', setLoadingGoogle);
+  };
+
+  const handleEmailAuth = async (e) => {
     e.preventDefault();
-    if (!email) return alert('Please enter your email address.');
-    setRecoverySent(true);
-    setTimeout(() => {
-      setShowRecovery(false);
-      setRecoverySent(false);
-    }, 3000);
+
+    if (!email || !password) {
+      alert('Please enter both email and password.');
+      return;
+    }
+
+    setLoadingEmail(true);
+
+    try {
+      const authData = await pb
+        .collection('users')
+        .authWithPassword(email, password);
+
+      await finishRealAuth(authData.record);
+    } catch (err) {
+      console.error('Email auth failed:', err);
+      alert(err?.message || 'Email login failed. Please check your email and password.');
+    } finally {
+      setLoadingEmail(false);
+    }
+  };
+
+  const handleRecovery = async (e) => {
+    e.preventDefault();
+
+    if (!email) {
+      alert('Please enter your email address.');
+      return;
+    }
+
+    try {
+      await pb.collection('users').requestPasswordReset(email);
+
+      setRecoverySent(true);
+
+      setTimeout(() => {
+        setShowRecovery(false);
+        setRecoverySent(false);
+      }, 3000);
+    } catch (err) {
+      console.error('Password reset failed:', err);
+      alert(err?.message || 'Could not send a recovery email.');
+    }
   };
 
   return (
@@ -80,7 +163,20 @@ export default function AuthView({ onAuthSuccess }) {
               onClick={handleAppleAuth}
               disabled={loadingApple || loadingGoogle}
               style={{
-                width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: '#fff', color: '#000', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'transform 0.2s'
+                width: '100%',
+                padding: '14px',
+                borderRadius: 12,
+                border: 'none',
+                background: '#fff',
+                color: '#000',
+                fontSize: 16,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                cursor: 'pointer',
+                transition: 'transform 0.2s',
               }}
             >
               {loadingApple ? <Loader size={20} className="spin" /> : <Apple size={20} fill="#000" />}
@@ -91,7 +187,20 @@ export default function AuthView({ onAuthSuccess }) {
               onClick={handleGoogleAuth}
               disabled={loadingApple || loadingGoogle}
               style={{
-                width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: '#fff', color: '#000', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'transform 0.2s'
+                width: '100%',
+                padding: '14px',
+                borderRadius: 12,
+                border: 'none',
+                background: '#fff',
+                color: '#000',
+                fontSize: 16,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                cursor: 'pointer',
+                transition: 'transform 0.2s',
               }}
             >
               {loadingGoogle ? <Loader size={20} className="spin" color="#000" /> : <GoogleIcon size={20} />}
@@ -101,7 +210,20 @@ export default function AuthView({ onAuthSuccess }) {
             <button
               onClick={() => setShowEmail(true)}
               style={{
-                width: '100%', padding: '14px', borderRadius: 12, border: '1px solid var(--border-b)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'border-color 0.2s'
+                width: '100%',
+                padding: '14px',
+                borderRadius: 12,
+                border: '1px solid var(--border-b)',
+                background: 'var(--bg2)',
+                color: 'var(--text)',
+                fontSize: 16,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                cursor: 'pointer',
+                transition: 'border-color 0.2s',
               }}
             >
               <Mail size={18} /> Continue with Email
@@ -115,20 +237,36 @@ export default function AuthView({ onAuthSuccess }) {
                 type="email"
                 placeholder="Email Address"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
-                style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg3)', color: '#fff', fontSize: 15 }}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px 12px 40px',
+                  borderRadius: 10,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg3)',
+                  color: '#fff',
+                  fontSize: 15,
+                }}
                 required
               />
             </div>
-            
+
             <div style={{ position: 'relative' }}>
               <Lock size={16} color="var(--text3)" style={{ position: 'absolute', left: 14, top: 14 }} />
               <input
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
-                style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg3)', color: '#fff', fontSize: 15 }}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px 12px 40px',
+                  borderRadius: 10,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg3)',
+                  color: '#fff',
+                  fontSize: 15,
+                }}
                 required
               />
             </div>
@@ -137,17 +275,41 @@ export default function AuthView({ onAuthSuccess }) {
               type="submit"
               disabled={loadingEmail}
               style={{
-                width: '100%', padding: '14px', marginTop: 8, borderRadius: 12, border: 'none', background: 'var(--cyan)', color: '#000', fontSize: 16, fontWeight: 900, textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', boxShadow: '0 0 20px rgba(0,240,255,0.4)'
+                width: '100%',
+                padding: '14px',
+                marginTop: 8,
+                borderRadius: 12,
+                border: 'none',
+                background: 'var(--cyan)',
+                color: '#000',
+                fontSize: 16,
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                cursor: 'pointer',
+                boxShadow: '0 0 20px rgba(0,240,255,0.4)',
               }}
             >
               {loadingEmail ? <Loader size={20} className="spin" /> : 'Log In'}
             </button>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-              <button type="button" onClick={() => setShowEmail(false)} style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: 13, cursor: 'pointer' }}>
+              <button
+                type="button"
+                onClick={() => setShowEmail(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: 13, cursor: 'pointer' }}
+              >
                 Back
               </button>
-              <button type="button" onClick={() => setShowRecovery(true)} style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+
+              <button
+                type="button"
+                onClick={() => setShowRecovery(true)}
+                style={{ background: 'none', border: 'none', color: 'var(--cyan)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >
                 Forgot Password?
               </button>
             </div>
@@ -158,15 +320,18 @@ export default function AuthView({ onAuthSuccess }) {
       {showRecovery && (
         <div className="overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="sheet" style={{ position: 'relative', top: 'auto', left: 'auto', bottom: 'auto', padding: 24, borderRadius: 20, maxWidth: 320, width: '90%' }}>
-            <button onClick={() => setShowRecovery(false)} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer' }}>
+            <button
+              onClick={() => setShowRecovery(false)}
+              style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer' }}
+            >
               <X size={20} />
             </button>
-            
+
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
               <KeyRound size={24} color="var(--cyan)" />
               <h2 style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>Recover Account</h2>
             </div>
-            
+
             {recoverySent ? (
               <p style={{ color: 'var(--lime)', fontSize: 14, fontWeight: 700 }}>
                 If an account exists for {email}, a password reset link has been sent.
@@ -176,15 +341,39 @@ export default function AuthView({ onAuthSuccess }) {
                 <p style={{ color: 'var(--text2)', fontSize: 13, marginBottom: 16 }}>
                   Enter the email associated with your account to receive a secure recovery link.
                 </p>
+
                 <input
                   type="email"
                   placeholder="Email Address"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  style={{ width: '100%', padding: '12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg3)', color: '#fff', fontSize: 14, marginBottom: 16 }}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: 10,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg3)',
+                    color: '#fff',
+                    fontSize: 14,
+                    marginBottom: 16,
+                  }}
                   required
                 />
-                <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: '#fff', color: '#000', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>
+
+                <button
+                  type="submit"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: '#fff',
+                    color: '#000',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                  }}
+                >
                   Send Recovery Link
                 </button>
               </form>

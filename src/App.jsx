@@ -56,7 +56,12 @@ export default function App() {
   };
 
   const goTab = t => {
-    if (tab === t) return;
+    if (tab === t) {
+      if (t === 'profile' && viewProfile) {
+        setViewProfile(null);
+      }
+      return;
+    }
     setIsTransitioning(true);
     setTimeout(() => {
       if (t === 'profile') setViewProfile(null);

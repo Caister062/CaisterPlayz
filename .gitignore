@@ -44,8 +44,6 @@ test_free_tier.cjs
 scratch/
 
 # Build / Capacitor
-ios/
-android/
 .capacitor/
 
 # Expo

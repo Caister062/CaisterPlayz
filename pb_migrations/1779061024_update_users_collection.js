@@ -1,84 +1,38 @@
-migrate((db) => {
-  const users = $app.dao().findCollectionByNameOrId("users");
+migrate((app) => {
+  const users = app.findCollectionByNameOrId("users");
 
-  users.schema.addField(new SchemaField({
-    "system": false,
-    "id": "users_displayName",
+  users.fields.add(new Field({
     "name": "displayName",
-    "type": "text",
-    "required": false,
-    "presentable": false,
-    "unique": false,
-    "options": {
-      "min": null,
-      "max": null,
-      "pattern": ""
-    }
+    "type": "text"
   }));
 
-  users.schema.addField(new SchemaField({
-    "system": false,
-    "id": "users_bio",
+  users.fields.add(new Field({
     "name": "bio",
-    "type": "text",
-    "required": false,
-    "presentable": false,
-    "unique": false,
-    "options": {
-      "min": null,
-      "max": null,
-      "pattern": ""
-    }
+    "type": "text"
   }));
 
-  users.schema.addField(new SchemaField({
-    "system": false,
-    "id": "users_website",
+  users.fields.add(new Field({
     "name": "website",
-    "type": "text",
-    "required": false,
-    "presentable": false,
-    "unique": false,
-    "options": {
-      "min": null,
-      "max": null,
-      "pattern": ""
-    }
+    "type": "text"
   }));
 
-  users.schema.addField(new SchemaField({
-    "system": false,
-    "id": "users_avatarUrl",
+  users.fields.add(new Field({
     "name": "avatarUrl",
-    "type": "text",
-    "required": false,
-    "presentable": false,
-    "unique": false,
-    "options": {
-      "min": null,
-      "max": null,
-      "pattern": ""
-    }
+    "type": "text"
   }));
 
-  users.schema.addField(new SchemaField({
-    "system": false,
-    "id": "users_verified",
+  users.fields.add(new Field({
     "name": "verified",
-    "type": "bool",
-    "required": false,
-    "presentable": false,
-    "unique": false,
-    "options": {}
+    "type": "bool"
   }));
 
-  return $app.dao().saveCollection(users);
-}, (db) => {
-  const users = $app.dao().findCollectionByNameOrId("users");
-  users.schema.removeField("users_displayName");
-  users.schema.removeField("users_bio");
-  users.schema.removeField("users_website");
-  users.schema.removeField("users_avatarUrl");
-  users.schema.removeField("users_verified");
-  return $app.dao().saveCollection(users);
+  app.save(users);
+}, (app) => {
+  const users = app.findCollectionByNameOrId("users");
+  users.fields.removeByName("displayName");
+  users.fields.removeByName("bio");
+  users.fields.removeByName("website");
+  users.fields.removeByName("avatarUrl");
+  users.fields.removeByName("verified");
+  app.save(users);
 });

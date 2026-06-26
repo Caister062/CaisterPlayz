@@ -119,10 +119,15 @@ jobs:
       # =========================
       # BUILD ARCHIVE
       # =========================
+      - name: Resolve Swift Packages
+        working-directory: ios/App
+        run: xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App
+
       - name: Build signed iOS archive
         working-directory: ios/App
         run: |
           xcodebuild \
+            -resolvePackageDependencies \
             -project App.xcodeproj \
             -scheme App \
             -configuration Release \

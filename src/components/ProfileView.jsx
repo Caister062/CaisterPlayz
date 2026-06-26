@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Camera, Check, X, Loader, CheckCircle } from 'lucide-react';
+import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert } from 'lucide-react';
 import { GridCard, timeAgo } from './PostCard';
 import ExpandedBroadcast from './PostCard';
 import { updateProfile } from '../hooks';
@@ -342,24 +342,39 @@ export default function ProfileView({
       )}
 
       {isOwn && (
-        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+        <div style={{ textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <button
+            className="admin-login-btn"
+            style={{ color: '#f43f5e', borderColor: '#f43f5e' }}
+            onClick={async () => {
+              if (window.confirm('WARNING: Are you sure you want to permanently delete your account? This action cannot be undone.')) {
+                try {
+                  await pb.collection('cplayz_users').delete(currentUserId);
+                  localStorage.removeItem('cplayz_user_id');
+                  window.location.reload();
+                } catch (e) {
+                  alert('Account deletion failed.');
+                }
+              }
+            }}
+          >
+            <Trash2 size={16} /> Delete Account
+          </button>
+
           <button
             className="admin-login-btn"
             onClick={() => {
-              const email = prompt('Enter Admin Signal Key:');
+              const key = prompt('Enter Admin Signal Key:');
 
-              if (
-                email === 'caismoretton@gmail.com' ||
-                email === 'nexusnpc0@gmail'
-              ) {
-                localStorage.setItem('caister_admin', email);
+              if (key === 'CAISTER_CORE_ADMIN') {
+                localStorage.setItem('caister_admin', key);
                 window.location.reload();
-              } else if (email) {
+              } else if (key) {
                 alert('Signal key denied.');
               }
             }}
           >
-            🛡️ Control Center Access
+            <ShieldAlert size={16} /> Control Center Access
           </button>
         </div>
       )}

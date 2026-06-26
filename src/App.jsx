@@ -17,27 +17,26 @@ function CpMark({ size = 18 }) {
   );
 }
 
+import AuthView from './components/AuthView';
+
 export default function App() {
   const [tab, setTab] = useState('home');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
-  const [userId, setUserId] = useState(null);
+  const [userId, setUserId] = useState(localStorage.getItem('cplayz_user_id'));
   const [booting, setBooting] = useState(true);
   const [viewProfile, setViewProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [dismissedAnnounce, setDismissedAnnounce] = useState(localStorage.getItem('cp_dismissed_announce'));
 
   useEffect(() => {
-    const adminEmail = localStorage.getItem('caister_admin');
+    const adminKey = localStorage.getItem('caister_admin');
 
-    if (adminEmail === 'caismoretton@gmail.com' || adminEmail === 'nexusnpc0@gmail') {
+    if (adminKey === 'CAISTER_CORE_ADMIN') {
       setIsAdmin(true);
     }
 
-    ensureGuestUser()
-      .then(u => setUserId(u.id))
-      .catch(console.error)
-      .finally(() => setBooting(false));
+    setTimeout(() => setBooting(false), 500); // Small boot delay for the Slurp Shield animation
   }, []);
 
   const { posts, loading } = useRealtimePosts();
@@ -81,6 +80,10 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  if (!userId) {
+    return <AuthView onAuthSuccess={(id) => setUserId(id)} />;
   }
 
   const NAV = [
@@ -135,17 +138,13 @@ export default function App() {
                   if (isAdmin) {
                     goTab('admin');
                   } else {
-                    const email = prompt('Enter Admin Signal Key:');
+                    const key = prompt('Enter Admin Signal Key:');
 
-                    if (
-                      email === 'caismoretton@gmail.com' ||
-                      email === 'nexusnpc0@gmail' ||
-                      email === 'nexusnpc0@gmail.com'
-                    ) {
-                      localStorage.setItem('caister_admin', email);
+                    if (key === 'CAISTER_CORE_ADMIN') {
+                      localStorage.setItem('caister_admin', key);
                       setIsAdmin(true);
                       goTab('admin');
-                    } else if (email) {
+                    } else if (key) {
                       alert('Signal key denied.');
                     }
                   }

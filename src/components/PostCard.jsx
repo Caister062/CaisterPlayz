@@ -89,7 +89,7 @@ function getPRLevel(power, views) {
 }
 
 export function GridCard({ post, users, onClick }) {
-  const author = users.find(u => u.id === post.userId);
+  const author = users.find(u => u.id === post.userId) || post.expand?.userId || { id: post.userId, displayName: post.authorName || 'Operator' };
   if (!author) return null;
 
   const power =
@@ -166,7 +166,7 @@ export function GridCard({ post, users, onClick }) {
 }
 
 export function DeckCard({ post, users, onClick }) {
-  const author = users.find(u => u.id === post.userId);
+  const author = users.find(u => u.id === post.userId) || post.expand?.userId || { id: post.userId, displayName: post.authorName || 'Operator' };
   if (!author) return null;
 
   const power =
@@ -238,7 +238,7 @@ export default function ExpandedBroadcast({
   const viewedR = useRef(false);
 
   const { comments } = useComments(post.id);
-  const author = users.find(u => u.id === post.userId);
+  const author = users.find(u => u.id === post.userId) || post.expand?.userId || { id: post.userId, displayName: post.authorName || 'Operator' };
 
   const isVerified = window.cplayz_config?.verifiedUsers?.includes(author?.id);
   const isFeatured = window.cplayz_config?.featuredPosts?.includes(post.id);

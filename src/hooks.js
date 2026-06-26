@@ -232,7 +232,10 @@ export function useAllUsers() {
             setUsers(prev => prev.filter(u => u.id !== e.record.id));
           }
         });
-      } catch {}
+      } catch {
+        const interval = setInterval(fetchUsers, 15000);
+        unsub = () => clearInterval(interval);
+      }
     })();
 
     return () => {

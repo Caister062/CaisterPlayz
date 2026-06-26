@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert } from 'lucide-react';
+import pb from './pocketbase';
 import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, ensureGuestUser, useSystemConfig } from './hooks';
 import FeedView from './components/FeedView';
 import ExploreView from './components/ExploreView';

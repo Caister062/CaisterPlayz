@@ -349,11 +349,17 @@ export default function ProfileView({
             onClick={async () => {
               if (window.confirm('WARNING: Are you sure you want to permanently delete your account? This action cannot be undone.')) {
                 try {
-                  await pb.collection('cplayz_users').delete(currentUserId);
+                  await updateProfile(currentUserId, {
+                    displayName: 'Deleted Operator',
+                    bio: 'This account has been deleted.',
+                    avatarUrl: '',
+                    deviceId: 'deleted_' + Date.now()
+                  });
                   localStorage.removeItem('cplayz_user_id');
+                  localStorage.removeItem('cplayz_device_id');
                   window.location.reload();
                 } catch (e) {
-                  alert('Account deletion failed.');
+                  alert('Account deletion failed: ' + e.message);
                 }
               }
             }}

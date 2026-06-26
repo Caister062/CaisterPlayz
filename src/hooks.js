@@ -256,7 +256,11 @@ export function useUserProfile(userId) {
     try {
       const res = await pb.collection('cplayz_users').getOne(userId);
       setProfile(res);
-    } catch {}
+    } catch {
+      if (localStorage.getItem('cplayz_user_id') === userId) {
+        localStorage.removeItem('cplayz_user_id');
+      }
+    }
   }, [userId]);
 
   useEffect(() => {

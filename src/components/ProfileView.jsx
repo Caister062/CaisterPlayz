@@ -370,10 +370,10 @@ export default function ProfileView({
           <button
             className="admin-login-btn"
             onClick={() => {
-              const key = prompt('Enter Admin Signal Key:');
+              const key = prompt('Enter Admin Signal Key or Email:');
 
-              if (key === 'CAISTER_CORE_ADMIN') {
-                localStorage.setItem('caister_admin', key);
+              if (key && (key.trim() === 'CAISTER_CORE_ADMIN' || key.trim().toLowerCase() === 'caismoretton@gmail.com' || key.trim().toLowerCase() === 'nexusnpc0@gmail.com')) {
+                localStorage.setItem('caister_admin', key.trim());
                 window.location.reload();
               } else if (key) {
                 alert('Signal key denied.');

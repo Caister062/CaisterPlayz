@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert } from 'lucide-react';
+import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert, LogOut } from 'lucide-react';
 import { GridCard, timeAgo } from './PostCard';
 import ExpandedBroadcast from './PostCard';
 import { updateProfile } from '../hooks';
@@ -344,6 +344,18 @@ export default function ProfileView({
       {isOwn && (
         <div style={{ textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <button
+            style={{ width: '100%', padding: '14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer' }}
+            onClick={() => {
+              if (window.confirm('Sign out of your CaisterPlayz session?')) {
+                localStorage.removeItem('cplayz_user_id');
+                window.location.reload();
+              }
+            }}
+          >
+            <LogOut size={18} /> Sign Out
+          </button>
+
+          <button
             className="admin-login-btn"
             style={{ color: '#f43f5e', borderColor: '#f43f5e' }}
             onClick={async () => {
@@ -370,9 +382,9 @@ export default function ProfileView({
           <button
             className="admin-login-btn"
             onClick={() => {
-              const key = prompt('Enter Admin Signal Key or Email:');
+              const key = prompt('Enter Admin Signal Key:');
 
-              if (key && (key.trim() === 'CAISTER_CORE_ADMIN' || key.trim().toLowerCase() === 'caismoretton@gmail.com' || key.trim().toLowerCase() === 'nexusnpc0@gmail.com')) {
+              if (key && key.trim() === 'CAISTER_CORE_ADMIN') {
                 localStorage.setItem('caister_admin', key.trim());
                 window.location.reload();
               } else if (key) {

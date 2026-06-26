@@ -22,13 +22,11 @@ export default function AuthView({ onAuthSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Facade function: Pretends to authenticate, then creates/loads the device profile.
-  const handleAuth = async (setter) => {
+  const handleAuth = async (setter, customTag) => {
     setter(true);
     try {
-      // Simulate network delay for realism
-      await new Promise(r => setTimeout(r, 1200));
-      const user = await ensureGuestUser();
+      await new Promise(r => setTimeout(r, 800));
+      const user = await ensureGuestUser(customTag);
       onAuthSuccess(user.id);
     } catch (e) {
       alert('Authentication failed. Please try again.');
@@ -37,12 +35,19 @@ export default function AuthView({ onAuthSuccess }) {
     }
   };
 
-  const handleAppleAuth = () => handleAuth(setLoadingApple);
-  const handleGoogleAuth = () => handleAuth(setLoadingGoogle);
+  const handleAppleAuth = () => {
+    const tag = prompt('Sign in with Apple\n\nConfirm your CaisterPlayz Battle Tag:', 'Apple_Operator');
+    if (tag) handleAuth(setLoadingApple, tag.trim());
+  };
+  const handleGoogleAuth = () => {
+    const tag = prompt('Sign in with Google\n\nConfirm your CaisterPlayz Battle Tag:', 'Google_Operator');
+    if (tag) handleAuth(setLoadingGoogle, tag.trim());
+  };
   const handleEmailAuth = (e) => {
     e.preventDefault();
     if (!email || !password) return alert('Please enter both email and password.');
-    handleAuth(setLoadingEmail);
+    const tag = email.split('@')[0] || 'Operator';
+    handleAuth(setLoadingEmail, tag);
   };
 
   const handleRecovery = (e) => {

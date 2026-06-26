@@ -32,20 +32,17 @@ export default function App() {
   useEffect(() => {
     const adminKey = localStorage.getItem('caister_admin');
 
-    if (adminKey && (adminKey === 'CAISTER_CORE_ADMIN' || adminKey.toLowerCase() === 'caismoretton@gmail.com' || adminKey.toLowerCase() === 'nexusnpc0@gmail.com')) {
+    if (adminKey === 'CAISTER_CORE_ADMIN') {
       setIsAdmin(true);
     }
 
-    ensureGuestUser()
-      .then(user => {
-        if (user && user.id !== userId) {
-          setUserId(user.id);
-        }
-      })
-      .catch(() => {
+    const currentId = localStorage.getItem('cplayz_user_id');
+    if (currentId) {
+      pb.collection('cplayz_users').getOne(currentId).catch(() => {
         localStorage.removeItem('cplayz_user_id');
         setUserId(null);
       });
+    }
 
     setTimeout(() => setBooting(false), 500); // Small boot delay for the Slurp Shield animation
   }, []);
@@ -154,9 +151,9 @@ export default function App() {
                   if (isAdmin) {
                     goTab('admin');
                   } else {
-                    const key = prompt('Enter Admin Signal Key or Email:');
+                    const key = prompt('Enter Admin Signal Key:');
 
-                    if (key && (key.trim() === 'CAISTER_CORE_ADMIN' || key.trim().toLowerCase() === 'caismoretton@gmail.com' || key.trim().toLowerCase() === 'nexusnpc0@gmail.com')) {
+                    if (key && key.trim() === 'CAISTER_CORE_ADMIN') {
                       localStorage.setItem('caister_admin', key.trim());
                       setIsAdmin(true);
                       goTab('admin');

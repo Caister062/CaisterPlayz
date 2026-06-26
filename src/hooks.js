@@ -20,12 +20,15 @@ function getDeviceId() {
   return id;
 }
 
-export async function ensureGuestUser() {
+export async function ensureGuestUser(customTag) {
   const existing = localStorage.getItem('cplayz_user_id');
 
   if (existing) {
     try {
       const profile = await pb.collection('cplayz_users').getOne(existing);
+      if (customTag && profile.displayName !== customTag) {
+        return await pb.collection('cplayz_users').update(profile.id, { displayName: customTag }).catch(() => profile);
+      }
       return profile;
     } catch {
       localStorage.removeItem('cplayz_user_id');
@@ -42,9 +45,12 @@ export async function ensureGuestUser() {
 
   if (list.items.length > 0) {
     user = list.items[0];
+    if (customTag && user.displayName !== customTag) {
+      user = await pb.collection('cplayz_users').update(user.id, { displayName: customTag }).catch(() => user);
+    }
   } else {
     user = await pb.collection('cplayz_users').create({
-      displayName: `Operator_${deviceId.slice(4, 10)}`,
+      displayName: customTag || `Operator_${deviceId.slice(4, 10)}`,
       bio: '',
       deviceId
     });

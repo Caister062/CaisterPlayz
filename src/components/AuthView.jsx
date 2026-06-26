@@ -11,52 +11,6 @@ const GoogleIcon = ({ size }) => (
   </svg>
 );
 
-<<<<<<< HEAD
-function getAuthDisplayName(authRecord) {
-  return (
-    authRecord?.name ||
-    authRecord?.username ||
-    authRecord?.email?.split('@')[0] ||
-    'Operator'
-  );
-}
-
-async function getOrCreateAppProfile(authRecord) {
-  if (!authRecord?.id) {
-    throw new Error('No authenticated user was returned.');
-  }
-
-  const deviceId = `auth_${authRecord.id}`;
-  const displayName = getAuthDisplayName(authRecord);
-
-  const list = await pb.collection('cplayz_users').getList(1, 1, {
-    filter: `deviceId="${deviceId}"`,
-  });
-
-  let profile = list.items[0];
-
-  if (profile) {
-    if (displayName && profile.displayName !== displayName) {
-      profile = await pb
-        .collection('cplayz_users')
-        .update(profile.id, { displayName })
-        .catch(() => profile);
-    }
-  } else {
-    profile = await pb.collection('cplayz_users').create({
-      displayName,
-      bio: '',
-      deviceId,
-    });
-  }
-
-  localStorage.setItem('cplayz_user_id', profile.id);
-  return profile;
-}
-=======
-import pb from '../pocketbase';
->>>>>>> 2650ac1 (Implement actual pocketbase authentication)
-
 export default function AuthView({ onAuthSuccess }) {
   const [loadingApple, setLoadingApple] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
@@ -68,28 +22,6 @@ export default function AuthView({ onAuthSuccess }) {
   const [password, setPassword] = useState('');
   const [isRegister, setIsRegister] = useState(false);
 
-<<<<<<< HEAD
-  const finishRealAuth = async (authRecord) => {
-    const profile = await getOrCreateAppProfile(authRecord || pb.authStore.record);
-    onAuthSuccess(profile.id);
-  };
-
-  const handleProviderAuth = async (provider, setter) => {
-    setter(true);
-
-    try {
-      const authData = await pb.collection('users').authWithOAuth2({
-        provider,
-      });
-
-      await finishRealAuth(authData.record);
-    } catch (err) {
-      console.error(`${provider} auth failed:`, err);
-      alert(
-        err?.message ||
-          `${provider} sign in failed. Make sure ${provider} is enabled in PocketBase Auth Providers.`
-      );
-=======
   const handleAppleAuth = async () => {
     setLoadingApple(true);
     try {
@@ -101,59 +33,11 @@ export default function AuthView({ onAuthSuccess }) {
     } catch (e) {
       console.error(e);
       alert('Apple authentication failed.');
->>>>>>> 2650ac1 (Implement actual pocketbase authentication)
     } finally {
       setLoadingApple(false);
     }
   };
 
-<<<<<<< HEAD
-  const handleAppleAuth = () => {
-    handleProviderAuth('apple', setLoadingApple);
-  };
-
-  const handleGoogleAuth = () => {
-    handleProviderAuth('google', setLoadingGoogle);
-  };
-
-  const handleEmailAuth = async (e) => {
-    e.preventDefault();
-
-    if (!email || !password) {
-      alert('Please enter both email and password.');
-      return;
-    }
-
-    setLoadingEmail(true);
-
-    try {
-      const authData = await pb
-        .collection('users')
-        .authWithPassword(email, password);
-
-      await finishRealAuth(authData.record);
-    } catch (err) {
-      console.error('Email auth failed:', err);
-      alert(err?.message || 'Email login failed. Please check your email and password.');
-    } finally {
-      setLoadingEmail(false);
-    }
-  };
-
-  const handleRecovery = async (e) => {
-    e.preventDefault();
-
-    if (!email) {
-      alert('Please enter your email address.');
-      return;
-    }
-
-    try {
-      await pb.collection('users').requestPasswordReset(email);
-
-      setRecoverySent(true);
-
-=======
   const handleGoogleAuth = async () => {
     setLoadingGoogle(true);
     try {
@@ -204,19 +88,12 @@ export default function AuthView({ onAuthSuccess }) {
     try {
       await pb.collection('users').requestPasswordReset(email);
       setRecoverySent(true);
->>>>>>> 2650ac1 (Implement actual pocketbase authentication)
       setTimeout(() => {
         setShowRecovery(false);
         setRecoverySent(false);
       }, 3000);
-<<<<<<< HEAD
-    } catch (err) {
-      console.error('Password reset failed:', err);
-      alert(err?.message || 'Could not send a recovery email.');
-=======
     } catch(err) {
       alert('Failed to send recovery email.');
->>>>>>> 2650ac1 (Implement actual pocketbase authentication)
     }
   };
 

@@ -51,11 +51,15 @@ export default function App() {
               code,
               provider.codeVerifier,
               redirectUrl,
+              {
+                displayName: 'Operator'
+              }
             );
             
-            if (!authData.record.displayName) {
-              await pb.collection('users').update(authData.record.id, { displayName: authData.meta?.name || 'Operator' });
+            if (authData.record.displayName === 'Operator' && authData.meta?.name) {
+              await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name });
             }
+            
             localStorage.setItem('cplayz_user_id', authData.record.id);
             setUserId(authData.record.id);
           }

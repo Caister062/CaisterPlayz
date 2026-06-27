@@ -31,21 +31,15 @@ export default function AuthView({ onAuthSuccess }) {
   const handleAppleAuth = async () => {
     try {
       setLoadingApple(true);
-      const authData = await pb.collection('users').authWithOAuth2({ 
-        provider: 'apple',
-        createData: { displayName: 'Operator' }
-      });
+      const authMethods = await pb.collection('users').listAuthMethods();
+      const provider = authMethods.oauth2.providers.find(p => p.name === 'apple');
+      if (!provider) throw new Error('Apple login not configured');
       
-      if (authData.record.displayName === 'Operator' && authData.meta?.name) {
-        await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name });
-      }
-      
-      localStorage.setItem('cplayz_user_id', authData.record.id);
-      onAuthSuccess(authData.record.id);
+      const redirectUrl = 'https://caisterplayz-caisterplayz-backend.hf.space/api/oauth-redirect';
+      localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
+      window.location.href = provider.authUrl + redirectUrl;
     } catch(err) {
-      if (!err.isAbort) {
-        alert(err.message);
-      }
+      alert(err.message);
       setLoadingApple(false);
     }
   };
@@ -53,21 +47,15 @@ export default function AuthView({ onAuthSuccess }) {
   const handleGoogleAuth = async () => {
     try {
       setLoadingGoogle(true);
-      const authData = await pb.collection('users').authWithOAuth2({ 
-        provider: 'google',
-        createData: { displayName: 'Operator' }
-      });
+      const authMethods = await pb.collection('users').listAuthMethods();
+      const provider = authMethods.oauth2.providers.find(p => p.name === 'google');
+      if (!provider) throw new Error('Google login not configured');
 
-      if (authData.record.displayName === 'Operator' && authData.meta?.name) {
-        await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name });
-      }
-
-      localStorage.setItem('cplayz_user_id', authData.record.id);
-      onAuthSuccess(authData.record.id);
+      const redirectUrl = 'https://caisterplayz-caisterplayz-backend.hf.space/api/oauth-redirect';
+      localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
+      window.location.href = provider.authUrl + redirectUrl;
     } catch(err) {
-      if (!err.isAbort) {
-        alert(err.message);
-      }
+      alert(err.message);
       setLoadingGoogle(false);
     }
   };

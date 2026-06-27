@@ -31,6 +31,49 @@ export default function App() {
   const [dismissedAnnounce, setDismissedAnnounce] = useState(localStorage.getItem('cp_dismissed_announce'));
 
   useEffect(() => {
+    const handleOAuthRedirect = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const state = urlParams.get('state');
+      const code = urlParams.get('code');
+
+      if (state && code) {
+        try {
+          const providerStr = localStorage.getItem('oauth_provider');
+          if (providerStr) {
+            localStorage.removeItem('oauth_provider');
+            const provider = JSON.parse(providerStr);
+            if (provider.state !== state) {
+              throw new Error('State mismatch');
+            }
+            const redirectUrl = provider.redirectUrl || (window.location.origin + window.location.pathname);
+            const authData = await pb.collection('users').authWithOAuth2Code(
+              provider.name,
+              code,
+              provider.codeVerifier,
+              redirectUrl,
+              {
+                displayName: 'Operator'
+              }
+            );
+            
+            if (authData.record.displayName === 'Operator' && authData.meta?.name) {
+              await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name });
+            }
+            
+            localStorage.setItem('cplayz_user_id', authData.record.id);
+            setUserId(authData.record.id);
+          }
+        } catch (e) {
+          console.error('OAuth callback failed', e);
+          alert('Authentication failed: ' + e.message);
+        } finally {
+          localStorage.removeItem('oauth_provider');
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      }
+    };
+    handleOAuthRedirect();
+
     const adminKey = localStorage.getItem('caister_admin');
 
     if (adminKey === 'CAISTER_CORE_ADMIN') {

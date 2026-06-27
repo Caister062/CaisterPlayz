@@ -94,7 +94,11 @@ export default function AuthView({ onAuthSuccess }) {
       }
     } catch (err) {
       console.error(err);
-      alert(isRegister ? 'Registration failed. Email might be taken or password too short.' : 'Login failed. Check your credentials.');
+      let errMsg = err.message;
+      if (err.data && err.data.data) {
+        errMsg += ' ' + JSON.stringify(err.data.data);
+      }
+      alert(isRegister ? 'Registration failed: ' + errMsg : 'Login failed: ' + errMsg);
     } finally {
       setLoadingEmail(false);
     }

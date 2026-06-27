@@ -38,8 +38,9 @@ export default function AuthView({ onAuthSuccess }) {
         setLoadingApple(false);
         return;
       }
+      const redirectUrl = window.location.origin + (window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/');
+      provider.redirectUrl = redirectUrl;
       localStorage.setItem('oauth_provider', JSON.stringify(provider));
-      const redirectUrl = window.location.origin + window.location.pathname;
       window.location.href = provider.authUrl + redirectUrl;
     } catch (e) {
       console.error(e);
@@ -58,8 +59,9 @@ export default function AuthView({ onAuthSuccess }) {
         setLoadingGoogle(false);
         return;
       }
+      const redirectUrl = window.location.origin + (window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/');
+      provider.redirectUrl = redirectUrl;
       localStorage.setItem('oauth_provider', JSON.stringify(provider));
-      const redirectUrl = window.location.origin + window.location.pathname;
       window.location.href = provider.authUrl + redirectUrl;
     } catch (e) {
       console.error(e);

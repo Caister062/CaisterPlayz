@@ -44,7 +44,7 @@ export default function App() {
             if (provider.state !== state) {
               throw new Error('State mismatch');
             }
-            const redirectUrl = window.location.origin + window.location.pathname;
+            const redirectUrl = provider.redirectUrl || (window.location.origin + window.location.pathname);
             const authData = await pb.collection('users').authWithOAuth2Code(
               provider.name,
               code,
@@ -60,7 +60,7 @@ export default function App() {
           }
         } catch (e) {
           console.error('OAuth callback failed', e);
-          alert('Authentication failed.');
+          alert('Authentication failed: ' + e.message);
         } finally {
           localStorage.removeItem('oauth_provider');
           window.history.replaceState(null, '', window.location.pathname);

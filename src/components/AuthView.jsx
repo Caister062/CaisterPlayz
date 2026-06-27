@@ -31,16 +31,19 @@ export default function AuthView({ onAuthSuccess }) {
   const handleAppleAuth = async () => {
     setLoadingApple(true);
     try {
-      const authData = await pb.collection('users').authWithOAuth2({ provider: 'apple' });
-      if (!authData.record.displayName) {
-        await pb.collection('users').update(authData.record.id, { displayName: authData.meta?.name || 'Apple_Operator' });
+      const authMethods = await pb.collection('users').listAuthMethods();
+      const provider = authMethods.authProviders.find(p => p.name === 'apple');
+      if (!provider) {
+        alert('Apple login is not enabled yet.');
+        setLoadingApple(false);
+        return;
       }
-      localStorage.setItem('cplayz_user_id', authData.record.id);
-      onAuthSuccess(authData.record.id);
+      localStorage.setItem('oauth_provider', JSON.stringify(provider));
+      const redirectUrl = window.location.origin + window.location.pathname;
+      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
     } catch (e) {
       console.error(e);
       alert('Apple authentication failed.');
-    } finally {
       setLoadingApple(false);
     }
   };
@@ -48,16 +51,19 @@ export default function AuthView({ onAuthSuccess }) {
   const handleGoogleAuth = async () => {
     setLoadingGoogle(true);
     try {
-      const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
-      if (!authData.record.displayName) {
-        await pb.collection('users').update(authData.record.id, { displayName: authData.meta?.name || 'Google_Operator' });
+      const authMethods = await pb.collection('users').listAuthMethods();
+      const provider = authMethods.authProviders.find(p => p.name === 'google');
+      if (!provider) {
+        alert('Google login is not enabled yet.');
+        setLoadingGoogle(false);
+        return;
       }
-      localStorage.setItem('cplayz_user_id', authData.record.id);
-      onAuthSuccess(authData.record.id);
+      localStorage.setItem('oauth_provider', JSON.stringify(provider));
+      const redirectUrl = window.location.origin + window.location.pathname;
+      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
     } catch (e) {
       console.error(e);
       alert('Google authentication failed.');
-    } finally {
       setLoadingGoogle(false);
     }
   };

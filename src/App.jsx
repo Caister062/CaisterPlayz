@@ -193,8 +193,8 @@ export default function App() {
                   } else {
                     const key = prompt('Enter Admin Signal Key:');
 
-                    if (key && key.trim() === 'CAISTER_CORE_ADMIN') {
-                      localStorage.setItem('caister_admin', key.trim());
+                    if (key && key.trim().toUpperCase() === 'CAISTER_CORE_ADMIN') {
+                      localStorage.setItem('caister_admin', 'CAISTER_CORE_ADMIN');
                       setIsAdmin(true);
                       goTab('admin');
                     } else if (key) {

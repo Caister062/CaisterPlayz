@@ -40,6 +40,7 @@ export default function App() {
         try {
           const providerStr = localStorage.getItem('oauth_provider');
           if (providerStr) {
+            localStorage.removeItem('oauth_provider');
             const provider = JSON.parse(providerStr);
             if (provider.state !== state) {
               throw new Error('State mismatch');

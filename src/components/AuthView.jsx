@@ -33,7 +33,7 @@ export default function AuthView({ onAuthSuccess }) {
     try {
       const authData = await pb.collection('users').authWithOAuth2({ provider: 'apple' });
       if (!authData.record.displayName) {
-        await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name || 'Apple_Operator' });
+        await pb.collection('users').update(authData.record.id, { displayName: authData.meta?.name || 'Apple_Operator' });
       }
       onAuthSuccess(authData.record.id);
     } catch (e) {

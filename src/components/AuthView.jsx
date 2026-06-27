@@ -29,43 +29,33 @@ export default function AuthView({ onAuthSuccess }) {
   const [isRegister, setIsRegister] = useState(false);
 
   const handleAppleAuth = async () => {
-    setLoadingApple(true);
     try {
+      setLoadingApple(true);
       const authMethods = await pb.collection('users').listAuthMethods();
       const provider = authMethods.oauth2?.providers?.find(p => p.name === 'apple');
-      if (!provider) {
-        alert('Apple login is not enabled yet.');
-        setLoadingApple(false);
-        return;
-      }
-      const redirectUrl = window.location.origin + (window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/');
-      provider.redirectUrl = redirectUrl;
-      localStorage.setItem('oauth_provider', JSON.stringify(provider));
+      if (!provider) throw new Error('Apple login not configured');
+      
+      const redirectUrl = 'https://caisterplayz-caisterplayz-backend.hf.space/api/oauth-redirect';
+      localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
       window.location.href = provider.authUrl + redirectUrl;
-    } catch (e) {
-      console.error(e);
-      alert('Apple authentication failed.');
+    } catch(err) {
+      alert(err.message);
       setLoadingApple(false);
     }
   };
 
   const handleGoogleAuth = async () => {
-    setLoadingGoogle(true);
     try {
+      setLoadingGoogle(true);
       const authMethods = await pb.collection('users').listAuthMethods();
       const provider = authMethods.oauth2?.providers?.find(p => p.name === 'google');
-      if (!provider) {
-        alert('Google login is not enabled yet.');
-        setLoadingGoogle(false);
-        return;
-      }
-      const redirectUrl = window.location.origin + (window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/');
-      provider.redirectUrl = redirectUrl;
-      localStorage.setItem('oauth_provider', JSON.stringify(provider));
+      if (!provider) throw new Error('Google login not configured');
+
+      const redirectUrl = 'https://caisterplayz-caisterplayz-backend.hf.space/api/oauth-redirect';
+      localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
       window.location.href = provider.authUrl + redirectUrl;
-    } catch (e) {
-      console.error(e);
-      alert('Google authentication failed.');
+    } catch(err) {
+      alert(err.message);
       setLoadingGoogle(false);
     }
   };

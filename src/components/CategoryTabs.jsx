@@ -1,4 +1,4 @@
-import { Dumbbell, Heart, Utensils, Target, Flame, Users, Gamepad2, Trophy, Lightbulb, MessageCircle } from 'lucide-react';
+import { Dumbbell, Heart, Utensils, Target, Flame, Users, Gamepad2, Trophy, Lightbulb, MessageCircle, TrendingUp } from 'lucide-react';
 
 const FITNESS_CATEGORIES = [
   { id: 'All',        label: 'All',       icon: null },
@@ -52,3 +52,4 @@ export default function CategoryTabs({ selectedCategory, onSelectCategory, activ
       </div>
     </div>
   );
+}

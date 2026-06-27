@@ -109,7 +109,7 @@ export default function App() {
 
   return (
     <div className="console">
-      {config.lockdown && !isAdmin ? (
+      {config?.lockdown && !isAdmin ? (
         <div style={{ display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',padding:20,textAlign:'center' }}>
           <ShieldAlert size={64} color="#f43f5e" style={{ marginBottom:20 }} />
 

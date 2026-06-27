@@ -35,6 +35,7 @@ export default function AuthView({ onAuthSuccess }) {
       if (!authData.record.displayName) {
         await pb.collection('users').update(authData.record.id, { displayName: authData.meta?.name || 'Apple_Operator' });
       }
+      localStorage.setItem('cplayz_user_id', authData.record.id);
       onAuthSuccess(authData.record.id);
     } catch (e) {
       console.error(e);
@@ -49,8 +50,9 @@ export default function AuthView({ onAuthSuccess }) {
     try {
       const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
       if (!authData.record.displayName) {
-        await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name || 'Google_Operator' });
+        await pb.collection('users').update(authData.record.id, { displayName: authData.meta?.name || 'Google_Operator' });
       }
+      localStorage.setItem('cplayz_user_id', authData.record.id);
       onAuthSuccess(authData.record.id);
     } catch (e) {
       console.error(e);
@@ -75,9 +77,11 @@ export default function AuthView({ onAuthSuccess }) {
           bio: ''
         });
         const authData = await pb.collection('users').authWithPassword(email, password);
+        localStorage.setItem('cplayz_user_id', authData.record.id);
         onAuthSuccess(authData.record.id);
       } else {
         const authData = await pb.collection('users').authWithPassword(email, password);
+        localStorage.setItem('cplayz_user_id', authData.record.id);
         onAuthSuccess(authData.record.id);
       }
     } catch (err) {

@@ -32,7 +32,7 @@ export default function AuthView({ onAuthSuccess }) {
     setLoadingApple(true);
     try {
       const authMethods = await pb.collection('users').listAuthMethods();
-      const provider = authMethods.authProviders.find(p => p.name === 'apple');
+      const provider = authMethods.oauth2?.providers?.find(p => p.name === 'apple');
       if (!provider) {
         alert('Apple login is not enabled yet.');
         setLoadingApple(false);
@@ -40,7 +40,7 @@ export default function AuthView({ onAuthSuccess }) {
       }
       localStorage.setItem('oauth_provider', JSON.stringify(provider));
       const redirectUrl = window.location.origin + window.location.pathname;
-      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
+      window.location.href = provider.authUrl + redirectUrl;
     } catch (e) {
       console.error(e);
       alert('Apple authentication failed.');
@@ -52,7 +52,7 @@ export default function AuthView({ onAuthSuccess }) {
     setLoadingGoogle(true);
     try {
       const authMethods = await pb.collection('users').listAuthMethods();
-      const provider = authMethods.authProviders.find(p => p.name === 'google');
+      const provider = authMethods.oauth2?.providers?.find(p => p.name === 'google');
       if (!provider) {
         alert('Google login is not enabled yet.');
         setLoadingGoogle(false);
@@ -60,7 +60,7 @@ export default function AuthView({ onAuthSuccess }) {
       }
       localStorage.setItem('oauth_provider', JSON.stringify(provider));
       const redirectUrl = window.location.origin + window.location.pathname;
-      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
+      window.location.href = provider.authUrl + redirectUrl;
     } catch (e) {
       console.error(e);
       alert('Google authentication failed.');

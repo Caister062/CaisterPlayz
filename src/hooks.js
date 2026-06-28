@@ -438,6 +438,10 @@ export async function toggleAnchor(postId, userId, isAnchored) {
       : uniqueList([...(post.favoritedBy || []), userId]);
 
     await pb.collection('cplayz_posts').update(postId, { favoritedBy });
+
+    if (!isAnchored) {
+      sendSignalAlert(post.userId, userId, 'anchor', postId);
+    }
   });
 }
 

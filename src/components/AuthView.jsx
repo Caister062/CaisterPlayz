@@ -37,7 +37,7 @@ export default function AuthView({ onAuthSuccess }) {
       
       const redirectUrl = 'https://caisterplayz-caisterplayz-backend.hf.space/api/oauth-redirect';
       localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
-      window.location.href = provider.authUrl + redirectUrl;
+      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
     } catch(err) {
       alert(err.message);
       setLoadingApple(false);
@@ -53,7 +53,7 @@ export default function AuthView({ onAuthSuccess }) {
 
       const redirectUrl = 'https://caisterplayz-caisterplayz-backend.hf.space/api/oauth-redirect';
       localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
-      window.location.href = provider.authUrl + redirectUrl;
+      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
     } catch(err) {
       alert(err.message);
       setLoadingGoogle(false);

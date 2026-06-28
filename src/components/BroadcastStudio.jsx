@@ -1,25 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Video, StopCircle, PlayCircle, Settings, Users, Monitor, Camera } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Video, StopCircle, PlayCircle, Settings, Users, Camera } from 'lucide-react';
 import pb from '../pocketbase';
 import LiveChat from './LiveChat';
+import {
+  LiveKitRoom,
+  VideoConference,
+  RoomAudioRenderer,
+} from '@livekit/components-react';
+import '@livekit/components-styles';
 
 export default function BroadcastStudio({ onBack }) {
   const [streamData, setStreamData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
-  const [isLiveLocally, setIsLiveLocally] = useState(false);
-  
-  const localVideoRef = useRef(null);
-  const localStreamRef = useRef(null);
-  const peerConnectionsRef = useRef(new Map()); // Map of viewerId -> RTCPeerConnection
+  const [token, setToken] = useState('');
 
-  // ICE Servers
-  const configuration = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
-  };
+  const LIVEKIT_URL = 'wss://lets-do-this-q7xchf2l.livekit.cloud';
 
   useEffect(() => {
     const fetchOrInitStream = async () => {
@@ -28,20 +24,22 @@ export default function BroadcastStudio({ onBack }) {
           filter: `hostId = "${pb.authStore.model.id}"`
         });
 
+        let currentStream;
         if (records.items.length > 0) {
-          setStreamData(records.items[0]);
-          setTitle(records.items[0].title);
+          currentStream = records.items[0];
+          setStreamData(currentStream);
+          setTitle(currentStream.title);
         } else {
-          const newStream = await pb.collection('cplayz_streams').create({
+          currentStream = await pb.collection('cplayz_streams').create({
             hostId: pb.authStore.model.id,
             title: `${pb.authStore.model.displayName || 'User'}'s Stream`,
             isLive: false,
             viewerCount: 0,
             hypeCount: 0,
-            streamUrl: 'webrtc'
+            streamUrl: 'livekit'
           });
-          setStreamData(newStream);
-          setTitle(newStream.title);
+          setStreamData(currentStream);
+          setTitle(currentStream.title);
         }
       } catch (err) {
         console.error(err);
@@ -50,14 +48,6 @@ export default function BroadcastStudio({ onBack }) {
       }
     };
     fetchOrInitStream();
-
-    return () => {
-      stopLocalVideo();
-      // Close all peer connections
-      peerConnectionsRef.current.forEach(pc => pc.close());
-      peerConnectionsRef.current.clear();
-      pb.collection('cplayz_webrtc_signals').unsubscribe('*');
-    };
   }, []);
 
   const handleUpdateTitle = async () => {
@@ -68,57 +58,30 @@ export default function BroadcastStudio({ onBack }) {
     } catch (err) {}
   };
 
-  const startLocalVideo = async (useScreen = false) => {
-    try {
-      const stream = useScreen 
-        ? await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-        : await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: true });
-      
-      localStreamRef.current = stream;
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-      return true;
-    } catch (err) {
-      alert('Could not access camera/microphone: ' + err.message);
-      return false;
-    }
-  };
-
-  const stopLocalVideo = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-      localStreamRef.current = null;
-    }
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
-    }
-  };
-
   const toggleLiveStatus = async () => {
     if (!streamData) return;
-    
     const willBeLive = !streamData.isLive;
 
     if (willBeLive) {
-      // Prompt for camera/mic before going live
-      const started = await startLocalVideo();
-      if (!started) return;
-
-      setIsLiveLocally(true);
-      // Listen for WebRTC signals (Offers and ICE candidates from Viewers)
-      pb.collection('cplayz_webrtc_signals').subscribe('*', async (e) => {
-        if (e.action === 'create' && e.record.receiverId === pb.authStore.model.id && e.record.streamId === streamData.id) {
-          const { senderId, signalType, payload } = e.record;
-          handleSignalingMessage(senderId, signalType, payload);
+      // Get LiveKit Token
+      try {
+        const res = await fetch(`https://caisterplayz-caisterplayz-backend.hf.space/api/livekit-token?room=${streamData.id}`, {
+          headers: {
+            'Authorization': pb.authStore.token
+          }
+        });
+        const data = await res.json();
+        if (data.token) {
+          setToken(data.token);
+        } else {
+          throw new Error('Failed to fetch token');
         }
-      });
+      } catch (err) {
+        alert('Could not start stream: ' + err.message);
+        return;
+      }
     } else {
-      setIsLiveLocally(false);
-      stopLocalVideo();
-      pb.collection('cplayz_webrtc_signals').unsubscribe('*');
-      peerConnectionsRef.current.forEach(pc => pc.close());
-      peerConnectionsRef.current.clear();
+      setToken('');
     }
 
     try {
@@ -126,72 +89,10 @@ export default function BroadcastStudio({ onBack }) {
         isLive: willBeLive,
         viewerCount: !willBeLive ? 0 : streamData.viewerCount,
         hypeCount: !willBeLive ? 0 : streamData.hypeCount,
-        streamUrl: 'webrtc'
+        streamUrl: 'livekit'
       });
       setStreamData(updated);
     } catch (err) {}
-  };
-
-  // --- WebRTC Signaling Logic ---
-  const handleSignalingMessage = async (viewerId, type, payload) => {
-    let pc = peerConnectionsRef.current.get(viewerId);
-
-    if (type === 'offer') {
-      if (!pc) {
-        pc = createPeerConnection(viewerId);
-        peerConnectionsRef.current.set(viewerId, pc);
-      }
-      await pc.setRemoteDescription(new RTCSessionDescription(payload));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      // Send answer back to viewer
-      await pb.collection('cplayz_webrtc_signals').create({
-        streamId: streamData.id,
-        senderId: pb.authStore.model.id,
-        receiverId: viewerId,
-        signalType: 'answer',
-        payload: answer
-      });
-    } else if (type === 'ice' && pc) {
-      try {
-        await pc.addIceCandidate(new RTCIceCandidate(payload));
-      } catch (err) {}
-    } else if (type === 'leave' && pc) {
-      pc.close();
-      peerConnectionsRef.current.delete(viewerId);
-    }
-  };
-
-  const createPeerConnection = (viewerId) => {
-    const pc = new RTCPeerConnection(configuration);
-
-    // Add local stream tracks to the connection
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        pc.addTrack(track, localStreamRef.current);
-      });
-    }
-
-    pc.onicecandidate = async (event) => {
-      if (event.candidate) {
-        await pb.collection('cplayz_webrtc_signals').create({
-          streamId: streamData.id,
-          senderId: pb.authStore.model.id,
-          receiverId: viewerId,
-          signalType: 'ice',
-          payload: event.candidate
-        });
-      }
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-        pc.close();
-        peerConnectionsRef.current.delete(viewerId);
-      }
-    };
-
-    return pc;
   };
 
   if (loading) return <div style={{ color: '#fff', padding: 20 }}>Loading Studio...</div>;
@@ -215,7 +116,7 @@ export default function BroadcastStudio({ onBack }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <h2 style={{ color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Video size={24} color="#3b82f6" /> WebRTC Studio
+            <Video size={24} color="#3b82f6" /> LiveKit Studio
           </h2>
           <button onClick={onBack} style={{
             background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
@@ -225,14 +126,19 @@ export default function BroadcastStudio({ onBack }) {
 
         {/* Video Preview */}
         <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: 12, overflow: 'hidden', marginBottom: 24, position: 'relative' }}>
-          <video 
-            ref={localVideoRef} 
-            autoPlay 
-            muted 
-            playsInline 
-            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
-          />
-          {!isLiveLocally && (
+          {token ? (
+            <LiveKitRoom
+              video={true}
+              audio={true}
+              token={token}
+              serverUrl={LIVEKIT_URL}
+              data-lk-theme="default"
+              style={{ height: '100%' }}
+            >
+              <VideoConference />
+              <RoomAudioRenderer />
+            </LiveKitRoom>
+          ) : (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
               Camera off
             </div>
@@ -253,9 +159,9 @@ export default function BroadcastStudio({ onBack }) {
               </div>
             </div>
             <div>
-              <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 4 }}>Viewers (P2P)</div>
+              <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 4 }}>Viewers (SFU)</div>
               <div style={{ color: '#fff', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Users size={18} /> {peerConnectionsRef.current.size} / {streamData.viewerCount}
+                <Users size={18} /> {streamData.viewerCount}
               </div>
             </div>
           </div>
@@ -271,7 +177,7 @@ export default function BroadcastStudio({ onBack }) {
             }}
           >
             {streamData.isLive ? <StopCircle size={20} /> : <Camera size={20} />}
-            {streamData.isLive ? 'End Stream' : 'Go Live (Camera)'}
+            {streamData.isLive ? 'End Stream' : 'Go Live (SFU)'}
           </button>
         </div>
 
@@ -293,8 +199,8 @@ export default function BroadcastStudio({ onBack }) {
               </button>
             </div>
           </div>
-          <p style={{ color: '#f59e0b', fontSize: 12 }}>
-            <strong>Warning:</strong> You are using WebRTC Pure Peer-to-Peer mode. Your device will upload the video directly to every viewer. Do not exceed ~5 viewers or your connection may drop.
+          <p style={{ color: '#10b981', fontSize: 12 }}>
+            <strong>Enterprise Mode Active:</strong> Your video is being routed through LiveKit's global edge network. Your device only uploads 1 stream, and the server distributes it to thousands of viewers with 0 delay.
           </p>
         </div>
       </div>

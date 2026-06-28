@@ -240,11 +240,11 @@ function ReelCard({
     setLikeCount(p => (newLiked ? p + 1 : p - 1));
 
     try {
-      await toggleLike(reel.id, currentUserId, liked, reel.userId);
+      await toggleLike(reel.id, currentUserId, liked, author?.displayName || 'User');
     } catch (err) {
       console.error(err);
     }
-  }, [liked, reel.id, currentUserId, reel.userId]);
+  }, [liked, reel.id, currentUserId, author?.displayName]);
 
   const handleDoubleTap = () => {
     const now = Date.now();
@@ -263,7 +263,7 @@ function ReelCard({
     setBookmarked(newState);
 
     try {
-      await toggleBookmark(reel.id, currentUserId, bookmarked);
+      await toggleBookmark(reel.id, currentUserId, bookmarked, author?.displayName || 'User');
     } catch (err) {
       console.error(err);
     }

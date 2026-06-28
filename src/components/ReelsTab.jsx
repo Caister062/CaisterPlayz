@@ -28,7 +28,8 @@ import {
 
 import {
   formatCount,
-  formatTime
+  formatTime,
+  triggerHaptic
 } from '../utils';
 
 import {
@@ -235,6 +236,7 @@ function ReelCard({
   }, [reel, currentUserId]);
 
   const handleLike = useCallback(async () => {
+    triggerHaptic('light');
     const newLiked = !liked;
     setLiked(newLiked);
     setLikeCount(p => (newLiked ? p + 1 : p - 1));
@@ -258,7 +260,8 @@ function ReelCard({
     lastTapRef.current = now;
   };
 
-  const handleBookmark = async () => {
+  const handleBookmark = useCallback(async () => {
+    triggerHaptic('light');
     const newState = !bookmarked;
     setBookmarked(newState);
 
@@ -267,7 +270,7 @@ function ReelCard({
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [bookmarked, reel.id, currentUserId, author?.displayName]);
 
   const handleShare = async () => {
     if (!navigator.share) return;

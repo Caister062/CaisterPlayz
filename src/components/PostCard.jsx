@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Eye, MoreHorizontal, Trash2, Share2, Loader, CheckCircle, Pin } from 'lucide-react';
 import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, deleteComment } from '../hooks';
-import { formatCount } from '../utils';
+import { formatCount, formatTime, triggerHaptic } from '../utils';
 
 export function timeAgo(ts) {
   if (!ts) return '';
@@ -291,8 +291,12 @@ export default function ExpandedBroadcast({
 
   const doReact = useCallback(
     type => {
+      if (!currentUserId) return;
+
+      triggerHaptic('light');
+
       setChipPop(type);
-      setTimeout(() => setChipPop(''), 350);
+      setTimeout(() => setChipPop(''), 300);
 
       if (type === 'boost') {
         const next = !liked;
@@ -364,6 +368,7 @@ export default function ExpandedBroadcast({
       try {
         await addComment(post.id, currentUserId, echoText.trim(), author.displayName);
         setEchoText('');
+        triggerHaptic('success');
       } catch (err) {
         console.error(err);
       } finally {

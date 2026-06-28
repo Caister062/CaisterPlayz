@@ -1,3 +1,58 @@
+export const THEMES = {
+  cyberpunk: {
+    cyan: '#00f0ff',
+    violet: '#b042ff',
+    lime: '#39ff14',
+    hot: '#ff2a2a',
+    amber: '#ffd700',
+    grad: 'linear-gradient(135deg, #00f0ff, #b042ff, #ffd700)'
+  },
+  neonGreen: {
+    cyan: '#39ff14',
+    violet: '#00f0ff',
+    lime: '#b042ff',
+    hot: '#ff2a2a',
+    amber: '#ffd700',
+    grad: 'linear-gradient(135deg, #39ff14, #00f0ff, #ffd700)'
+  },
+  bloodRed: {
+    cyan: '#ff2a2a',
+    violet: '#ffd700',
+    lime: '#39ff14',
+    hot: '#00f0ff',
+    amber: '#b042ff',
+    grad: 'linear-gradient(135deg, #ff2a2a, #ffd700, #b042ff)'
+  },
+  gold: {
+    cyan: '#ffd700',
+    violet: '#ff2a2a',
+    lime: '#39ff14',
+    hot: '#b042ff',
+    amber: '#00f0ff',
+    grad: 'linear-gradient(135deg, #ffd700, #ff2a2a, #39ff14)'
+  }
+};
+
+export function applyTheme(themeName) {
+  const t = THEMES[themeName] || THEMES.cyberpunk;
+  const root = document.documentElement;
+  root.style.setProperty('--cyan', t.cyan);
+  root.style.setProperty('--violet', t.violet);
+  root.style.setProperty('--lime', t.lime);
+  root.style.setProperty('--hot', t.hot);
+  root.style.setProperty('--amber', t.amber);
+  root.style.setProperty('--caister-grad', t.grad);
+}
+
+export function triggerHaptic(type = 'light') {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    if (type === 'light') navigator.vibrate(10);
+    else if (type === 'medium') navigator.vibrate(20);
+    else if (type === 'heavy') navigator.vibrate(30);
+    else if (type === 'success') navigator.vibrate([10, 50, 20]);
+  }
+}
+
 export function compressImage(file, maxDim = 800, quality = 0.75) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type.startsWith('image/')) {

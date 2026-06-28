@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Bell, Shield, Mail, Check, MessageSquare, AlertCircle } from 'lucide-react';
 import { updateProfile } from '../hooks';
+import { THEMES, applyTheme } from '../utils';
 
 export default function SettingsModal({ isOpen, onClose, user, profile, onProfileUpdate }) {
   const [notifPrefs, setNotifPrefs] = useState({
@@ -19,6 +20,8 @@ export default function SettingsModal({ isOpen, onClose, user, profile, onProfil
   const [supportMessage, setSupportMessage] = useState('');
   const [supportSent, setSupportSent] = useState(false);
   const [sendingSupport, setSendingSupport] = useState(false);
+
+  const [activeTheme, setActiveTheme] = useState(localStorage.getItem('cplayz_theme') || 'cyberpunk');
 
   // Load preferences
   useEffect(() => {
@@ -44,6 +47,12 @@ export default function SettingsModal({ isOpen, onClose, user, profile, onProfil
     const next = { ...notifPrefs, [key]: !notifPrefs[key] };
     setNotifPrefs(next);
     localStorage.setItem(`cplayz_notif_prefs_${user.id}`, JSON.stringify(next));
+  };
+
+  const handleThemeChange = (themeName) => {
+    setActiveTheme(themeName);
+    localStorage.setItem('cplayz_theme', themeName);
+    applyTheme(themeName);
   };
 
   const handleVerifyToggle = async () => {
@@ -261,18 +270,48 @@ export default function SettingsModal({ isOpen, onClose, user, profile, onProfil
                   <span>Support request submitted! We will respond shortly.</span>
                 </div>
               )}
-
-              <button
-                type="submit"
-                disabled={sendingSupport || !supportMessage.trim()}
-                className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/95 text-white font-bold text-sm rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {sendingSupport ? 'Sending...' : 'Submit Feedbacks'}
-              </button>
+                <div className="flex justify-end pt-2">
+                <button
+                  type="submit"
+                  disabled={!supportMessage.trim() || sendingSupport || supportSent}
+                  className="px-5 py-2 rounded-xl text-sm font-bold bg-brand-primary text-white hover:bg-brand-primary/90 disabled:opacity-50 transition-all flex items-center gap-2"
+                >
+                  {supportSent ? <><Check className="w-4 h-4"/> Sent!</> : 'Send Message'}
+                </button>
+              </div>
             </form>
           </div>
 
+          {/* Section 4: Personalization */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-dark-muted uppercase tracking-wider px-1">Personalization</h4>
+            <div className="bg-dark-surface border border-dark-border rounded-2xl p-4">
+              <p className="text-sm font-semibold text-dark-text mb-3">HUD Color Theme</p>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.keys(THEMES).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => { applyTheme(t); handleThemeChange(t); }}
+                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                      activeTheme === t 
+                        ? 'border-brand-primary bg-brand-primary/10' 
+                        : 'border-dark-border bg-dark-bg hover:border-dark-muted'
+                    }`}
+                  >
+                    <span className="text-sm font-semibold capitalize text-dark-text">{t.replace(/([A-Z])/g, ' $1').trim()}</span>
+                    <div 
+                      className="w-5 h-5 rounded-full shadow-md"
+                      style={{ background: THEMES[t].grad }}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          
         </div>
+
+        {/* Footer */}
       </div>
     </div>
   );

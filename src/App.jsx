@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert } from 'lucide-react';
 import pb from './pocketbase';
 import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig } from './hooks';
+import { applyTheme } from './utils';
 import FeedView from './components/FeedView';
 import ExploreView from './components/ExploreView';
 import NotificationsView from './components/NotificationsView';
@@ -77,6 +78,11 @@ export default function App() {
 
     if (adminKey === 'CAISTER_CORE_ADMIN') {
       setIsAdmin(true);
+    }
+
+    const savedTheme = localStorage.getItem('cplayz_theme');
+    if (savedTheme) {
+      applyTheme(savedTheme);
     }
 
     const unsub = pb.authStore.onChange((token, model) => {

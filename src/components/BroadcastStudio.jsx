@@ -170,8 +170,19 @@ export default function BroadcastStudio({ onBack }) {
             </div>
           </div>
 
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 8 }}>RTMP Server URL</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input 
+                type="text" value="rtmps://global-live.mux.com:443/app" readOnly
+                style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 12px', color: '#fff' }}
+              />
+            </div>
+            <p style={{ color: '#94a3b8', fontSize: 12, marginTop: 8 }}>Paste this into OBS Studio (Settings {'>'} Stream {'>'} Custom).</p>
+          </div>
+
           <div>
-            <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 8 }}>RTMP Stream Key (OBS/Wirecast)</label>
+            <label style={{ display: 'block', color: '#94a3b8', fontSize: 13, marginBottom: 8 }}>RTMP Stream Key</label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input 
                 type="password" value={streamData.streamKey || ''} readOnly
@@ -181,7 +192,7 @@ export default function BroadcastStudio({ onBack }) {
                 <Copy size={16} /> {copied ? 'Copied!' : 'Copy'}
               </button>
             </div>
-            <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>Keep this key secret! Anyone with this key can broadcast to your channel.</p>
+            <p style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>Keep this secret! Anyone with this key can broadcast to your channel.</p>
           </div>
         </div>
       </div>

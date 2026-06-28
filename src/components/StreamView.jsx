@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Flame, X, ArrowLeft } from 'lucide-react';
 import pb from '../pocketbase';
 import LiveChat from './LiveChat';
+import MuxPlayer from '@mux/mux-player-react';
 
 export default function StreamView({ stream, onBack }) {
   const [streamData, setStreamData] = useState(stream);
@@ -77,14 +78,30 @@ export default function StreamView({ stream, onBack }) {
         alignItems: 'center',
         justifyContent: 'center'
       }}>
-        {/* Placeholder for Mux/Agora Video Player */}
+        {/* Video Player */}
         {streamData.streamUrl ? (
-          <div style={{ color: '#64748b' }}>Video Player will render here</div>
+          <MuxPlayer
+            streamType="live"
+            playbackId={streamData.streamUrl}
+            metadataVideoTitle={streamData.title}
+            metadataViewerUserId={pb.authStore.model?.id}
+            primaryColor="#ef4444"
+            secondaryColor="#ffffff"
+            autoPlay
+            muted
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         ) : (
-          <div style={{ color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 5, background: '#ef4444', animation: 'pulse 2s infinite' }} />
-            Stream is offline
-          </div>
+          <MuxPlayer
+            streamType="live"
+            playbackId="O6LdRc0112FEJVKyzb8v7428f8LpX01sEOfQhH7p79hZg" 
+            metadataVideoTitle="Demo Stream"
+            primaryColor="#ef4444"
+            secondaryColor="#ffffff"
+            autoPlay
+            muted
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         )}
 
         {/* Video Overlays (Top) */}

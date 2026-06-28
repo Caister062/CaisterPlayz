@@ -585,6 +585,42 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId) {
       targetId,
       read: false
     });
+
+    // FIREWALL BYPASS: Send Discord Webhook from Frontend
+    try {
+        const sender = pb.authStore.model;
+        const senderName = sender ? (sender.displayName || 'Someone') : 'Someone';
+        
+        let recipientName = 'Someone';
+        if (recipientId) {
+            const recipient = await pb.collection('users').getOne(recipientId);
+            recipientName = recipient.displayName || 'Someone';
+        }
+
+        let msg = null;
+        switch (type) {
+            case 'boost': msg = `[HYPE] **${senderName}** hyped **${recipientName}'s** drop!`; break;
+            case 'echo': msg = `[ECHO] **${senderName}** dropped an echo on **${recipientName}'s** signal!`; break;
+            case 'relay': msg = `[SHARE] **${senderName}** relayed **${recipientName}'s** signal!`; break;
+            case 'anchor': msg = `[PIN] **${senderName}** pinned **${recipientName}'s** drop!`; break;
+            case 'connect': msg = `[FOLLOW] **${senderName}** connected with **${recipientName}'s** core!`; break;
+        }
+
+        if (msg) {
+            fetch('https://discord.com/api/webhooks/1520862944530006047/38StQo5E6_rXkCs4hCfJFRL4aze9FdhUf--Bind6JJnwdM6DrtXEtT6zeqHRv4tpzO6e', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: msg,
+                    username: 'CaisterPlayz System',
+                    avatar_url: 'https://caister062.github.io/CaisterPlayz/assets/logo-Cp.png'
+                })
+            }).catch(() => {});
+        }
+    } catch(err) {
+        console.error('Discord frontend webhook failed:', err);
+    }
+
   } catch (e) {
     console.error('Signal alert failed:', e);
   }

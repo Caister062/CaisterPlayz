@@ -591,11 +591,8 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId) {
         const sender = pb.authStore.model;
         const senderName = sender ? (sender.displayName || 'Someone') : 'Someone';
         
-        let recipientName = 'Someone';
-        if (recipientId) {
-            const recipient = await pb.collection('users').getOne(recipientId);
-            recipientName = recipient.displayName || 'Someone';
-        }
+        // Recipient fetch removed because PocketBase viewRule blocks it!
+        let recipientName = 'another user';
 
         let msg = null;
         switch (type) {

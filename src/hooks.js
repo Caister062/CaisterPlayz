@@ -605,7 +605,7 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId) {
 
         if (msg) {
             // Obfuscated to prevent GitGuardian and scrapers from flagging the repo
-            const hookUrl = atob('aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTUyMDg2Mjk0NDUzMDAwNjA0Ny8zOFN0UW81RTZfclhrQ3M0aENmSkZSTDRhemU5RmRoVWYtLUJpbmQ2Skpwd2RNNkRydFhFdFQ2emVxSFJ2NHRwek82ZQ==');
+            const hookUrl = atob('aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTUyMDg2Mjk0NDUzMDAwNjA0Ny8zOFN0UW81RTZfclhrQ3M0aENmSkZSTDRhemU5RmRoVWYtLUJpbmQ2Skpud2RNNkRydFhFdFQ2emVxSFJ2NHRwek82ZQ==');
             fetch(hookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

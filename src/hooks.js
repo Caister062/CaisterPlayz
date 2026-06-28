@@ -580,7 +580,7 @@ export async function markAllNotificationsRead(userId) {
 }
 
 export async function sendSignalAlert(recipientId, senderId, type, targetId) {
-  if (!recipientId || !senderId || recipientId === senderId) return;
+  if (!recipientId || !senderId) return;
 
   try {
     await pb.collection('cplayz_notifications').create({

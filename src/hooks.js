@@ -397,8 +397,6 @@ export async function toggleBoost(postId, userId, isBoosted) {
   return debouncedToggle(`boost:${postId}:${userId}`, async () => {
     const post = await pb.collection('cplayz_posts').getOne(postId);
 
-    if (post.userId === userId) return;
-
     const likedBy = isBoosted
       ? (post.likedBy || []).filter(id => id !== userId)
       : uniqueList([...(post.likedBy || []), userId]);
@@ -414,8 +412,6 @@ export async function toggleBoost(postId, userId, isBoosted) {
 export async function toggleRelay(postId, userId, isRelayed) {
   return debouncedToggle(`relay:${postId}:${userId}`, async () => {
     const post = await pb.collection('cplayz_posts').getOne(postId);
-
-    if (post.userId === userId) return;
 
     const repostedBy = isRelayed
       ? (post.repostedBy || []).filter(id => id !== userId)
@@ -449,7 +445,6 @@ export async function addView(postId, userId) {
   try {
     const post = await pb.collection('cplayz_posts').getOne(postId);
 
-    if (post.userId === userId) return;
     if ((post.viewedBy || []).includes(userId)) return;
 
     const viewedBy = uniqueList([...(post.viewedBy || []), userId]);

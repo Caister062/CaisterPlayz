@@ -393,7 +393,7 @@ async function debouncedToggle(key, fn, delay = 500) {
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    SIGNAL ACTIONS
 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
-export async function toggleBoost(postId, userId, isBoosted) {
+export async function toggleBoost(postId, userId, isBoosted, authorName) {
   return debouncedToggle(`boost:${postId}:${userId}`, async () => {
     const post = await pb.collection('cplayz_posts').getOne(postId);
 
@@ -404,12 +404,12 @@ export async function toggleBoost(postId, userId, isBoosted) {
     await pb.collection('cplayz_posts').update(postId, { likedBy });
 
     if (!isBoosted) {
-      sendSignalAlert(post.userId, userId, 'boost', postId);
+      sendSignalAlert(post.userId, userId, 'boost', postId, authorName);
     }
   });
 }
 
-export async function toggleRelay(postId, userId, isRelayed) {
+export async function toggleRelay(postId, userId, isRelayed, authorName) {
   return debouncedToggle(`relay:${postId}:${userId}`, async () => {
     const post = await pb.collection('cplayz_posts').getOne(postId);
 
@@ -420,12 +420,12 @@ export async function toggleRelay(postId, userId, isRelayed) {
     await pb.collection('cplayz_posts').update(postId, { repostedBy });
 
     if (!isRelayed) {
-      sendSignalAlert(post.userId, userId, 'relay', postId);
+      sendSignalAlert(post.userId, userId, 'relay', postId, authorName);
     }
   });
 }
 
-export async function toggleAnchor(postId, userId, isAnchored) {
+export async function toggleAnchor(postId, userId, isAnchored, authorName) {
   return debouncedToggle(`anchor:${postId}:${userId}`, async () => {
     const post = await pb.collection('cplayz_posts').getOne(postId);
 
@@ -436,7 +436,7 @@ export async function toggleAnchor(postId, userId, isAnchored) {
     await pb.collection('cplayz_posts').update(postId, { favoritedBy });
 
     if (!isAnchored) {
-      sendSignalAlert(post.userId, userId, 'anchor', postId);
+      sendSignalAlert(post.userId, userId, 'anchor', postId, authorName);
     }
   });
 }
@@ -485,7 +485,7 @@ export async function purgeSignal(postId, userId) {
   }
 }
 
-export async function addEcho(postId, userId, text) {
+export async function addEcho(postId, userId, text, authorName) {
   const echo = await pb.collection('cplayz_comments').create({
     postId,
     userId,
@@ -496,7 +496,7 @@ export async function addEcho(postId, userId, text) {
     .getOne(postId)
     .then(post => {
       if (post.userId !== userId) {
-        sendSignalAlert(post.userId, userId, 'echo', postId);
+        sendSignalAlert(post.userId, userId, 'echo', postId, authorName);
       }
     })
     .catch(() => {});
@@ -574,7 +574,7 @@ export async function markAllNotificationsRead(userId) {
   } catch {}
 }
 
-export async function sendSignalAlert(recipientId, senderId, type, targetId) {
+export async function sendSignalAlert(recipientId, senderId, type, targetId, explicitRecipientName) {
   if (!recipientId || !senderId || recipientId === senderId) return;
 
   try {
@@ -591,8 +591,8 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId) {
         const sender = pb.authStore.model;
         const senderName = sender ? (sender.displayName || 'Someone') : 'Someone';
         
-        let recipientName = 'another user';
-        if (recipientId) {
+        let recipientName = explicitRecipientName || 'another user';
+        if (!explicitRecipientName && recipientId) {
             try {
                 const recipient = await pb.collection('users').getOne(recipientId);
                 recipientName = recipient.displayName || 'another user';

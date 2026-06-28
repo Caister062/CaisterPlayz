@@ -306,7 +306,7 @@ export default function ExpandedBroadcast({
         const sN = likeN;
 
         likeT.current = setTimeout(() => {
-          toggleLike(post.id, currentUserId, !next).catch(() => {
+          toggleLike(post.id, currentUserId, !next, author.displayName).catch(() => {
             setOLiked(sL);
             setOLikeN(sN);
           });
@@ -325,7 +325,7 @@ export default function ExpandedBroadcast({
         const sN = repostN;
 
         repostT.current = setTimeout(() => {
-          toggleRepost(post.id, currentUserId, !next).catch(() => {
+          toggleRepost(post.id, currentUserId, !next, author.displayName).catch(() => {
             setOReposted(sR);
             setORepostN(sN);
           });
@@ -337,7 +337,7 @@ export default function ExpandedBroadcast({
 
         setOPinned(next);
 
-        toggleBookmark(post.id, currentUserId, !next).catch(() =>
+        toggleBookmark(post.id, currentUserId, !next, author.displayName).catch(() =>
           setOPinned(pinned)
         );
       }
@@ -362,7 +362,7 @@ export default function ExpandedBroadcast({
       setSending(true);
 
       try {
-        await addComment(post.id, currentUserId, echoText.trim());
+        await addComment(post.id, currentUserId, echoText.trim(), author.displayName);
         setEchoText('');
       } catch (err) {
         console.error(err);

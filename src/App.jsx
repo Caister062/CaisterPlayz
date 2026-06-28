@@ -9,9 +9,6 @@ import ProfileView from './components/ProfileView';
 import VaultView from './components/VaultView';
 import AdminView from './components/AdminView';
 import Composer from './components/Composer';
-import LiveStreamsTab from './components/LiveStreamsTab';
-import StreamView from './components/StreamView';
-import BroadcastStudio from './components/BroadcastStudio';
 function CpMark({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -31,8 +28,6 @@ export default function App() {
   const [viewProfile, setViewProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [dismissedAnnounce, setDismissedAnnounce] = useState(localStorage.getItem('cp_dismissed_announce'));
-  const [activeStream, setActiveStream] = useState(null);
-  const [showStudio, setShowStudio] = useState(false);
 
   useEffect(() => {
     const handleOAuthRedirect = async () => {
@@ -150,7 +145,6 @@ export default function App() {
   const NAV = [
     { id: 'home', icon: Radio, label: 'Feed' },
     { id: 'explore', icon: Search, label: 'Explore' },
-    { id: 'live', icon: Radio, label: 'Live' },
     { id: 'vault', icon: Lock, label: 'Vault' },
     { id: 'profile', icon: User, label: 'Stats' },
   ];
@@ -263,13 +257,6 @@ export default function App() {
                   />
                 )}
 
-                {tab === 'live' && (
-                  <LiveStreamsTab
-                    onWatchStream={(s) => setActiveStream(s)}
-                    onBroadcast={() => setShowStudio(true)}
-                  />
-                )}
-
                 {tab === 'vault' && (
                   <VaultView
                     posts={posts}
@@ -326,9 +313,6 @@ export default function App() {
               onClose={() => setShowCompose(false)}
             />
           )}
-
-          {activeStream && <StreamView stream={activeStream} onBack={() => setActiveStream(null)} />}
-          {showStudio && <BroadcastStudio onBack={() => setShowStudio(false)} />}
 
           {/* ─ Global Announcement Modal ─ */}
           {config?.globalAnnouncement && !isAdmin && String(config.globalAnnouncement.timestamp) !== dismissedAnnounce && (

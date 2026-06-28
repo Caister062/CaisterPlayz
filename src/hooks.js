@@ -464,7 +464,7 @@ export async function createPost(userId, text, imageUrl, communityId) {
     viewedBy: [],
     repostedBy: [],
     favoritedBy: [],
-    type: isAdmin ? 'post' : 'pending'
+    type: 'post'
   };
 
   if (communityId) data.communityId = communityId;

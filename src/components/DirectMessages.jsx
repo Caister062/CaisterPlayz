@@ -1,13 +1,17 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   ArrowLeft,
   Send,
   Image,
   Search,
-  MessageSquare
+  MessageSquare,
+  Flag,
+  ShieldOff,
+  AlertTriangle,
+  X as XIcon,
 } from 'lucide-react';
 
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   useDirectMessages,
   sendMessage,
@@ -16,7 +20,9 @@ import {
   useSquadMessages,
   sendSquadMessage,
   createSquad,
-  joinSquad
+  joinSquad,
+  reportUser,
+  blockUser,
 } from '../hooks';
 import pb from '../pocketbase';
 
@@ -44,6 +50,12 @@ export default function DirectMessages({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isSending, setIsSending] = useState(false);
+
+  // Safety actions
+  const [dmReporting, setDmReporting] = useState(false);
+  const [dmBlocking, setDmBlocking] = useState(false);
+  const [dmBlocked, setDmBlocked] = useState(false);
+  const [showDmReportModal, setShowDmReportModal] = useState(false);
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -231,6 +243,61 @@ export default function DirectMessages({
                 {activeSquadId ? 'Squad Chat' : 'Direct Signal'}
               </div>
             </div>
+
+            {/* ── SAFETY BUTTONS (Apple requirement) ── */}
+            {!activeSquadId && activeRecipientId && activeRecipientId !== currentUserId && (
+              <>
+                {/* 🚩 Report User */}
+                <button
+                  className="dm-icon-btn report-btn"
+                  title="Report this user"
+                  aria-label="Report user"
+                  onClick={() => {
+                    if (navigator.vibrate) navigator.vibrate(10);
+                    setShowDmReportModal(true);
+                  }}
+                  style={{
+                    color: dmReporting ? 'var(--hot)' : 'var(--text3)',
+                    background: 'rgba(244,63,94,0.08)',
+                    border: '1px solid rgba(244,63,94,0.25)',
+                    borderRadius: 8, padding: '6px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <Flag size={16} />
+                </button>
+
+                {/* 🚫 Block User */}
+                <button
+                  className="dm-icon-btn block-btn"
+                  title="Block this user"
+                  aria-label="Block user"
+                  onClick={async () => {
+                    const name = activeRecipient?.displayName || 'this user';
+                    if (!confirm(`Block ${name}? They will no longer be able to message you.`)) return;
+                    if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
+                    setDmBlocking(true);
+                    try {
+                      await blockUser(currentUserId, activeRecipientId);
+                      setDmBlocked(true);
+                    } catch {
+                      alert('Could not block user. Please try again.');
+                    } finally {
+                      setDmBlocking(false);
+                    }
+                  }}
+                  style={{
+                    color: dmBlocking ? 'var(--hot)' : 'var(--text3)',
+                    background: 'rgba(244,63,94,0.08)',
+                    border: '1px solid rgba(244,63,94,0.25)',
+                    borderRadius: 8, padding: '6px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <ShieldOff size={16} />
+                </button>
+              </>
+            )}
 
             <button className="dm-icon-btn" onClick={onClose}>
               <X size={18} />
@@ -429,6 +496,104 @@ export default function DirectMessages({
             })}
           </div>
         </>
+      )}
+
+      {/* ── DM REPORT MODAL ── */}
+      {showDmReportModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300,
+            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+          onClick={() => setShowDmReportModal(false)}
+        >
+          <div
+            style={{
+              background: 'var(--card)', borderRadius: '16px 16px 0 0',
+              padding: '20px 16px 32px', width: '100%', maxWidth: 480,
+              border: '1px solid var(--border)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <AlertTriangle size={18} color="var(--hot)" />
+              <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
+                Report {activeRecipient?.displayName}
+              </span>
+              <button
+                style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer' }}
+                onClick={() => setShowDmReportModal(false)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 14 }}>
+              Why are you reporting this account? All reports are reviewed by our team.
+            </p>
+            {[
+              'Harassment or bullying',
+              'Inappropriate messages',
+              'Spam or unsolicited content',
+              'Threats or dangerous behaviour',
+              'Other',
+            ].map(reason => (
+              <button
+                key={reason}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '11px 14px', marginBottom: 6,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: 10, color: 'var(--text)', fontSize: 13,
+                  cursor: 'pointer',
+                }}
+                onClick={async () => {
+                  setShowDmReportModal(false);
+                  setDmReporting(true);
+                  try {
+                    await reportUser(currentUserId, activeRecipientId, reason);
+                    if (navigator.vibrate) navigator.vibrate(15);
+                    alert(`Report submitted: "${reason}". Thank you — our team will review this.`);
+                  } catch {
+                    alert('Error submitting report. Please try again.');
+                  } finally {
+                    setDmReporting(false);
+                  }
+                }}
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── DM BLOCKED CONFIRMATION ── */}
+      {dmBlocked && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 310,
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 12,
+          }}
+        >
+          <ShieldOff size={40} color="var(--hot)" />
+          <div style={{ color: '#fff', fontWeight: 900, fontSize: 16 }}>User Blocked</div>
+          <div style={{ color: 'var(--text3)', fontSize: 13 }}>
+            This user can no longer message you.
+          </div>
+          <button
+            style={{
+              marginTop: 12, padding: '10px 28px',
+              background: 'var(--brand-primary)', color: '#000',
+              border: 'none', borderRadius: 10, fontWeight: 800, cursor: 'pointer',
+            }}
+            onClick={() => { setDmBlocked(false); setActiveRecipientId(null); }}
+          >
+            Back to Messages
+          </button>
+        </div>
       )}
     </div>
   );

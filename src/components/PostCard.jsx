@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Eye, MoreHorizontal, Trash2, Share2, Loader, CheckCircle, Pin, Flag, Film } from 'lucide-react';
-import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, editPost, deleteComment } from '../hooks';
+import { Eye, MoreHorizontal, Trash2, Share2, Loader, CheckCircle, Pin, Flag, Film, ShieldOff, UserX, AlertTriangle, X as XIcon } from 'lucide-react';
+import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, editPost, deleteComment, reportPost, blockUser } from '../hooks';
 import { formatCount, formatTime, triggerHaptic } from '../utils';
 import GifPicker from './GifPicker';
 import { Avatar } from './Shared';
@@ -244,6 +244,9 @@ export default function ExpandedBroadcast({
   const [showLB, setShowLB] = useState(false);
   const [chipPop, setChipPop] = useState('');
   const [reporting, setReporting] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [blocking, setBlocking] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const [showGif, setShowGif] = useState(false);
   const [echoImg, setEchoImg] = useState('');
   
@@ -451,7 +454,7 @@ export default function ExpandedBroadcast({
     {
       key: 'surge',
       emoji: '🧪',
-      label: 'Slurp',
+      label: 'Boost',
       count: 0,
       active: false,
       cls: 'active-skull',
@@ -538,7 +541,67 @@ export default function ExpandedBroadcast({
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              {/* ── ALWAYS-VISIBLE SAFETY BUTTONS (Apple requirement) ── */}
+              {post.userId !== currentUserId && (
+                <>
+                  {/* 🚩 Report Post */}
+                  <button
+                    className="hud-btn report-btn"
+                    title="Report this post"
+                    aria-label="Report post"
+                    onClick={() => {
+                      if (navigator.vibrate) navigator.vibrate(10);
+                      setShowMenu(false);
+                      setShowReportModal(true);
+                    }}
+                    style={{
+                      width: 32, height: 32,
+                      color: reporting ? 'var(--hot)' : 'var(--text3)',
+                      background: 'rgba(244,63,94,0.08)',
+                      border: '1px solid rgba(244,63,94,0.25)',
+                      borderRadius: 8,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {reporting ? <Loader size={13} className="spin" /> : <Flag size={13} />}
+                  </button>
+
+                  {/* 🚫 Block User */}
+                  <button
+                    className="hud-btn block-btn"
+                    title="Block this user"
+                    aria-label="Block user"
+                    onClick={async () => {
+                      if (!confirm(`Block ${author.displayName}? Their posts will be hidden from your feed immediately.`)) return;
+                      if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
+                      setBlocking(true);
+                      try {
+                        await blockUser(currentUserId, author.id);
+                        setBlocked(true);
+                        setTimeout(() => onClose(), 500);
+                      } catch {
+                        alert('Could not block user. Please try again.');
+                      } finally {
+                        setBlocking(false);
+                      }
+                    }}
+                    style={{
+                      width: 32, height: 32,
+                      color: blocking ? 'var(--hot)' : 'var(--text3)',
+                      background: 'rgba(244,63,94,0.08)',
+                      border: '1px solid rgba(244,63,94,0.25)',
+                      borderRadius: 8,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {blocking ? <Loader size={13} className="spin" /> : <ShieldOff size={13} />}
+                  </button>
+                </>
+              )}
+
               <button
                 className="hud-btn"
                 onClick={() => setShowMenu(v => !v)}
@@ -590,27 +653,6 @@ export default function ExpandedBroadcast({
                     Purge Signal
                   </button>
                   </>
-                )}
-                {post.userId !== currentUserId && (
-                  <button
-                    onClick={async () => {
-                      if (!confirm('Are you sure you want to report this post?')) return;
-                      setShowMenu(false);
-                      setReporting(true);
-                      try {
-                        const { reportPost } = await import('../hooks');
-                        await reportPost(currentUserId, post.id);
-                        alert('Report submitted successfully.');
-                      } catch {
-                        alert('Error submitting report.');
-                      } finally {
-                        setReporting(false);
-                      }
-                    }}
-                    style={{ color: 'var(--hot)' }}
-                  >
-                    {reporting ? <Loader size={12} className="spin" /> : <Flag size={12} />} Report Signal
-                  </button>
                 )}
               </div>
             )}
@@ -807,6 +849,92 @@ export default function ExpandedBroadcast({
           style={{ position: 'fixed', inset: 0, zIndex: 79 }}
           onClick={() => setShowMenu(false)}
         />
+      )}
+
+      {/* ── REPORT MODAL ── */}
+      {showReportModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+          onClick={() => setShowReportModal(false)}
+        >
+          <div
+            style={{
+              background: 'var(--card)', borderRadius: '16px 16px 0 0',
+              padding: '20px 16px 32px', width: '100%', maxWidth: 480,
+              border: '1px solid var(--border)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <AlertTriangle size={18} color="var(--hot)" />
+              <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>Report Post</span>
+              <button
+                style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer' }}
+                onClick={() => setShowReportModal(false)}
+              >
+                <XIcon size={16} />
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 14 }}>
+              Why are you reporting this post? We review all reports within 24 hours.
+            </p>
+            {[
+              'Inappropriate content',
+              'Harassment or bullying',
+              'Spam or misleading',
+              'Hate speech',
+              'Other',
+            ].map(reason => (
+              <button
+                key={reason}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '11px 14px', marginBottom: 6,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: 10, color: 'var(--text)', fontSize: 13,
+                  cursor: 'pointer', transition: 'background 0.15s',
+                }}
+                onClick={async () => {
+                  setShowReportModal(false);
+                  setReporting(true);
+                  try {
+                    await reportPost(currentUserId, post.id, reason);
+                    if (navigator.vibrate) navigator.vibrate(15);
+                    alert(`Report submitted: "${reason}". Thank you for keeping the community safe.`);
+                  } catch {
+                    alert('Error submitting report. Please try again.');
+                  } finally {
+                    setReporting(false);
+                  }
+                }}
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── BLOCKED CONFIRMATION ── */}
+      {blocked && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 210,
+            background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 12,
+          }}
+        >
+          <ShieldOff size={40} color="var(--hot)" />
+          <div style={{ color: '#fff', fontWeight: 900, fontSize: 16 }}>User Blocked</div>
+          <div style={{ color: 'var(--text3)', fontSize: 13 }}>
+            Their content has been removed from your feed.
+          </div>
+        </div>
       )}
     </>
   );

@@ -357,7 +357,7 @@ export default function ProfileView({
         )}
 
         <div className="rank-badge">
-          {rank} · {formatCount(energy)} V-Bucks & PRs
+          {rank} · {formatCount(energy)} Tokens &amp; PRs
         </div>
 
         <div className="stat-grid">

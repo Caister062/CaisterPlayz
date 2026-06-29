@@ -251,7 +251,7 @@ export default function ExploreView({
             <div className="empty">
               <div className="empty-ico">🌐</div>
               <h3>Nothing here yet</h3>
-              <p>Drop the first post about Fortnite or Fitness!</p>
+              <p>Drop the first post about Gaming or Fitness!</p>
             </div>
           )}
         </>

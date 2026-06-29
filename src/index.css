@@ -1023,28 +1023,28 @@ input, textarea { font: inherit; }
    ANIMATIONS: INTRO & TAB TRANSITION
 ============================================================ */
 
-/* Slurp Shield Boot */
-.slurp-shield-container {
+/* Boot Shield Animation */
+.boot-shield-container {
   width: 80px; height: 100px;
   position: relative;
   display: flex; align-items: center; justify-content: center;
   animation: shieldPulse 1.2s ease-in-out infinite alternate;
 }
-.slurp-shield-outline {
+.boot-shield-outline {
   position: absolute; inset: 0;
   border: 4px solid var(--cyan);
   border-radius: 20px 20px 40px 40px;
   box-shadow: 0 0 20px var(--cyan-glow);
   overflow: hidden;
 }
-.slurp-shield-fill {
+.boot-shield-fill {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: var(--cyan);
   box-shadow: 0 0 30px var(--cyan);
-  animation: slurpFill 2s ease-in forwards;
+  animation: bootFill 2s ease-in forwards;
 }
 
-@keyframes slurpFill {
+@keyframes bootFill {
   0% { height: 0%; opacity: 0.5; }
   50% { height: 50%; opacity: 0.8; }
   100% { height: 100%; opacity: 1; }
@@ -1055,21 +1055,10 @@ input, textarea { font: inherit; }
   100% { transform: scale(1.1); filter: drop-shadow(0 0 25px var(--cyan)); }
 }
 
-.rift-flash-overlay {
-  position: fixed; inset: 0;
-  background: #fff;
-  z-index: 9999;
-  animation: riftFlash 1s ease-out forwards;
-  pointer-events: none;
-}
-
-@keyframes riftFlash {
-  0% { opacity: 0; background: var(--cyan); }
-  20% { opacity: 1; background: #fff; }
-  100% { opacity: 0; background: transparent; }
-}
-
-/* Tab Rift Wipe Transition */
+/* ────────────────────────────────────────────
+   iOS-style slide tab transition
+   (replaces the old rift-wipe white flash)
+──────────────────────────────────────────── */
 .tab-container {
   position: relative;
   width: 100%;
@@ -1077,29 +1066,38 @@ input, textarea { font: inherit; }
   overflow-x: hidden;
 }
 .tab-content {
-  transition: opacity 0.2s;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity  0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
 }
-.tab-content.transitioning {
+.tab-content.tab-slide-enter {
+  transform: translateX(6px);
   opacity: 0;
 }
 
-.rift-wipe {
-  position: fixed;
-  top: 0; bottom: 0; left: -100%; width: 100%;
-  background: linear-gradient(90deg, transparent, var(--cyan), var(--violet), transparent);
-  z-index: 900;
-  pointer-events: none;
-  opacity: 0.8;
-  filter: blur(8px);
-}
-.rift-wipe.active {
-  animation: riftSweep 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+/* Accessibility: honour user's reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .tab-content {
+    transition: opacity 0.15s;
+  }
+  .tab-content.tab-slide-enter {
+    transform: none;
+    opacity: 0;
+  }
 }
 
-@keyframes riftSweep {
-  0% { left: -100%; }
-  50% { left: 0%; }
-  100% { left: 100%; }
+/* Safety button hover states */
+.report-btn:hover {
+  background: rgba(244,63,94,0.18) !important;
+  border-color: rgba(244,63,94,0.5) !important;
+  color: var(--hot) !important;
+  transform: scale(1.05);
+}
+.block-btn:hover {
+  background: rgba(244,63,94,0.18) !important;
+  border-color: rgba(244,63,94,0.5) !important;
+  color: var(--hot) !important;
+  transform: scale(1.05);
 }
 
 /* ============================================================

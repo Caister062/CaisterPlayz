@@ -231,7 +231,7 @@ function GamePlayCreatorModal({ mode, setMode, onClose, currentUserId, profile, 
                   type="text"
                   value={gameTitle}
                   onChange={(e) => setGameTitle(e.target.value)}
-                  placeholder="e.g., Fortnite, Valorant"
+                  placeholder="e.g., Battle Royale, FPS, RPG"
                   className="w-full bg-dark-card border border-dark-border rounded-lg px-3 py-2 text-sm text-dark-text focus:outline-none focus:border-brand-accent"
                 />
               </div>

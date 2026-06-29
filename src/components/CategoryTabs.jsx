@@ -12,7 +12,7 @@ const FITNESS_CATEGORIES = [
 
 const FITNESS_GAMES = [
   { id: 'All Games',     label: 'All',       icon: null },
-  { id: 'Fortnite',      label: 'Fortnite',  icon: Gamepad2 },
+  { id: 'Battle Royale',  label: 'Battle Royale', icon: Gamepad2 },
   { id: 'Roblox',        label: 'Roblox',    icon: Trophy },
   { id: 'Minecraft',     label: 'Minecraft', icon: Target },
 ];

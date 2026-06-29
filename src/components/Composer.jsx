@@ -136,7 +136,7 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
             <div>
               <div className="text-sm font-black">Ready to Drop</div>
               <div className="text-xs text-dark-muted">
-                Share your Fortnite wins or fitness gains.
+                Share your gaming wins or fitness gains.
               </div>
             </div>
           </div>
@@ -153,7 +153,7 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
 
           <textarea
             className="sheet-ta"
-            placeholder="What's your drop? Fortnite clips, gym PRs, grind updates..."
+            placeholder="What's your drop? Gaming clips, gym PRs, grind updates..."
             value={text}
             onChange={e => setText(e.target.value.slice(0, MAX))}
             rows={4}

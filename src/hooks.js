@@ -692,6 +692,16 @@ export async function reportPost(reporterId, postId, reason = 'Inappropriate con
   return pb.collection('cplayz_reports').create({ reporterId, postId, reason });
 }
 
+export async function reportUser(reporterId, reportedUserId, reason = 'Abusive account') {
+  if (!reporterId || !reportedUserId || reporterId === reportedUserId) return null;
+  return pb.collection('cplayz_reports').create({
+    reporterId,
+    reportedUserId,
+    reason,
+    type: 'user',
+  });
+}
+
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    ALERT READ STATE
 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */

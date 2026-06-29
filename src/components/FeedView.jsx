@@ -224,7 +224,7 @@ export default function FeedView({
           </div>
 
           <h3>The Island is empty</h3>
-          <p>Drop the first post about your latest workout or Victory Royale!</p>
+          <p>Drop the first post about your latest workout or Gaming Win!</p>
         </div>
       ) : (
         <>

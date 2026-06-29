@@ -108,7 +108,7 @@ export default function App() {
       presenceInterval = setInterval(pingPresence, 60000); // Every minute
     }
 
-    setTimeout(() => setBooting(false), 500); // Small boot delay for the Slurp Shield animation
+    setTimeout(() => setBooting(false), 500); // Boot animation delay
     
     return () => {
       unsub();
@@ -154,6 +154,9 @@ export default function App() {
       return;
     }
     
+    // Haptic feedback on nav switch
+    if (navigator.vibrate) navigator.vibrate(8);
+    
     // Switch immediately to prevent getting stuck
     if (t === 'profile') setViewProfile(null);
     setTab(t);
@@ -165,15 +168,15 @@ export default function App() {
   if (booting) {
     return (
       <div style={{ minHeight:'100dvh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24,background:'var(--bg)' }}>
-        <div className="slurp-shield-container">
-          <div className="slurp-shield-outline">
-            <div className="slurp-shield-fill" />
+        <div className="boot-shield-container">
+          <div className="boot-shield-outline">
+            <div className="boot-shield-fill" />
           </div>
           <ShieldAlert size={40} color="#fff" style={{ position: 'absolute', zIndex: 10 }} />
         </div>
 
         <div style={{ fontSize:16,fontWeight:900,letterSpacing:'0.12em',color:'var(--cyan)',fontFamily:'"Anton", sans-serif',textTransform:'uppercase' }}>
-          Loading the Drop Zone…
+          Loading…
         </div>
       </div>
     );
@@ -280,8 +283,7 @@ export default function App() {
           </header>
 
           <main className="main tab-container">
-            <div className={`rift-wipe ${isTransitioning ? 'active' : ''}`} />
-            <div className={`tab-content ${isTransitioning ? 'transitioning' : ''}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div className={`tab-content ${isTransitioning ? 'tab-slide-enter' : ''}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ flex: 1 }}>
                 {tab === 'home' && (
                   <FeedView
@@ -377,7 +379,7 @@ export default function App() {
               </div>
 
               <div className="brand-footer">
-                Powered by CaisterPlayz — Fortnite & Fitness
+                Powered by CaisterPlayz — Gaming &amp; Fitness
               </div>
             </div>
           </main>
@@ -407,7 +409,7 @@ export default function App() {
               <div className="modal" style={{ border: '2px solid var(--cyan)', boxShadow: '0 0 30px var(--cyan-glow)' }}>
                 <div className="modal-head" style={{ color: 'var(--cyan)' }}>
                   <ShieldAlert size={20} />
-                  BATTLE BUS BROADCAST
+                  COMMUNITY BROADCAST
                 </div>
                 <div className="modal-body" style={{ textAlign: 'center', padding: '20px 10px', fontSize: 16 }}>
                   {config.globalAnnouncement.text}

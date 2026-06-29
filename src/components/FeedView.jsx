@@ -183,7 +183,7 @@ export default function FeedView({
       <div 
         className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}
       >
-        <div className="bg-brand-primary text-black font-bold px-4 py-2 rounded-full shadow-[0_0_15px_rgba(0,229,255,0.5)] cursor-pointer" onClick={() => { flushNewPosts(); window.scrollTo(0,0); setToast(null); }}>
+        <div className="bg-brand-primary text-black font-bold px-4 py-2 rounded-full shadow-[0_0_15px_rgba(0,229,255,0.5)] cursor-pointer" onClick={() => { flushNewPosts?.(); window.scrollTo(0,0); setToast(null); }}>
           {toast}
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function FeedView({
       {newPostsQueue && newPostsQueue.length > 0 && (
         <button
           onClick={() => {
-            flushNewPosts();
+            flushNewPosts?.();
             window.scrollTo(0, 0);
           }}
           className="w-full bg-dark-card border border-brand-primary text-brand-primary font-bold py-3 mb-4 rounded hover:bg-brand-primary hover:text-black transition-colors"

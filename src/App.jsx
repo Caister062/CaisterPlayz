@@ -25,7 +25,6 @@ import AuthView from './components/AuthView';
 export default function App() {
   const [tab, setTab] = useState('home');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showDirectMessages, setShowDirectMessages] = useState(false);
   const [dmRecipientId, setDmRecipientId] = useState(null);
   const [showCompose, setShowCompose] = useState(false);
   const [userId, setUserId] = useState(pb.authStore.model?.id || null);
@@ -273,8 +272,8 @@ export default function App() {
               </button>
 
               <button
-                className={`hud-btn${showDirectMessages ? ' lit' : ''}`}
-                onClick={() => setShowDirectMessages(true)}
+                className={`hud-btn${tab === 'messages' ? ' lit' : ''}`}
+                onClick={() => goTab('messages')}
                 title="Direct Messages"
               >
                 <MessageSquare size={18} />
@@ -363,7 +362,7 @@ export default function App() {
                     onHashtagClick={goHashtag}
                     onMessageClick={(uid) => {
                       setDmRecipientId(uid);
-                      setShowDirectMessages(true);
+                      goTab('messages');
                     }}
                     onRefresh={refMe}
                     config={config}
@@ -385,13 +384,15 @@ export default function App() {
             </div>
           </main>
 
-          <DirectMessages
-            isOpen={showDirectMessages}
-            onClose={() => setShowDirectMessages(false)}
-            currentUserId={userId}
-            users={users}
-            initialRecipientId={dmRecipientId}
-          />
+          {tab === 'messages' && (
+            <DirectMessages
+              isOpen={true}
+              onClose={() => goTab('home')}
+              currentUserId={userId}
+              users={users}
+              initialRecipientId={dmRecipientId}
+            />
+          )}
 
           {/* ─ Composer ─ */}
           {showCompose && userId && (

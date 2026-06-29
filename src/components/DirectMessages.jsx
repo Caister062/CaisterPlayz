@@ -225,7 +225,7 @@ export default function DirectMessages({
   const isChatOpen = !!activeRecipientId || !!activeSquadId;
 
   return (
-    <div className="absolute inset-y-0 right-0 w-full sm:w-[400px] backdrop-blur-xl bg-dark-bg/95 z-50 flex flex-col border-l border-dark-border shadow-2xl transition-all duration-300">
+    <div className="flex flex-col w-full h-full bg-dark-bg" style={{ minHeight: 0, flex: 1 }}>
       {/* ───────── CHAT VIEW ───────── */}
       {isChatOpen ? (
         <div className="flex-1 flex flex-col">

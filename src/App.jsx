@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert, MessageSquare } from 'lucide-react';
+import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert, MessageSquare, Trophy } from 'lucide-react';
 import pb from './pocketbase';
-import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig } from './hooks';
+import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig, useSquads } from './hooks';
 import { applyTheme } from './utils';
 import FeedView from './components/FeedView';
 import ExploreView from './components/ExploreView';
 import NotificationsView from './components/NotificationsView';
+import LeaderboardView from './components/LeaderboardView';
 import ProfileView from './components/ProfileView';
 import VaultView from './components/VaultView';
 import AdminView from './components/AdminView';
@@ -102,6 +103,7 @@ export default function App() {
 
   const { posts, loading, loadMore, hasMore, loadingMore, refresh: refPosts } = useRealtimePosts();
   const users = useAllUsers();
+  const { squads } = useSquads();
   const { notifications, unreadCount, refresh: refNotif } = useNotifications(userId);
   const followData = useFollows(userId);
   const { profile: me, refresh: refMe } = useUserProfile(userId);
@@ -119,6 +121,14 @@ export default function App() {
   const goHashtag = tag => {
     setExploreQuery(tag);
     setTab('explore');
+  };
+
+  const goMention = mentionStr => {
+    const username = mentionStr.slice(1).toLowerCase();
+    const targetUser = users.find(u => u.displayName.toLowerCase() === username);
+    if (targetUser) {
+      goProfile(targetUser.id);
+    }
   };
 
   const goTab = t => {
@@ -160,6 +170,7 @@ export default function App() {
   const NAV = [
     { id: 'home', icon: Radio, label: 'Feed' },
     { id: 'explore', icon: Search, label: 'Explore' },
+    { id: 'leaderboard', icon: Trophy, label: 'Rankings' },
     { id: 'vault', icon: Lock, label: 'Vault' },
     { id: 'profile', icon: User, label: 'Stats' },
   ];
@@ -270,6 +281,7 @@ export default function App() {
                     loadingMore={loadingMore}
                     onProfileClick={goProfile}
                     onHashtagClick={goHashtag}
+                    onMentionClick={goMention}
                     config={config}
                   />
                 )}
@@ -278,14 +290,23 @@ export default function App() {
                   <ExploreView
                     posts={posts}
                     users={users}
+                    squads={squads}
                     currentUserId={userId}
                     onProfileClick={goProfile}
                     onHashtagClick={goHashtag}
+                    onMentionClick={goMention}
                     config={config}
                     loadMore={loadMore}
                     hasMore={hasMore}
                     loadingMore={loadingMore}
                     initialQuery={exploreQuery}
+                  />
+                )}
+
+                {tab === 'leaderboard' && (
+                  <LeaderboardView
+                    users={users}
+                    onProfileClick={goProfile}
                   />
                 )}
 

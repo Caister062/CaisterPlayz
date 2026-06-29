@@ -606,7 +606,7 @@ export default function ExpandedBroadcast({
                 </div>
               </div>
             ) : (
-              <RichBody text={post.text} onHashtagClick={onHashtagClick} />
+              <RichBody text={post.text} onHashtagClick={onHashtagClick} onMentionClick={onMentionClick} />
             )}
 
             {post.imageUrl && (

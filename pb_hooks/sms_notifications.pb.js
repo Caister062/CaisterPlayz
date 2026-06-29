@@ -11,20 +11,22 @@ onRecordAfterCreateSuccess((e) => {
         // 👤 Get sender safely
         let senderName = "Someone";
         try {
-            const senderId = notif.get("senderId");
+            const senderId = String(notif.get("senderId") || "");
             if (senderId) {
-                const sender = $app.findRecordById("cplayz_users", senderId);
-                senderName = sender.get("displayName") || "Someone";
+                const sender = $app.findRecordById("users", senderId);
+                senderName = String(sender.get("displayName") || "Someone");
             }
-        } catch (_) { }
+        } catch (err) { 
+            console.log("Error finding sender:", err);
+        }
 
         // 🧠 Build message
         let msg = null;
         switch (type) {
-            case "like": msg = senderName + " liked your post"; break;
-            case "comment": msg = senderName + " commented on your post"; break;
-            case "repost": msg = senderName + " reposted your post"; break;
-            case "follow": msg = senderName + " followed you"; break;
+            case "boost": msg = senderName + " boosted your signal!"; break;
+            case "echo": msg = senderName + " dropped an echo on your signal!"; break;
+            case "relay": msg = senderName + " relayed your signal!"; break;
+            case "connect": msg = senderName + " connected with your core!"; break;
             default: return;
         }
 
@@ -80,4 +82,4 @@ onRecordAfterCreateSuccess((e) => {
     } catch (err) {
         console.log("New User SMS Hook Error:", err);
     }
-}, "cplayz_users");
+}, "users");

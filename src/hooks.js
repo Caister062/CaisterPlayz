@@ -474,15 +474,37 @@ export async function toggleAnchor(postId, userId, isAnchored, authorName) {
 }
 
 export async function addView(postId, userId) {
-  try {
+  if (!postId || !userId) return;
+  return debouncedToggle(`view:${postId}:${userId}`, async () => {
     const post = await pb.collection('cplayz_posts').getOne(postId);
+    const v = uniqueList(post.viewedBy);
+    if (!v.includes(userId)) {
+      v.push(userId);
+      await pb.collection('cplayz_posts').update(postId, { viewedBy: v });
+    }
+  });
+}
 
-    if ((post.viewedBy || []).includes(userId)) return;
+async function extractAndNotifyMentions(text, senderId, targetId, senderName) {
+  if (!text) return;
+  const mentions = [...new Set((text.match(/@\w+/g) || []).map(m => m.slice(1)))];
+  if (!mentions.length) return;
 
-    const viewedBy = uniqueList([...(post.viewedBy || []), userId]);
-
-    await pb.collection('cplayz_posts').update(postId, { viewedBy });
-  } catch {}
+  try {
+    for (const mention of mentions) {
+      const users = await pb.collection('users').getList(1, 1, {
+        filter: `displayName="${mention}"`
+      });
+      if (users.items.length > 0) {
+        const recipient = users.items[0];
+        if (recipient.id !== senderId) {
+          sendSignalAlert(recipient.id, senderId, 'mention', targetId, senderName);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to notify mentions:', err);
+  }
 }
 
 export async function createPost(userId, text, imageUrl, communityId) {
@@ -500,7 +522,11 @@ export async function createPost(userId, text, imageUrl, communityId) {
 
   if (communityId) data.communityId = communityId;
 
-  return pb.collection('cplayz_posts').create(data);
+  const post = await pb.collection('cplayz_posts').create(data);
+  const senderName = pb.authStore.model?.displayName || 'Someone';
+  extractAndNotifyMentions(text, userId, post.id, senderName);
+
+  return post;
 }
 
 export async function editPost(postId, newText) {
@@ -537,6 +563,7 @@ export async function addEcho(postId, userId, text, authorName) {
       if (post.userId !== userId) {
         sendSignalAlert(post.userId, userId, 'echo', postId, authorName);
       }
+      extractAndNotifyMentions(text, userId, postId, authorName);
     })
     .catch(() => {});
 

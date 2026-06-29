@@ -379,7 +379,7 @@ export default function App() {
               </div>
 
               <div className="brand-footer">
-                Powered by CaisterPlayz — Gaming &amp; Fitness
+                Powered by CaisterPlayz — Gaming & Fitness
               </div>
             </div>
           </main>

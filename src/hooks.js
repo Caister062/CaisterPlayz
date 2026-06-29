@@ -11,6 +11,8 @@ import pb from './pocketbase';
 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
 export function useRealtimePosts() {
   const [posts, setPosts] = useState([]);
+  const [newPostsQueue, setNewPostsQueue] = useState([]);
+  const [latestPostId, setLatestPostId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -67,17 +69,23 @@ export function useRealtimePosts() {
     fetchPage(1, true);
   }, [fetchPage]);
 
-  const loadMore = useCallback(() => {
-    if (hasMore && !loading && !loadingMore) {
-      setPage(p => p + 1);
-    }
-  }, [hasMore, loading, loadingMore]);
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await fetchPage(nextPage);
+    setLoadingMore(false);
+  }, [page, hasMore, loadingMore, fetchPage]);
 
-  useEffect(() => {
-    if (page > 1) {
-      fetchPage(page, false);
-    }
-  }, [page, fetchPage]);
+  const flushNewPosts = useCallback(() => {
+    setPosts(prev => {
+      const existingIds = new Set(prev.map(p => p.id));
+      const filtered = newPostsQueue.filter(p => !existingIds.has(p.id));
+      return [...filtered, ...prev];
+    });
+    setNewPostsQueue([]);
+  }, [newPostsQueue]);
 
   useEffect(() => {
     fetchAll();
@@ -92,7 +100,13 @@ export function useRealtimePosts() {
           if (currentBlocked.includes(e.record.userId)) return;
 
           if (e.action === 'create') {
-            setPosts(prev => [e.record, ...prev]);
+            const currentUserId = pb.authStore.model?.id;
+            if (e.record.userId === currentUserId) {
+              setPosts(prev => [e.record, ...prev]);
+            } else {
+              setNewPostsQueue(prev => [e.record, ...prev]);
+              setLatestPostId(Date.now() + '_' + e.record.id);
+            }
           } else if (e.action === 'update') {
             setPosts(prev =>
               prev.map(p => (p.id === e.record.id ? e.record : p))
@@ -125,7 +139,7 @@ export function useRealtimePosts() {
     };
   }, [fetchAll, fetchBlocks]);
 
-  return { posts, loading, loadMore, hasMore, loadingMore, refresh: fetchAll };
+  return { posts, newPostsQueue, flushNewPosts, latestPostId, loading, loadMore, hasMore, loadingMore, refresh: fetchAll };
 }
 
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
@@ -889,13 +903,17 @@ export function useDirectMessages(userId, recipientId) {
       return;
     }
 
-    const loadMessages = async () => {
+    const loadMessages = async (p = 1) => {
       try {
-        const res = await pb.collection('cplayz_messages').getList(1, 100, {
+        const res = await pb.collection('cplayz_messages').getList(p, 100, {
           filter: `(senderId = "${userId}" && recipientId = "${recipientId}") || (senderId = "${recipientId}" && recipientId = "${userId}")`,
           sort: 'created'
         });
-        setMessages(res.items);
+        if (p === 1) {
+          setMessages(res.items);
+        } else {
+          setMessages(prev => [...prev, ...res.items]);
+        }
 
         // Mark as read
         const unread = res.items.filter(m => m.recipientId === userId && !m.read);

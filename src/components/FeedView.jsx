@@ -89,6 +89,9 @@ function SkeletonGrid() {
 
 export default function FeedView({
   posts,
+  newPostsQueue = [],
+  flushNewPosts,
+  latestPostId,
   loading,
   users,
   currentUserId,
@@ -100,6 +103,7 @@ export default function FeedView({
   onHashtagClick
 }) {
   const [expandedPost, setExpandedPost] = useState(null);
+  const [toast, setToast] = useState(null);
   const observerTarget = useRef(null);
 
   useEffect(() => {
@@ -118,6 +122,18 @@ export default function FeedView({
 
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loadMore]);
+
+  useEffect(() => {
+    if (latestPostId && newPostsQueue.length > 0) {
+      const p = newPostsQueue[0];
+      const u = users.find(user => user.id === p.userId);
+      const name = u?.displayName || 'Someone';
+      setToast(`New post from ${name}`);
+      const t = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(t);
+    }
+  }, [latestPostId]);
+
 
   const primeSignals = useMemo(() => {
     return [...posts]
@@ -162,6 +178,31 @@ export default function FeedView({
 
       {/* LIVE SIGNAL TICKER */}
       <Ticker notifications={notifications} users={users} />
+
+      {/* Floating Toast Notification */}
+      <div 
+        className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}
+      >
+        <div className="bg-brand-primary text-black font-bold px-4 py-2 rounded-full shadow-[0_0_15px_rgba(0,229,255,0.5)] cursor-pointer" onClick={() => { flushNewPosts(); window.scrollTo(0,0); setToast(null); }}>
+          {toast}
+        </div>
+      </div>
+
+      <div className="feed-header">
+        <h2 className="feed-title">Global Core</h2>
+      </div>
+
+      {newPostsQueue && newPostsQueue.length > 0 && (
+        <button
+          onClick={() => {
+            flushNewPosts();
+            window.scrollTo(0, 0);
+          }}
+          className="w-full bg-dark-card border border-brand-primary text-brand-primary font-bold py-3 mb-4 rounded hover:bg-brand-primary hover:text-black transition-colors"
+        >
+          SHOW {newPostsQueue.length} NEW POST{newPostsQueue.length !== 1 ? 'S' : ''}
+        </button>
+      )}
 
       {posts.length === 0 ? (
         <div className="empty">

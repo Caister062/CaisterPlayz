@@ -117,7 +117,7 @@ export default function App() {
     };
   }, []);
 
-  const { posts, loading, loadMore, hasMore, loadingMore, refresh: refPosts } = useRealtimePosts();
+  const { posts, newPostsQueue, flushNewPosts, latestPostId, loading, loadMore, hasMore, loadingMore, refresh: refPosts } = useRealtimePosts();
   const users = useAllUsers();
   const { squads } = useSquads();
   const { notifications, unreadCount, refresh: refNotif } = useNotifications(userId);
@@ -288,6 +288,9 @@ export default function App() {
                 {tab === 'home' && (
                   <FeedView
                     posts={posts}
+                    newPostsQueue={newPostsQueue}
+                    flushNewPosts={flushNewPosts}
+                    latestPostId={latestPostId}
                     loading={loading}
                     users={users}
                     currentUserId={userId}

@@ -236,15 +236,13 @@ export default function App() {
                   if (isAdmin) {
                     goTab('admin');
                   } else {
-                    const key = prompt('Enter Admin Signal Key:');
-                    const upperKey = key ? key.trim().toUpperCase() : '';
-
-                    if (upperKey === 'CAISTER_CORE_ADMIN' || upperKey === 'ADMIN' || upperKey === 'NEWSTRONGPASSWORD123') {
+                    const key = prompt('Enter Control Core Key:');
+                    if (key && key.trim() === 'CAISTER_CORE_ADMIN') {
                       localStorage.setItem('caister_admin', 'CAISTER_CORE_ADMIN');
                       setIsAdmin(true);
                       goTab('admin');
                     } else if (key) {
-                      alert('Signal key denied.');
+                      alert('Access denied.');
                     }
                   }
                 }}

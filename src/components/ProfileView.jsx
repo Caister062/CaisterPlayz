@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert, LogOut, ShieldBan } from 'lucide-react';
 import pb from '../pocketbase';
 import { GridCard, timeAgo } from './PostCard';
 import ExpandedBroadcast from './PostCard';
-import { updateProfile, useBlocks, blockUser, unblockUser } from '../hooks';
-import { formatCount, THEMES, applyTheme } from '../utils';
+import { updateProfile, useBlocks, blockUser, unblockUser, toggleFollow, checkIsFollowing, getFollowStats } from '../hooks';
+import { formatCount, THEMES, applyTheme, formatNumber } from '../utils';
 
 function compressAv(file) {
   return new Promise((res, rej) => {
@@ -45,7 +45,18 @@ export default function ProfileView({
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [followStats, setFollowStats] = useState({ followers: 0, following: 0 });
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
+  useEffect(() => {
+    if (profile?.id) {
+      getFollowStats(profile.id).then(setFollowStats);
+      if (currentUserId && currentUserId !== profile.id) {
+        checkIsFollowing(currentUserId, profile.id).then(setIsFollowing);
+      }
+    }
+  }, [profile?.id, currentUserId]);
   const { blocks, refresh: refreshBlocks } = useBlocks(currentUserId);
   const isBlocked = blocks.some(b => b.blockedId === profile?.id);
 
@@ -141,6 +152,24 @@ export default function ProfileView({
     }
   };
 
+  const handleToggleFollow = async () => {
+    if (!currentUserId || isOwn || followLoading) return;
+    setFollowLoading(true);
+    try {
+      await toggleFollow(currentUserId, profile.id, isFollowing);
+      // Optimistically update UI
+      setIsFollowing(!isFollowing);
+      setFollowStats(prev => ({
+        ...prev,
+        followers: isFollowing ? Math.max(0, prev.followers - 1) : prev.followers + 1
+      }));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
   const energy = totalBoosts + totalRelays;
 
   const rank =
@@ -214,7 +243,16 @@ export default function ProfileView({
           )}
 
           {!isOwn && onMessageClick && (
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                className={`edit-btn ${isFollowing ? 'text-dark-muted border-dark-border' : 'text-brand-primary border-brand-primary'}`}
+                onClick={handleToggleFollow}
+                disabled={followLoading}
+                style={!isFollowing ? { boxShadow: '0 0 10px rgba(0,229,255,0.2)' } : {}}
+              >
+                {followLoading ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
+              </button>
+              
               <button className="edit-btn" onClick={() => onMessageClick(profile.id)}>
                 Message
               </button>
@@ -306,6 +344,15 @@ export default function ProfileView({
                 {profile.bio}
               </div>
             )}
+            
+            <div className="flex gap-4 mt-3 mb-1 text-sm">
+              <div className="text-brand-primary">
+                <span className="font-bold text-white">{formatNumber(followStats.following)}</span> Following
+              </div>
+              <div className="text-brand-primary">
+                <span className="font-bold text-white">{formatNumber(followStats.followers)}</span> Followers
+              </div>
+            </div>
           </>
         )}
 

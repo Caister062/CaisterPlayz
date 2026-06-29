@@ -1012,3 +1012,64 @@ export async function sendSquadMessage(senderId, squadId, text, imageUrl = '') {
 }
 
 export const sendNotification = sendSignalAlert;
+
+export async function toggleFollow(followerId, followingId, isCurrentlyFollowing) {
+  if (!followerId || !followingId) return false;
+  
+  if (isCurrentlyFollowing) {
+    const records = await pb.collection('cplayz_follows').getList(1, 1, {
+      filter: `followerId="${followerId}" && followingId="${followingId}"`
+    });
+    if (records.items.length > 0) {
+      await pb.collection('cplayz_follows').delete(records.items[0].id, {
+        headers: { 'X-User-Id': followerId }
+      });
+    }
+    return false;
+  } else {
+    await pb.collection('cplayz_follows').create({
+      followerId,
+      followingId
+    }, {
+      headers: { 'X-User-Id': followerId }
+    });
+    
+    const sender = pb.authStore.model;
+    const senderName = sender ? (sender.displayName || sender.username || 'Someone') : 'Someone';
+    // Send alert using 'mention' type which shows up nicely in the UI
+    sendSignalAlert(followingId, followerId, 'mention', followingId, senderName);
+    return true;
+  }
+}
+
+export async function checkIsFollowing(followerId, followingId) {
+  if (!followerId || !followingId) return false;
+  const records = await pb.collection('cplayz_follows').getList(1, 1, {
+    filter: `followerId="${followerId}" && followingId="${followingId}"`
+  });
+  return records.items.length > 0;
+}
+
+export async function getFollowStats(userId) {
+  if (!userId) return { followers: 0, following: 0 };
+  
+  try {
+    const followersRes = await pb.collection('cplayz_follows').getList(1, 1, {
+      filter: `followingId="${userId}"`,
+      $autoCancel: false
+    });
+    
+    const followingRes = await pb.collection('cplayz_follows').getList(1, 1, {
+      filter: `followerId="${userId}"`,
+      $autoCancel: false
+    });
+    
+    return {
+      followers: followersRes.totalItems || 0,
+      following: followingRes.totalItems || 0
+    };
+  } catch(e) {
+    console.error("Failed to get follow stats:", e);
+    return { followers: 0, following: 0 };
+  }
+}

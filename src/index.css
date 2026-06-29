@@ -1101,3 +1101,232 @@ input, textarea { font: inherit; }
   50% { left: 0%; }
   100% { left: 100%; }
 }
+
+/* ============================================================
+   DIRECT MESSAGES & SQUADS
+============================================================ */
+.dm-view {
+  display: flex; flex-direction: column;
+  width: 100%; height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.dm-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  background: rgba(4,6,14,0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.dm-head-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 900; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--text);
+}
+.dm-head-title svg { color: var(--cyan); }
+.dm-head-actions { display: flex; gap: 4px; }
+.dm-icon-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3); transition: all 0.15s;
+}
+.dm-icon-btn:hover { background: var(--bg3); color: var(--text); }
+
+/* ── Section labels ── */
+.dm-section-label {
+  padding: 8px 14px 4px;
+  font-size: 10px; font-weight: 900; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text3);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.dm-section-action {
+  font-size: 10px; font-weight: 700; color: var(--cyan);
+  text-transform: none; letter-spacing: 0; cursor: pointer;
+}
+.dm-section-action:hover { text-decoration: underline; }
+
+/* ── Search bar ── */
+.dm-search-wrap { padding: 8px 14px; border-bottom: 1px solid var(--border); }
+.dm-search {
+  width: 100%; background: var(--surface);
+  border: 1px solid var(--border-b); border-radius: 99px;
+  padding: 8px 14px; font-size: 13px; color: var(--text);
+  outline: none; transition: border-color 0.15s;
+}
+.dm-search:focus { border-color: var(--cyan); }
+.dm-search::placeholder { color: var(--text3); }
+
+/* ── Thread / User rows ── */
+.dm-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+.dm-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; cursor: pointer;
+  transition: background 0.12s;
+}
+.dm-row:hover { background: var(--bg3); }
+.dm-row-squad-icon {
+  width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 900; color: var(--bg);
+  box-shadow: var(--cyan-glow);
+}
+.dm-row-info { flex: 1; min-width: 0; }
+.dm-row-name {
+  font-size: 14px; font-weight: 800; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dm-row-sub {
+  font-size: 11px; color: var(--text3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.dm-row-sub.accent { color: var(--cyan); }
+
+/* ── Create Squad form ── */
+.dm-create-form {
+  padding: 12px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.dm-create-title {
+  font-size: 12px; font-weight: 900; color: var(--text); margin-bottom: 8px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.dm-create-input {
+  width: 100%; background: var(--bg2);
+  border: 1px solid var(--border-b); border-radius: 8px;
+  padding: 8px 12px; font-size: 13px; color: var(--text);
+  outline: none; margin-bottom: 8px; transition: border-color 0.15s;
+}
+.dm-create-input:focus { border-color: var(--cyan); }
+.dm-create-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dm-create-cancel {
+  font-size: 12px; color: var(--text3); padding: 6px 10px;
+  border-radius: 6px; transition: color 0.12s;
+}
+.dm-create-cancel:hover { color: var(--text); }
+.dm-create-submit {
+  font-size: 12px; font-weight: 900; padding: 6px 14px;
+  background: var(--cyan); color: var(--bg); border-radius: 6px;
+  transition: opacity 0.15s; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.dm-create-submit:disabled { opacity: 0.5; }
+
+/* ── Chat view ── */
+.dm-chat { display: flex; flex-direction: column; height: 100%; }
+.dm-chat-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: rgba(4,6,14,0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.dm-chat-back {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3); transition: all 0.15s;
+}
+.dm-chat-back:hover { background: var(--bg3); color: var(--text); }
+.dm-chat-name {
+  flex: 1; font-size: 14px; font-weight: 900; color: var(--text);
+}
+.dm-chat-sub {
+  font-size: 10px; font-weight: 700; color: var(--cyan);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+
+/* ── Messages area ── */
+.dm-messages {
+  flex: 1; overflow-y: auto; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.dm-empty {
+  text-align: center; color: var(--text3); font-size: 13px;
+  padding-top: 40px;
+}
+.dm-bubble-wrap { display: flex; flex-direction: column; }
+.dm-bubble-wrap.own { align-items: flex-end; }
+.dm-bubble-sender { font-size: 10px; color: var(--text3); margin-bottom: 2px; padding: 0 4px; }
+.dm-bubble {
+  max-width: 80%; padding: 10px 14px; border-radius: 18px;
+  font-size: 13px; line-height: 1.4; word-break: break-word;
+  background: var(--surface); color: var(--text);
+}
+.dm-bubble.own {
+  background: linear-gradient(135deg, var(--cyan), #00b4cc);
+  color: #050811; font-weight: 600;
+  box-shadow: 0 0 12px rgba(0,240,255,0.25);
+}
+.dm-bubble img { border-radius: 10px; margin-bottom: 6px; max-height: 200px; }
+.dm-bubble-meta {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; color: var(--text3); margin-top: 3px; padding: 0 4px;
+}
+.dm-bubble-meta.own { justify-content: flex-end; }
+.dm-read-tick { font-weight: 900; }
+.dm-read-tick.seen { color: var(--cyan); }
+
+/* ── Typing indicator ── */
+.dm-typing {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 0; font-size: 11px; color: var(--cyan);
+  opacity: 0.8; font-style: italic;
+}
+.dm-typing-dots { display: flex; gap: 3px; align-items: center; }
+.dm-typing-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--cyan);
+  animation: dmBounce 1s infinite;
+}
+.dm-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.dm-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dmBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+/* ── Input bar ── */
+.dm-input-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: rgba(4,6,14,0.95);
+  backdrop-filter: blur(20px);
+  flex-shrink: 0;
+}
+.dm-img-preview { position: relative; flex-shrink: 0; }
+.dm-img-preview img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; }
+.dm-img-remove {
+  position: absolute; top: -6px; right: -6px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--hot); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+}
+.dm-attach-btn {
+  color: var(--text3); transition: color 0.15s;
+  display: flex; align-items: center;
+}
+.dm-attach-btn:hover { color: var(--cyan); }
+.dm-input {
+  flex: 1; background: var(--surface);
+  border: 1px solid var(--border-b); border-radius: 99px;
+  padding: 9px 14px; font-size: 13px; color: var(--text);
+  outline: none; transition: border-color 0.15s;
+}
+.dm-input:focus { border-color: var(--cyan); }
+.dm-input::placeholder { color: var(--text3); }
+.dm-send-btn {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  display: flex; align-items: center; justify-content: center;
+  color: var(--bg); transition: transform 0.15s, opacity 0.15s;
+  box-shadow: var(--cyan-glow);
+}
+.dm-send-btn:hover { transform: scale(1.08); }
+.dm-send-btn:disabled { opacity: 0.4; transform: none; }

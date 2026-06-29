@@ -124,7 +124,7 @@ export default function DirectMessages({
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-y-0 right-0 w-full bg-dark-bg z-50 flex flex-col border-l border-dark-border">
+    <div className="absolute inset-y-0 right-0 w-full backdrop-blur-xl bg-dark-bg/95 z-50 flex flex-col border-l border-dark-border shadow-2xl transition-all duration-300">
 
       {/* ───────── CHAT VIEW ───────── */}
       {activeRecipientId ? (
@@ -197,9 +197,14 @@ export default function DirectMessages({
                       <p>{msg.text}</p>
                     </div>
 
-                    <p className="text-[10px] text-dark-muted mt-1">
-                      {formatTime(msg.created)}
-                    </p>
+                    <div className={`flex items-center gap-1 mt-1 text-[10px] ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                      <span className="text-dark-muted">{formatTime(msg.created)}</span>
+                      {isOwn && (
+                        <span className={msg.read ? 'text-brand-primary font-bold' : 'text-dark-muted'} title={msg.read ? 'Read' : 'Delivered'}>
+                          {msg.read ? '✓✓' : '✓'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })

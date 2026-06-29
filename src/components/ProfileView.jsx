@@ -35,7 +35,8 @@ export default function ProfileView({
   posts,
   users,
   currentUserId,
-  onRefresh
+  onRefresh,
+  onMessageClick
 }) {
   const [tab, setTab] = useState('broadcasts');
   const [editing, setEditing] = useState(false);
@@ -205,6 +206,12 @@ export default function ProfileView({
           {isOwn && !editing && (
             <button className="edit-btn" onClick={startEdit}>
               Edit Profile
+            </button>
+          )}
+
+          {!isOwn && onMessageClick && (
+            <button className="edit-btn" onClick={() => onMessageClick(profile.id)}>
+              Message
             </button>
           )}
 

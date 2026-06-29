@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert } from 'lucide-react';
+import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert, MessageSquare } from 'lucide-react';
 import pb from './pocketbase';
 import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig } from './hooks';
 import { applyTheme } from './utils';
@@ -10,6 +10,7 @@ import ProfileView from './components/ProfileView';
 import VaultView from './components/VaultView';
 import AdminView from './components/AdminView';
 import Composer from './components/Composer';
+import DirectMessages from './components/DirectMessages';
 function CpMark({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -23,6 +24,8 @@ import AuthView from './components/AuthView';
 export default function App() {
   const [tab, setTab] = useState('home');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showDirectMessages, setShowDirectMessages] = useState(false);
+  const [dmRecipientId, setDmRecipientId] = useState(null);
   const [showCompose, setShowCompose] = useState(false);
   const [userId, setUserId] = useState(pb.authStore.model?.id || null);
   const [booting, setBooting] = useState(true);
@@ -234,6 +237,14 @@ export default function App() {
                 <Bell size={18} />
                 {unreadCount > 0 && <span className="hud-pip" />}
               </button>
+
+              <button
+                className={`hud-btn${showDirectMessages ? ' lit' : ''}`}
+                onClick={() => setShowDirectMessages(true)}
+                title="Direct Messages"
+              >
+                <MessageSquare size={18} />
+              </button>
             </div>
           </header>
 
@@ -291,6 +302,10 @@ export default function App() {
                     currentUserId={userId}
                     followData={viewProfile ? {} : followData}
                     onProfileClick={goProfile}
+                    onMessageClick={(uid) => {
+                      setDmRecipientId(uid);
+                      setShowDirectMessages(true);
+                    }}
                     onRefresh={refMe}
                     config={config}
                   />
@@ -310,6 +325,14 @@ export default function App() {
               </div>
             </div>
           </main>
+
+          <DirectMessages
+            isOpen={showDirectMessages}
+            onClose={() => setShowDirectMessages(false)}
+            currentUserId={userId}
+            users={users}
+            initialRecipientId={dmRecipientId}
+          />
 
           {/* ─ Composer ─ */}
           {showCompose && userId && (

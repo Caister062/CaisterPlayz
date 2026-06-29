@@ -641,4 +641,139 @@ export const addComment = addEcho;
 export const deleteComment = removeEcho;
 export const followUser = connectCore;
 export const unfollowUser = disconnectCore;
+
+/* ============================================================
+   DIRECT MESSAGES HOOKS
+============================================================ */
+
+export function useDMThreads(userId) {
+  const [threads, setThreads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) {
+      setThreads([]);
+      setLoading(false);
+      return;
+    }
+
+    const loadThreads = async () => {
+      try {
+        const res = await pb.collection('cplayz_messages').getList(1, 200, {
+          filter: `senderId = "${userId}" || recipientId = "${userId}"`,
+          sort: '-created'
+        });
+
+        const threadMap = {};
+        for (const msg of res.items) {
+          const otherId = msg.senderId === userId ? msg.recipientId : msg.senderId;
+          if (!threadMap[otherId]) {
+            threadMap[otherId] = {
+              userId: otherId,
+              lastMessage: msg.text || (msg.imageUrl ? 'Sent an image' : ''),
+              created: msg.created,
+              unread: msg.recipientId === userId && !msg.read
+            };
+          } else if (msg.recipientId === userId && !msg.read) {
+            threadMap[otherId].unread = true;
+          }
+        }
+        setThreads(Object.values(threadMap));
+      } catch (err) {
+        console.error('Failed to load threads:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadThreads();
+
+    let unsub;
+    pb.collection('cplayz_messages').subscribe('*', () => {
+      loadThreads();
+    }).then(u => (unsub = u)).catch(console.error);
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [userId]);
+
+  return { threads, loading };
+}
+
+export function useDirectMessages(userId, recipientId) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId || !recipientId) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
+
+    const loadMessages = async () => {
+      try {
+        const res = await pb.collection('cplayz_messages').getList(1, 100, {
+          filter: `(senderId = "${userId}" && recipientId = "${recipientId}") || (senderId = "${recipientId}" && recipientId = "${userId}")`,
+          sort: 'created'
+        });
+        setMessages(res.items);
+
+        // Mark as read
+        const unread = res.items.filter(m => m.recipientId === userId && !m.read);
+        for (const m of unread) {
+          pb.collection('cplayz_messages').update(m.id, { read: true }).catch(console.error);
+        }
+      } catch (err) {
+        console.error('Failed to load messages:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMessages();
+
+    let unsub;
+    pb.collection('cplayz_messages').subscribe('*', (e) => {
+      if (
+        (e.record.senderId === userId && e.record.recipientId === recipientId) ||
+        (e.record.senderId === recipientId && e.record.recipientId === userId)
+      ) {
+        loadMessages();
+      }
+    }).then(u => (unsub = u)).catch(console.error);
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [userId, recipientId]);
+
+  return { messages, loading };
+}
+
+export async function sendMessage(senderId, recipientId, text, imageUrl = '') {
+  if (!senderId || !recipientId || (!text.trim() && !imageUrl)) return null;
+
+  const msg = await pb.collection('cplayz_messages').create({
+    senderId,
+    recipientId,
+    text: text.trim(),
+    imageUrl,
+    read: false
+  });
+
+  const sender = pb.authStore.model;
+  const senderName = sender ? (sender.displayName || sender.username || sender.name || 'Someone') : 'Someone';
+
+  sendSignalAlert(
+    recipientId, 
+    senderId, 
+    'message', 
+    text.trim() || 'Sent an image attachment', 
+    senderName
+  );
+
+  return msg;
+}
 export const sendNotification = sendSignalAlert;

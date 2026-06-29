@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { GridCard, DeckCard } from './PostCard';
+import { useState, useMemo } from 'react';
+import { SafeGridCard, SafeDeckCard } from './SafetyPostCard';
 import ExpandedBroadcast from './PostCard';
 
 function Radar({ users, currentUserId }) {
@@ -9,66 +9,13 @@ function Radar({ users, currentUserId }) {
         <div key={u.id} className="radar-dot">
           <div className={`radar-ring${u.id === currentUserId ? ' idle' : ''}`}>
             <div className="radar-inner">
-              {u.avatarUrl ? (
-                <img src={u.avatarUrl} alt="" />
-              ) : (
-                (u.displayName || '?')[0].toUpperCase()
-              )}
+              {u.avatarUrl ? <img src={u.avatarUrl} alt="" /> : (u.displayName || '?')[0].toUpperCase()}
             </div>
-
             {u.id !== currentUserId && <div className="radar-ping" />}
           </div>
-
-          <span className="radar-tag">
-            {(u.displayName || 'Player').split(' ')[0]}
-          </span>
+          <span className="radar-tag">{(u.displayName || 'Player').split(' ')[0]}</span>
         </div>
       ))}
-    </div>
-  );
-}
-
-function Ticker({ notifications, users }) {
-  if (!notifications || notifications.length === 0) return null;
-
-  const MSGS = {
-    like: 'hyped',
-    comment: 'replied to',
-    repost: 'shared',
-    follow: 'squaded up with'
-  };
-
-  const EMOJIS = {
-    like: '🔥',
-    comment: '💬',
-    repost: '🔁',
-    follow: '🤝'
-  };
-
-  const items = notifications.slice(0, 20).map(n => {
-    const s = users.find(u => u.id === n.senderId);
-
-    return {
-      id: n.id,
-      name: s?.displayName || 'Someone',
-      msg: MSGS[n.type] || 'triggered',
-      emoji: EMOJIS[n.type] || '📡'
-    };
-  });
-
-  const doubled = [...items, ...items];
-
-  return (
-    <div className="ticker-wrap">
-      <div className="ticker">
-        {doubled.map((item, i) => (
-          <span key={`${item.id}-${i}`} className="ticker-item">
-            <span className="ticker-emoji">{item.emoji}</span>
-            <strong>{item.name}</strong> {item.msg} a post
-            <span className="ticker-dot" />
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
@@ -91,75 +38,27 @@ export default function FeedView({
   posts,
   newPostsQueue = [],
   flushNewPosts,
-  latestPostId,
   loading,
   users,
   currentUserId,
-  notifications,
-  loadMore,
-  hasMore,
-  loadingMore,
   onProfileClick,
   onHashtagClick
 }) {
   const [expandedPost, setExpandedPost] = useState(null);
-  const [toast, setToast] = useState(null);
-  const observerTarget = useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loadingMore, loadMore]);
-
-  useEffect(() => {
-    if (latestPostId && newPostsQueue.length > 0) {
-      const p = newPostsQueue[0];
-      const u = users.find(user => user.id === p.userId);
-      const name = u?.displayName || 'Someone';
-      setToast(`New post from ${name}`);
-      const t = setTimeout(() => setToast(null), 3500);
-      return () => clearTimeout(t);
-    }
-  }, [latestPostId]);
-
 
   const primeSignals = useMemo(() => {
+    const realCount = (arr, authorId) => (arr || []).filter(id => id !== authorId).length;
     return [...posts]
       .sort((a, b) => {
-        const rc = (arr, authorId) =>
-          (arr || []).filter(id => id !== authorId).length;
-
-        const pa =
-          rc(a.likedBy, a.userId) +
-          rc(a.repostedBy, a.userId) +
-          rc(a.viewedBy, a.userId);
-
-        const pb =
-          rc(b.likedBy, b.userId) +
-          rc(b.repostedBy, b.userId) +
-          rc(b.viewedBy, b.userId);
-
+        const pa = realCount(a.likedBy, a.userId) + realCount(a.repostedBy, a.userId) + realCount(a.viewedBy, a.userId);
+        const pb = realCount(b.likedBy, b.userId) + realCount(b.repostedBy, b.userId) + realCount(b.viewedBy, b.userId);
         return pb - pa;
       })
       .slice(0, 10);
   }, [posts]);
 
   const signalDrops = useMemo(() => {
-    return [...posts].sort(
-      (a, b) => new Date(b.created) - new Date(a.created)
-    );
+    return [...posts].sort((a, b) => new Date(b.created) - new Date(a.created));
   }, [posts]);
 
   if (loading) {
@@ -173,26 +72,13 @@ export default function FeedView({
 
   return (
     <div>
-      {/* SIGNAL RADAR */}
       <Radar users={users} currentUserId={currentUserId} />
-
-      {/* LIVE SIGNAL TICKER */}
-      <Ticker notifications={notifications} users={users} />
-
-      {/* Floating Toast Notification */}
-      <div 
-        className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}
-      >
-        <div className="bg-brand-primary text-black font-bold px-4 py-2 rounded-full shadow-[0_0_15px_rgba(0,229,255,0.5)] cursor-pointer" onClick={() => { flushNewPosts?.(); window.scrollTo(0,0); setToast(null); }}>
-          {toast}
-        </div>
-      </div>
 
       <div className="feed-header">
         <h2 className="feed-title">Global Core</h2>
       </div>
 
-      {newPostsQueue && newPostsQueue.length > 0 && (
+      {newPostsQueue.length > 0 && (
         <button
           onClick={() => {
             flushNewPosts?.();
@@ -208,59 +94,39 @@ export default function FeedView({
         <div className="empty">
           <div className="brand-empty-mark">
             <svg width="40" height="40" viewBox="0 0 512 512" fill="none">
-              <text
-                x="256"
-                y="390"
-                textAnchor="middle"
-                fontFamily="'Arial Black','Impact',sans-serif"
-                fontWeight="900"
-                fontSize="340"
-                fill="white"
-                letterSpacing="-20"
-              >
-                CP
-              </text>
+              <text x="256" y="390" textAnchor="middle" fontFamily="'Arial Black','Impact',sans-serif" fontWeight="900" fontSize="340" fill="white" letterSpacing="-20">CP</text>
             </svg>
           </div>
-
           <h3>The Island is empty</h3>
           <p>Drop the first post about your latest workout or Gaming Win!</p>
         </div>
       ) : (
         <>
-          {/* PRIME SIGNALS */}
           {primeSignals.length > 0 && (
             <>
               <div className="sec">
-                <span className="sec-label">🏆 Top PRs & Wins</span>
+                <span className="sec-label">Top PRs & Wins</span>
                 <span className="sec-badge">{primeSignals.length}</span>
               </div>
-
               <div className="deck">
                 {primeSignals.map(p => (
-                  <DeckCard
-                    key={p.id}
-                    post={p}
-                    users={users}
-                    onClick={setExpandedPost}
-                  />
+                  <SafeDeckCard key={p.id} post={p} users={users} currentUserId={currentUserId} onClick={setExpandedPost} />
                 ))}
               </div>
             </>
           )}
 
-          {/* LATEST POSTS */}
           <div className="sec">
-            <span className="sec-label">⚡ Latest Posts</span>
+            <span className="sec-label">Latest Posts</span>
             <span className="sec-badge">{signalDrops.length}</span>
           </div>
-
           <div className="grid">
             {signalDrops.map(p => (
-              <GridCard
+              <SafeGridCard
                 key={p.id}
                 post={p}
                 users={users}
+                currentUserId={currentUserId}
                 onClick={setExpandedPost}
                 onProfileClick={onProfileClick}
                 onHashtagClick={onHashtagClick}

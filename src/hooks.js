@@ -518,7 +518,7 @@ export async function removeEcho(commentId, userId) {
   }
 }
 
-export async function connectCore(followerId, followingId) {
+export async function connectCore(followerId, followingId, followingName) {
   if (!followerId || !followingId || followerId === followingId) return null;
 
   const existing = await pb.collection('cplayz_follows').getList(1, 1, {
@@ -532,7 +532,7 @@ export async function connectCore(followerId, followingId) {
     followingId
   });
 
-  sendSignalAlert(followingId, followerId, 'connect', '');
+  sendSignalAlert(followingId, followerId, 'connect', '', followingName);
 
   return connection;
 }
@@ -589,7 +589,7 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId, exp
     // FIREWALL BYPASS: Send Discord Webhook from Frontend
     try {
         const sender = pb.authStore.model;
-        const senderName = sender ? (sender.displayName || 'Someone') : 'Someone';
+        const senderName = sender ? (sender.displayName || sender.username || sender.name || 'Someone') : 'Someone';
         
         let recipientName = explicitRecipientName || 'another user';
         if (!explicitRecipientName && recipientId) {

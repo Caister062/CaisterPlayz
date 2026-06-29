@@ -60,7 +60,7 @@ export default function GamingProfileCard({
       if (originalState) {
         await unfollowUser(currentUserId, viewingUserId);
       } else {
-        await followUser(currentUserId, viewingUserId);
+        await followUser(currentUserId, viewingUserId, viewingUser?.displayName || 'another user');
       }
     } catch (err) {
       console.error("Follow failed:", err);

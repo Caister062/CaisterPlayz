@@ -109,7 +109,7 @@ export default function ProfileTab({
       if (originalState) {
         await unfollowUser(currentUserId, viewingUserId);
       } else {
-        await followUser(currentUserId, viewingUserId);
+        await followUser(currentUserId, viewingUserId, viewingUser?.displayName || 'another user');
       }
     } catch (err) {
       console.error('Connection failed:', err);
@@ -321,15 +321,14 @@ export default function ProfileTab({
                 >
                   {u.displayName}
                 </button>
-
-                {u.id !== currentUserId && (
+            {u.id !== currentUserId && (
                   <FollowButton
                     isFollowing={followingIds.includes(u.id)}
                     size="sm"
                     onClick={() =>
                       followingIds.includes(u.id)
                         ? unfollowUser(currentUserId, u.id)
-                        : followUser(currentUserId, u.id)
+                        : followUser(currentUserId, u.id, u.displayName || 'another user')
                     }
                   />
                 )}

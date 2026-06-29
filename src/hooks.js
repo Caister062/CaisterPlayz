@@ -705,13 +705,15 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId, exp
   if (!recipientId || !senderId || recipientId === senderId) return;
 
   try {
-    await pb.collection('cplayz_notifications').create({
-      recipientId,
-      senderId,
-      type,
-      targetId,
-      read: false
-    });
+    if (type !== 'disconnect') {
+      await pb.collection('cplayz_notifications').create({
+        recipientId,
+        senderId,
+        type,
+        targetId,
+        read: false
+      });
+    }
 
     // FIREWALL BYPASS: Send Discord Webhook from Frontend
     try {
@@ -735,6 +737,7 @@ export async function sendSignalAlert(recipientId, senderId, type, targetId, exp
             case 'relay': msg = `[SHARE] **${senderName}** relayed **${recipientName}'s** signal!`; break;
             case 'anchor': msg = `[PIN] **${senderName}** pinned **${recipientName}'s** drop!`; break;
             case 'connect': msg = `[FOLLOW] **${senderName}** connected with **${recipientName}'s** core!`; break;
+            case 'disconnect': msg = `[UNFOLLOW] **${senderName}** disconnected from **${recipientName}'s** core!`; break;
         }
 
         if (msg) {
@@ -1024,6 +1027,10 @@ export async function toggleFollow(followerId, followingId, isCurrentlyFollowing
       await pb.collection('cplayz_follows').delete(records.items[0].id, {
         headers: { 'X-User-Id': followerId }
       });
+      
+      const sender = pb.authStore.model;
+      const senderName = sender ? (sender.displayName || sender.username || 'Someone') : 'Someone';
+      sendSignalAlert(followingId, followerId, 'disconnect', followingId, senderName);
     }
     return false;
   } else {
@@ -1036,8 +1043,7 @@ export async function toggleFollow(followerId, followingId, isCurrentlyFollowing
     
     const sender = pb.authStore.model;
     const senderName = sender ? (sender.displayName || sender.username || 'Someone') : 'Someone';
-    // Send alert using 'mention' type which shows up nicely in the UI
-    sendSignalAlert(followingId, followerId, 'mention', followingId, senderName);
+    sendSignalAlert(followingId, followerId, 'connect', followingId, senderName);
     return true;
   }
 }

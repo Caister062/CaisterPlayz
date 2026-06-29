@@ -69,7 +69,7 @@ export default function AdminView({ posts, users, currentUserId }) {
             {
               id: Date.now(),
               text: `[${e.action.toUpperCase()}] Signal by ${
-                u?.displayName || 'Unknown Operator'
+                u?.displayName || 'Unknown Player'
               }`
             },
             ...prev
@@ -113,7 +113,7 @@ export default function AdminView({ posts, users, currentUserId }) {
 
     if (
       !window.confirm(
-        `Purge signal by ${author?.displayName || 'Unknown Operator'}?`
+        `Purge signal by ${author?.displayName || 'Unknown Player'}?`
       )
     ) {
       return;
@@ -134,7 +134,7 @@ export default function AdminView({ posts, users, currentUserId }) {
     const msg = prompt('Enter Core broadcast alert:');
     if (!msg || !msg.trim()) return;
     const nonAdmins = users.filter(u => u.id !== currentUserId);
-    if (!window.confirm(`Broadcast "${msg}" as a popup to all operators?`)) return;
+    if (!window.confirm(`Broadcast "${msg}" as a popup to all players?`)) return;
     
     // Save to global config to trigger the popup for active users
     await updateSystemConfig(configId, { 
@@ -142,7 +142,7 @@ export default function AdminView({ posts, users, currentUserId }) {
       globalAnnouncement: { text: msg.trim(), timestamp: Date.now() } 
     });
 
-    alert(`Core broadcast dispatched to ${nonAdmins.length} operators.`);
+    alert(`Core broadcast dispatched to ${nonAdmins.length} players.`);
   };
 
   const handleSweep = async () => {
@@ -195,12 +195,12 @@ export default function AdminView({ posts, users, currentUserId }) {
     window.location.reload();
   };
 
-  const handlePurgeOperatorSignals = async userId => {
+  const handlePurgePlayerSignals = async userId => {
     const userSignals = posts.filter(p => p.userId === userId);
 
     if (
       !window.confirm(
-        `PURGE: Delete all ${userSignals.length} signal(s) from this operator? This cannot be undone.`
+        `PURGE: Delete all ${userSignals.length} signal(s) from this player? This cannot be undone.`
       )
     ) {
       return;
@@ -212,7 +212,7 @@ export default function AdminView({ posts, users, currentUserId }) {
       } catch (e) {}
     }
 
-    alert('Operator signals purged.');
+    alert('Player signals purged.');
   };
 
   const handleDisableCore = async user => {
@@ -230,25 +230,25 @@ export default function AdminView({ posts, users, currentUserId }) {
       avatarUrl: ''
     });
 
-    await handlePurgeOperatorSignals(user.id);
+    await handlePurgePlayerSignals(user.id);
   };
 
   const handleExport = () => {
     const data = {
       timestamp: new Date().toISOString(),
       stats: {
-        operators: totalUsers,
+        players: totalUsers,
         signals: totalSignals,
         coreEnergy: totalEnergy
       },
-      operators: users.map(u => ({
+      players: users.map(u => ({
         id: u.id,
         name: u.displayName,
         created: u.created
       })),
       signals: posts.map(p => ({
         id: p.id,
-        operator: p.userId,
+        player: p.userId,
         text: p.text,
         boosts: p.likedBy?.length || 0
       }))
@@ -303,7 +303,7 @@ export default function AdminView({ posts, users, currentUserId }) {
         </div>
 
         <div className="admin-subtitle">
-          Signal moderation, operator systems, and live core analytics.
+          Signal moderation, player management, and live core analytics.
         </div>
       </div>
 
@@ -311,7 +311,7 @@ export default function AdminView({ posts, users, currentUserId }) {
         <div className="stat-box">
           <Users size={20} className="stat-icon" />
           <div className="stat-val">{totalUsers}</div>
-          <div className="stat-lbl">Operators</div>
+          <div className="stat-lbl">Players</div>
         </div>
 
         <div className="stat-box">
@@ -371,7 +371,7 @@ export default function AdminView({ posts, users, currentUserId }) {
           className={`admin-tab${activeTab === 'users' ? ' on' : ''}`}
           onClick={() => setActiveTab('users')}
         >
-          Operators
+          Players
         </button>
 
         <button
@@ -419,7 +419,7 @@ export default function AdminView({ posts, users, currentUserId }) {
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="admin-item-meta">
-                      <strong>{author?.displayName || 'Unknown Operator'}</strong>{' '}
+                      <strong>{author?.displayName || 'Unknown Player'}</strong>{' '}
                       • {timeAgo(signal.created)}
                     </div>
 
@@ -471,7 +471,7 @@ export default function AdminView({ posts, users, currentUserId }) {
 
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="admin-item-meta">
-                        <strong>{author?.displayName || 'Unknown Operator'}</strong>{' '}
+                        <strong>{author?.displayName || 'Unknown Player'}</strong>{' '}
                         • {timeAgo(signal.created)}
                       </div>
 
@@ -565,7 +565,7 @@ export default function AdminView({ posts, users, currentUserId }) {
 
                     <button
                       className="admin-micro-btn danger"
-                      onClick={() => handlePurgeOperatorSignals(u.id)}
+                      onClick={() => handlePurgePlayerSignals(u.id)}
                     >
                       Purge Signals
                     </button>

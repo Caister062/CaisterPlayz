@@ -577,6 +577,7 @@ export default function ExpandedBroadcast({
                     )}
                     Purge Signal
                   </button>
+                  </>
                 )}
               </div>
             )}

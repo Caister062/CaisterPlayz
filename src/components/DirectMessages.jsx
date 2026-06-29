@@ -31,6 +31,9 @@ export default function DirectMessages({
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  
+  // Typing state tracking
+  const typingTimeoutRef = useRef(null);
 
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [showUserSearch, setShowUserSearch] = useState(false);
@@ -42,6 +45,16 @@ export default function DirectMessages({
       setActiveRecipientId(initialRecipientId);
     }
   }, [initialRecipientId]);
+
+  // Clear typing status on unmount or active recipient change
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (activeRecipientId) {
+        pb.collection('users').update(currentUserId, { typingTo: '' }).catch(() => {});
+      }
+    };
+  }, [activeRecipientId, currentUserId]);
 
   const { messages, loading: messagesLoading } = useDirectMessages(
     currentUserId,
@@ -71,6 +84,21 @@ export default function DirectMessages({
     }
   };
 
+  const handleInputChange = (e) => {
+    setInputText(e.target.value);
+
+    // Update typing status
+    if (activeRecipientId) {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      
+      pb.collection('users').update(currentUserId, { typingTo: activeRecipientId }).catch(() => {});
+      
+      typingTimeoutRef.current = setTimeout(() => {
+        pb.collection('users').update(currentUserId, { typingTo: '' }).catch(() => {});
+      }, 3000);
+    }
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
 
@@ -80,6 +108,9 @@ export default function DirectMessages({
     setIsSending(true);
 
     try {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      pb.collection('users').update(currentUserId, { typingTo: '' }).catch(() => {});
+
       await sendMessage(
         currentUserId,
         activeRecipientId,
@@ -210,33 +241,58 @@ export default function DirectMessages({
               })
             )}
 
+            {/* Typing Indicator */}
+            {activeRecipient?.typingTo === currentUserId && (
+              <div className="flex items-center gap-2 mb-2 ml-4">
+                <Avatar src={activeRecipient.avatarUrl} name={activeRecipient.displayName} size="sm" />
+                <div className="bg-dark-surface p-3 rounded-2xl flex gap-1 items-center max-w-[80%]">
+                  <div className="w-2 h-2 bg-dark-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-dark-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-dark-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            )}
+
             <div ref={feedEndRef} />
           </div>
 
           {/* Input */}
           <form
             onSubmit={handleSend}
-            className="p-3 border-t border-dark-border flex gap-2"
+            className="p-3 border-t border-dark-border flex gap-2 items-center bg-dark-bg/50 backdrop-blur-md"
           >
-            <label>
+            {imagePreview && (
+              <div className="relative w-10 h-10">
+                <img src={imagePreview} className="w-full h-full object-cover rounded-lg" />
+                <button
+                  type="button"
+                  onClick={() => { setImagePreview(null); setImageFile(null); }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+            <label className="p-2 text-dark-muted hover:text-white cursor-pointer transition-colors">
               <Image className="w-5 h-5" />
               <input
                 type="file"
                 hidden
+                accept="image/*"
                 onChange={handleImageChange}
               />
             </label>
 
             <input
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              className="flex-1 bg-dark-surface px-4 py-2 rounded-full"
-              placeholder="Message..."
+              onChange={handleInputChange}
+              className="flex-1 bg-dark-surface border border-dark-border px-4 py-2.5 rounded-full text-sm outline-none focus:border-brand-primary transition-colors"
+              placeholder="iMessage..."
             />
 
             <button
-              disabled={isSending}
-              className="bg-brand-primary text-white p-2 rounded-full"
+              disabled={isSending || (!inputText.trim() && !imageFile)}
+              className="bg-brand-primary disabled:opacity-50 text-white p-2.5 rounded-full transition-transform active:scale-95"
             >
               <Send className="w-4 h-4" />
             </button>

@@ -740,6 +740,53 @@ export function useDMThreads(userId) {
   return { threads, loading };
 }
 
+export function useSquads() {
+  const [squads, setSquads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSquads = async () => {
+      try {
+        const res = await pb.collection('cplayz_squads').getList(1, 100, { sort: '-created' });
+        setSquads(res.items);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSquads();
+
+    let unsub;
+    pb.collection('cplayz_squads').subscribe('*', fetchSquads)
+      .then(u => unsub = u)
+      .catch(console.error);
+
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  return { squads, loading };
+}
+
+export async function createSquad(name, creatorId, avatarUrl = '') {
+  return pb.collection('cplayz_squads').create({
+    name,
+    avatarUrl,
+    createdBy: creatorId,
+    members: [creatorId]
+  });
+}
+
+export async function joinSquad(squad, userId) {
+  const members = Array.isArray(squad.members) ? squad.members : [];
+  if (!members.includes(userId)) {
+    return pb.collection('cplayz_squads').update(squad.id, {
+      members: [...members, userId]
+    });
+  }
+  return squad;
+}
+
 export function useDirectMessages(userId, recipientId) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -791,6 +838,48 @@ export function useDirectMessages(userId, recipientId) {
   return { messages, loading };
 }
 
+export function useSquadMessages(squadId) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!squadId) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
+
+    const loadMessages = async () => {
+      try {
+        const res = await pb.collection('cplayz_messages').getList(1, 100, {
+          filter: `squadId = "${squadId}"`,
+          sort: 'created'
+        });
+        setMessages(res.items);
+      } catch (err) {
+        console.error('Failed to load squad messages:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMessages();
+
+    let unsub;
+    pb.collection('cplayz_messages').subscribe('*', (e) => {
+      if (e.record.squadId === squadId) {
+        loadMessages();
+      }
+    }).then(u => (unsub = u)).catch(console.error);
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [squadId]);
+
+  return { messages, loading };
+}
+
 export async function sendMessage(senderId, recipientId, text, imageUrl = '') {
   if (!senderId || !recipientId || (!text.trim() && !imageUrl)) return null;
 
@@ -799,7 +888,8 @@ export async function sendMessage(senderId, recipientId, text, imageUrl = '') {
     recipientId,
     text: text.trim(),
     imageUrl,
-    read: false
+    read: false,
+    squadId: ''
   });
 
   const sender = pb.authStore.model;
@@ -815,4 +905,18 @@ export async function sendMessage(senderId, recipientId, text, imageUrl = '') {
 
   return msg;
 }
+
+export async function sendSquadMessage(senderId, squadId, text, imageUrl = '') {
+  if (!senderId || !squadId || (!text.trim() && !imageUrl)) return null;
+
+  return pb.collection('cplayz_messages').create({
+    senderId,
+    recipientId: '',
+    squadId,
+    text: text.trim(),
+    imageUrl,
+    read: false
+  });
+}
+
 export const sendNotification = sendSignalAlert;

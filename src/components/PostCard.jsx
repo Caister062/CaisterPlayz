@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Eye, MoreHorizontal, Trash2, Share2, Loader, CheckCircle, Pin } from 'lucide-react';
-import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, deleteComment } from '../hooks';
+import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, editPost, deleteComment } from '../hooks';
 import { formatCount, formatTime, triggerHaptic } from '../utils';
 
 export function timeAgo(ts) {
@@ -23,7 +23,7 @@ export function Hex({ src, name, size = '', onClick }) {
   );
 }
 
-function RichBody({ text, cls = 'expand-text' }) {
+function RichBody({ text, cls = 'expand-text', onHashtagClick, onMentionClick }) {
   if (!text) return null;
 
   const parts = [];
@@ -54,9 +54,21 @@ function RichBody({ text, cls = 'expand-text' }) {
     <div className={cls}>
       {parts.map((p, i) =>
         p.t === 'h' ? (
-          <span key={i} className="tag">{p.v}</span>
+          <span 
+            key={i} 
+            className="tag cursor-pointer hover:underline"
+            onClick={(e) => { e.stopPropagation(); if (onHashtagClick) onHashtagClick(p.v); }}
+          >
+            {p.v}
+          </span>
         ) : p.t === 'a' ? (
-          <span key={i} className="at">{p.v}</span>
+          <span 
+            key={i} 
+            className="at cursor-pointer hover:underline"
+            onClick={(e) => { e.stopPropagation(); if (onMentionClick) onMentionClick(p.v); }}
+          >
+            {p.v}
+          </span>
         ) : p.t === 'l' ? (
           <a
             key={i}
@@ -226,6 +238,10 @@ export default function ExpandedBroadcast({
   const [deleting, setDeleting] = useState(false);
   const [showLB, setShowLB] = useState(false);
   const [chipPop, setChipPop] = useState('');
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(post.text);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [oLiked, setOLiked] = useState(null);
   const [oLikeN, setOLikeN] = useState(null);
@@ -378,19 +394,32 @@ export default function ExpandedBroadcast({
     [echoText, sending, post.id, currentUserId]
   );
 
-  const doDel = useCallback(async () => {
+  const doDel = async () => {
     if (!confirm('Purge this signal?')) return;
-
     setDeleting(true);
-
     try {
-      await deletePost(post.id, currentUserId);
+      await deletePost(post.id);
       onClose();
-    } catch (err) {
-      console.error(err);
+    } catch {
       setDeleting(false);
     }
-  }, [post.id, currentUserId, onClose]);
+  };
+
+  const handleEditSave = async () => {
+    if (!editText.trim() || editText === post.text) {
+      setIsEditing(false);
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await editPost(post.id, editText.trim());
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   if (!author) return null;
 
@@ -490,6 +519,9 @@ export default function ExpandedBroadcast({
 
                 <div className="expand-time">
                   Rank: {rankLevel}
+                  <span style={{ margin: '0 6px', color: 'var(--border)' }}>|</span>
+                  {timeAgo(post.created)}
+                  {post.isEdited && <span style={{ marginLeft: 4, fontStyle: 'italic', color: 'var(--text3)' }}>(edited)</span>}
                 </div>
               </div>
             </div>
@@ -521,7 +553,17 @@ export default function ExpandedBroadcast({
                 </button>
 
                 {post.userId === currentUserId && (
-                  <button
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        setIsEditing(true);
+                        setEditText(post.text);
+                      }}
+                    >
+                      <MoreHorizontal size={12} /> Edit Signal
+                    </button>
+                    <button
                     onClick={() => {
                       setShowMenu(false);
                       doDel();
@@ -541,7 +583,30 @@ export default function ExpandedBroadcast({
           </div>
 
           <div className="expand-body">
-            <RichBody text={post.text} />
+            {isEditing ? (
+              <div style={{ marginBottom: 16 }}>
+                <textarea
+                  value={editText}
+                  onChange={e => setEditText(e.target.value)}
+                  className="post-textarea"
+                  style={{ minHeight: 80, width: '100%', marginBottom: 8 }}
+                  autoFocus
+                />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button className="hud-btn" onClick={() => setIsEditing(false)}>Cancel</button>
+                  <button 
+                    className="hud-btn" 
+                    onClick={handleEditSave}
+                    disabled={savingEdit}
+                    style={{ background: 'var(--brand-primary)', color: 'white' }}
+                  >
+                    {savingEdit ? <Loader size={14} className="spin" /> : 'Save'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <RichBody text={post.text} onHashtagClick={onHashtagClick} />
+            )}
 
             {post.imageUrl && (
               <div className="expand-media" onClick={() => setShowLB(true)}>

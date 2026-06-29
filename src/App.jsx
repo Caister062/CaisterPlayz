@@ -31,6 +31,7 @@ export default function App() {
   const [booting, setBooting] = useState(true);
   const [viewProfile, setViewProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [exploreQuery, setExploreQuery] = useState('');
   const [dismissedAnnounce, setDismissedAnnounce] = useState(localStorage.getItem('cp_dismissed_announce'));
 
   useEffect(() => {
@@ -99,7 +100,7 @@ export default function App() {
     };
   }, []);
 
-  const { posts, loading } = useRealtimePosts();
+  const { posts, loading, loadMore, hasMore, loadingMore, refresh: refPosts } = useRealtimePosts();
   const users = useAllUsers();
   const { notifications, unreadCount, refresh: refNotif } = useNotifications(userId);
   const followData = useFollows(userId);
@@ -113,6 +114,11 @@ export default function App() {
   const goProfile = uid => {
     setViewProfile(uid);
     setTab('profile');
+  };
+
+  const goHashtag = tag => {
+    setExploreQuery(tag);
+    setTab('explore');
   };
 
   const goTab = t => {
@@ -259,7 +265,11 @@ export default function App() {
                     users={users}
                     currentUserId={userId}
                     notifications={notifications}
+                    loadMore={loadMore}
+                    hasMore={hasMore}
+                    loadingMore={loadingMore}
                     onProfileClick={goProfile}
+                    onHashtagClick={goHashtag}
                     config={config}
                   />
                 )}
@@ -270,7 +280,12 @@ export default function App() {
                     users={users}
                     currentUserId={userId}
                     onProfileClick={goProfile}
+                    onHashtagClick={goHashtag}
                     config={config}
+                    loadMore={loadMore}
+                    hasMore={hasMore}
+                    loadingMore={loadingMore}
+                    initialQuery={exploreQuery}
                   />
                 )}
 
@@ -297,11 +312,12 @@ export default function App() {
                 {tab === 'profile' && (
                   <ProfileView
                     profile={pUser || me}
+                    currentUserId={userId}
                     posts={posts}
                     users={users}
-                    currentUserId={userId}
                     followData={viewProfile ? {} : followData}
                     onProfileClick={goProfile}
+                    onHashtagClick={goHashtag}
                     onMessageClick={(uid) => {
                       setDmRecipientId(uid);
                       setShowDirectMessages(true);

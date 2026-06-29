@@ -12,22 +12,54 @@ import pb from './pocketbase';
 export function useRealtimePosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const subRef = useRef(null);
 
-  const fetchAll = useCallback(async () => {
+  const fetchPage = useCallback(async (p, isInitial = false) => {
+    if (isInitial) setLoading(true);
+    else setLoadingMore(true);
+
     try {
-      const res = await pb.collection('cplayz_posts').getList(1, 100, {
-        sort: '-created'
+      const res = await pb.collection('cplayz_posts').getList(p, 15, {
+        sort: '-created',
+        filter: 'type != "system_config" && type != "pending"'
       });
 
-      const validPosts = res.items.filter(p => p.type !== 'system_config' && p.type !== 'pending');
-      setPosts(validPosts);
+      setPosts(prev => {
+        if (isInitial) return res.items;
+        
+        // Prevent duplicates
+        const existingIds = new Set(prev.map(item => item.id));
+        const newItems = res.items.filter(item => !existingIds.has(item.id));
+        return [...prev, ...newItems];
+      });
+      setHasMore(res.page < res.totalPages);
     } catch (err) {
       console.error('fetchSignals:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
+
+  const fetchAll = useCallback(() => {
+    setPage(1);
+    fetchPage(1, true);
+  }, [fetchPage]);
+
+  const loadMore = useCallback(() => {
+    if (hasMore && !loading && !loadingMore) {
+      setPage(p => p + 1);
+    }
+  }, [hasMore, loading, loadingMore]);
+
+  useEffect(() => {
+    if (page > 1) {
+      fetchPage(page, false);
+    }
+  }, [page, fetchPage]);
 
   useEffect(() => {
     fetchAll();
@@ -73,7 +105,7 @@ export function useRealtimePosts() {
     };
   }, [fetchAll]);
 
-  return { posts, loading, refresh: fetchAll };
+  return { posts, loading, loadMore, hasMore, loadingMore, refresh: fetchAll };
 }
 
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
@@ -469,6 +501,13 @@ export async function createPost(userId, text, imageUrl, communityId) {
   if (communityId) data.communityId = communityId;
 
   return pb.collection('cplayz_posts').create(data);
+}
+
+export async function editPost(postId, newText) {
+  return pb.collection('cplayz_posts').update(postId, {
+    text: newText,
+    isEdited: true
+  });
 }
 
 export async function purgeSignal(postId, userId) {

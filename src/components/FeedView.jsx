@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { GridCard, DeckCard } from './PostCard';
 import ExpandedBroadcast from './PostCard';
 
@@ -92,9 +92,32 @@ export default function FeedView({
   loading,
   users,
   currentUserId,
-  notifications
+  notifications,
+  loadMore,
+  hasMore,
+  loadingMore,
+  onProfileClick,
+  onHashtagClick
 }) {
   const [expandedPost, setExpandedPost] = useState(null);
+  const observerTarget = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loadMore]);
 
   const primeSignals = useMemo(() => {
     return [...posts]
@@ -198,6 +221,8 @@ export default function FeedView({
                 post={p}
                 users={users}
                 onClick={setExpandedPost}
+                onProfileClick={onProfileClick}
+                onHashtagClick={onHashtagClick}
               />
             ))}
           </div>
@@ -210,6 +235,8 @@ export default function FeedView({
           currentUserId={currentUserId}
           users={users}
           onClose={() => setExpandedPost(null)}
+          onProfileClick={onProfileClick}
+          onHashtagClick={onHashtagClick}
         />
       )}
     </div>

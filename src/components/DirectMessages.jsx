@@ -39,6 +39,7 @@ export default function DirectMessages({
   const [showCreateSquad, setShowCreateSquad] = useState(false);
   const [newSquadName, setNewSquadName] = useState('');
   const [isCreatingSquad, setIsCreatingSquad] = useState(false);
+  const [createError, setCreateError] = useState('');
   const [inputText, setInputText] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -150,6 +151,7 @@ export default function DirectMessages({
     e.preventDefault();
     if (!newSquadName.trim()) return;
     setIsCreatingSquad(true);
+    setCreateError('');
     try {
       const sq = await createSquad(newSquadName.trim(), currentUserId);
       setActiveSquadId(sq.id);
@@ -158,6 +160,7 @@ export default function DirectMessages({
       setNewSquadName('');
     } catch (err) {
       console.error(err);
+      setCreateError(err?.message || 'Failed to create squad. Try again.');
     } finally {
       setIsCreatingSquad(false);
     }
@@ -354,6 +357,11 @@ export default function DirectMessages({
             showCreateSquad ? (
               <form onSubmit={handleCreateSquad} className="dm-create-form">
                 <div className="dm-create-title">Create Squad</div>
+                {createError && (
+                  <div style={{ fontSize: 12, color: 'var(--hot)', marginBottom: 8, padding: '6px 8px', background: 'var(--hot-dim)', borderRadius: 6 }}>
+                    {createError}
+                  </div>
+                )}
                 <input
                   className="dm-create-input"
                   value={newSquadName}
@@ -362,7 +370,7 @@ export default function DirectMessages({
                   autoFocus
                 />
                 <div className="dm-create-actions">
-                  <button type="button" className="dm-create-cancel" onClick={() => setShowCreateSquad(false)}>
+                  <button type="button" className="dm-create-cancel" onClick={() => { setShowCreateSquad(false); setCreateError(''); }}>
                     Cancel
                   </button>
                   <button type="submit" className="dm-create-submit" disabled={isCreatingSquad}>

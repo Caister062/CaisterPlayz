@@ -879,6 +879,8 @@ export async function createSquad(name, creatorId, avatarUrl = '') {
     avatarUrl,
     createdBy: creatorId,
     members: [creatorId]
+  }, {
+    headers: { 'X-User-Id': creatorId }
   });
 }
 
@@ -887,6 +889,8 @@ export async function joinSquad(squad, userId) {
   if (!members.includes(userId)) {
     return pb.collection('cplayz_squads').update(squad.id, {
       members: [...members, userId]
+    }, {
+      headers: { 'X-User-Id': userId }
     });
   }
   return squad;

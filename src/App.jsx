@@ -154,12 +154,13 @@ export default function App() {
       }
       return;
     }
+    
+    // Switch immediately to prevent getting stuck
+    if (t === 'profile') setViewProfile(null);
+    setTab(t);
+    
     setIsTransitioning(true);
-    setTimeout(() => {
-      if (t === 'profile') setViewProfile(null);
-      setTab(t);
-      setTimeout(() => setIsTransitioning(false), 200);
-    }, 200);
+    setTimeout(() => setIsTransitioning(false), 300);
   };
 
   if (booting) {

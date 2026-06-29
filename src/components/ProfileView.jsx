@@ -174,12 +174,12 @@ export default function ProfileView({
 
   const rank =
     energy >= 50
-      ? '🏆 UNREAL'
+      ? '🏆 GRANDMASTER'
       : energy >= 20
-        ? '⚡ CHAMPION'
+        ? '⚡ MASTER'
         : energy >= 5
-          ? '📡 ELITE'
-          : '🌱 BRONZE';
+          ? '📡 DIAMOND'
+          : '🌱 NOVICE';
 
   return (
     <div>

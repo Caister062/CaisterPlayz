@@ -96,10 +96,10 @@ function realCount(arr, authorId) {
 function getPRLevel(power, views) {
   const total = power + views;
 
-  if (total >= 100) return 'Unreal';
-  if (total >= 50) return 'Champion';
-  if (total >= 15) return 'Elite';
-  return 'Bronze';
+  if (total >= 100) return 'Grandmaster';
+  if (total >= 50) return 'Master';
+  if (total >= 15) return 'Diamond';
+  return 'Novice';
 }
 
 export function GridCard({ post, users, onClick }) {

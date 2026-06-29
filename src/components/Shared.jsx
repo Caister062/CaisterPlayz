@@ -32,7 +32,7 @@ export function AnimatedNumber({ value, className = '' }) {
   );
 }
 
-export function Avatar({ src, name, size = 'md', onClick }) {
+export function Avatar({ src, name, size = 'md', onClick, isOnline = false }) {
   const sizes = {
     sm: 'w-8 h-8',
     md: 'w-10 h-10',
@@ -66,7 +66,9 @@ export function Avatar({ src, name, size = 'md', onClick }) {
         )}
       </div>
 
-      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-brand-success rounded-full border-2 border-dark-bg shadow-sm animate-pulse-live" />
+      {isOnline && (
+        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-brand-success rounded-full border-2 border-dark-bg shadow-sm animate-pulse-live" />
+      )}
     </div>
   );
 }

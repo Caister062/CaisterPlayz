@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { GridCard } from './PostCard';
 import ExpandedBroadcast from './PostCard';
 
-export default function VaultView({ posts, currentUserId, users }) {
+export default function VaultView({ posts, currentUserId, users, onProfileClick, onHashtagClick, onMentionClick }) {
   const [expanded, setExpanded] = useState(null);
 
   const anchored = posts.filter(p =>
@@ -32,6 +32,8 @@ export default function VaultView({ posts, currentUserId, users }) {
               post={p}
               users={users}
               onClick={setExpanded}
+              onProfileClick={onProfileClick}
+              onHashtagClick={onHashtagClick}
             />
           ))}
         </div>
@@ -43,6 +45,9 @@ export default function VaultView({ posts, currentUserId, users }) {
           currentUserId={currentUserId}
           users={users}
           onClose={() => setExpanded(null)}
+          onProfileClick={onProfileClick}
+          onHashtagClick={onHashtagClick}
+          onMentionClick={onMentionClick}
         />
       )}
     </div>

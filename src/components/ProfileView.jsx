@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
-import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert, LogOut } from 'lucide-react';
+import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert, LogOut, ShieldBan } from 'lucide-react';
 import pb from '../pocketbase';
 import { GridCard, timeAgo } from './PostCard';
 import ExpandedBroadcast from './PostCard';
-import { updateProfile } from '../hooks';
-import { formatCount } from '../utils';
+import { updateProfile, useBlocks, blockUser, unblockUser } from '../hooks';
+import { formatCount, THEMES, applyTheme } from '../utils';
 
 function compressAv(file) {
   return new Promise((res, rej) => {
@@ -44,6 +44,10 @@ export default function ProfileView({
   const [eBio, setEBio] = useState('');
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const { blocks, refresh: refreshBlocks } = useBlocks(currentUserId);
+  const isBlocked = blocks.some(b => b.blockedId === profile?.id);
 
   const fRef = useRef(null);
 
@@ -210,9 +214,29 @@ export default function ProfileView({
           )}
 
           {!isOwn && onMessageClick && (
-            <button className="edit-btn" onClick={() => onMessageClick(profile.id)}>
-              Message
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="edit-btn" onClick={() => onMessageClick(profile.id)}>
+                Message
+              </button>
+
+              <button
+                onClick={async () => {
+                  setActionLoading(true);
+                  if (isBlocked) {
+                    await unblockUser(currentUserId, profile.id);
+                  } else {
+                    await blockUser(currentUserId, profile.id);
+                  }
+                  await refreshBlocks();
+                  setActionLoading(false);
+                }}
+                className={`edit-btn ${isBlocked ? 'text-red-500 border-red-500' : ''}`}
+                title={isBlocked ? "Unblock User" : "Block User"}
+                disabled={actionLoading}
+              >
+                <ShieldBan size={14} />
+              </button>
+            </div>
           )}
 
           {isOwn && editing && (
@@ -350,7 +374,26 @@ export default function ProfileView({
       )}
 
       {isOwn && (
-        <div style={{ textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ textAlign: 'center', padding: '20px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Theme Selector */}
+          <div className="bg-dark-surface p-4 rounded-xl border border-dark-border">
+            <h3 className="text-sm font-bold text-dark-muted mb-3 uppercase tracking-wider text-left">App Theme</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {['cyberpunk', 'neonGreen', 'bloodRed', 'gold'].map(t => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    localStorage.setItem('cplayz_theme', t);
+                    window.location.reload();
+                  }}
+                  className={`p-2 rounded-lg border capitalize text-sm font-bold transition-all ${localStorage.getItem('cplayz_theme') === t || (!localStorage.getItem('cplayz_theme') && t === 'cyberpunk') ? 'border-brand-primary bg-brand-primary/10 text-brand-primary' : 'border-dark-border text-dark-muted hover:border-gray-500'}`}
+                >
+                  {t.replace(/([A-Z])/g, ' $1').trim()}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button
             style={{ width: '100%', padding: '14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer' }}
             onClick={() => {

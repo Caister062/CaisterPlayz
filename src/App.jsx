@@ -94,10 +94,26 @@ export default function App() {
       setUserId(model?.id || null);
     }, true);
 
+    // Online Presence Heartbeat
+    let presenceInterval;
+    if (pb.authStore.isValid) {
+      const pingPresence = () => {
+        try {
+          pb.collection('users').update(pb.authStore.model.id, {
+            isOnline: true,
+            lastActive: new Date().toISOString()
+          });
+        } catch {}
+      };
+      pingPresence();
+      presenceInterval = setInterval(pingPresence, 60000); // Every minute
+    }
+
     setTimeout(() => setBooting(false), 500); // Small boot delay for the Slurp Shield animation
     
     return () => {
       unsub();
+      if (presenceInterval) clearInterval(presenceInterval);
     };
   }, []);
 
@@ -316,6 +332,8 @@ export default function App() {
                     currentUserId={userId}
                     users={users}
                     onProfileClick={goProfile}
+                    onHashtagClick={goHashtag}
+                    onMentionClick={goMention}
                     config={config}
                   />
                 )}

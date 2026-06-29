@@ -45,7 +45,13 @@ export default function DirectMessages({
   const [isSending, setIsSending] = useState(false);
   
   // Typing state tracking
+  const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  const squadMembers = useMemo(() => {
+    const squad = squads.find(s => s.id === activeSquadId);
+    return squad ? users.filter(u => squad.members?.includes(u.id)) : [];
+  }, [squads, activeSquadId, users]);
 
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [showUserSearch, setShowUserSearch] = useState(false);
@@ -62,11 +68,11 @@ export default function DirectMessages({
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      if (activeRecipientId) {
+      if (activeRecipientId || activeSquadId) {
         pb.collection('users').update(currentUserId, { typingTo: '' }).catch(() => {});
       }
     };
-  }, [activeRecipientId, currentUserId]);
+  }, [activeRecipientId, activeSquadId, currentUserId]);
 
   const { messages: dmMessages, loading: dmMessagesLoading } = useDirectMessages(
     currentUserId,
@@ -92,7 +98,7 @@ export default function DirectMessages({
     if (feedEndRef.current) {
       feedEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, activeRecipientId]);
+  }, [messages, activeRecipientId, activeSquadId]);
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
@@ -108,13 +114,15 @@ export default function DirectMessages({
   };
 
   const handleInputChange = (e) => {
-    setInputText(e.target.value);
+    const val = e.target.value;
+    setInputText(val);
 
+    const targetId = activeSquadId || activeRecipientId;
     // Update typing status
-    if (activeRecipientId) {
+    if (targetId) {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       
-      pb.collection('users').update(currentUserId, { typingTo: activeRecipientId }).catch(() => {});
+      pb.collection('users').update(currentUserId, { typingTo: targetId }).catch(() => {});
       
       typingTimeoutRef.current = setTimeout(() => {
         pb.collection('users').update(currentUserId, { typingTo: '' }).catch(() => {});
@@ -125,7 +133,7 @@ export default function DirectMessages({
   const handleSend = async (e) => {
     e.preventDefault();
 
-    if (!activeRecipientId) return;
+    if (!activeRecipientId && !activeSquadId) return;
     if (!inputText.trim() && !imageFile) return;
 
     setIsSending(true);
@@ -154,7 +162,7 @@ export default function DirectMessages({
       setImageFile(null);
       setImagePreview(null);
     } catch (err) {
-      console.error('DM send failed:', err);
+      console.error('Message send failed:', err);
     } finally {
       setIsSending(false);
     }
@@ -314,16 +322,23 @@ export default function DirectMessages({
             )}
 
             {/* Typing Indicator */}
-            {activeRecipient?.typingTo === currentUserId && (
-              <div className="flex items-center gap-2 mb-2 ml-4">
-                <Avatar src={activeRecipient.avatarUrl} name={activeRecipient.displayName} size="sm" />
-                <div className="bg-dark-surface p-3 rounded-2xl flex gap-1 items-center max-w-[80%]">
-                  <div className="w-2 h-2 bg-dark-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-dark-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-dark-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            {(() => {
+              const targetId = activeSquadId || activeRecipientId;
+              const typingUsers = users.filter(u => u.id !== currentUserId && u.typingTo === targetId);
+              if (typingUsers.length === 0) return null;
+
+              const names = typingUsers.map(u => u.displayName).join(', ');
+              return (
+                <div className="text-xs text-brand-primary/80 italic p-2 animate-pulse flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  {names} {typingUsers.length === 1 ? 'is' : 'are'} typing...
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div ref={feedEndRef} />
           </div>
@@ -359,7 +374,7 @@ export default function DirectMessages({
               value={inputText}
               onChange={handleInputChange}
               className="flex-1 bg-dark-surface border border-dark-border px-4 py-2.5 rounded-full text-sm outline-none focus:border-brand-primary transition-colors"
-              placeholder="Message..."
+              placeholder={activeSquadId ? `Message ${activeSquad?.name}...` : "Message..."}
             />
 
             <button

@@ -15,24 +15,42 @@ export function useRealtimePosts() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [blockedIds, setBlockedIds] = useState([]);
   const subRef = useRef(null);
+
+  const fetchBlocks = useCallback(async () => {
+    if (!pb.authStore.isValid) return [];
+    try {
+      const records = await pb.collection('cplayz_blocks').getFullList({
+        filter: `blockerId="${pb.authStore.model.id}"`,
+      });
+      const ids = records.map(r => r.blockedId);
+      setBlockedIds(ids);
+      return ids;
+    } catch {
+      return [];
+    }
+  }, []);
 
   const fetchPage = useCallback(async (p, isInitial = false) => {
     if (isInitial) setLoading(true);
     else setLoadingMore(true);
 
     try {
+      const currentBlockedIds = await fetchBlocks();
       const res = await pb.collection('cplayz_posts').getList(p, 15, {
         sort: '-created',
         filter: 'type != "system_config" && type != "pending"'
       });
 
+      const filteredItems = res.items.filter(item => !currentBlockedIds.includes(item.userId));
+
       setPosts(prev => {
-        if (isInitial) return res.items;
+        if (isInitial) return filteredItems;
         
         // Prevent duplicates
         const existingIds = new Set(prev.map(item => item.id));
-        const newItems = res.items.filter(item => !existingIds.has(item.id));
+        const newItems = filteredItems.filter(item => !existingIds.has(item.id));
         return [...prev, ...newItems];
       });
       setHasMore(res.page < res.totalPages);
@@ -42,7 +60,7 @@ export function useRealtimePosts() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [fetchBlocks]);
 
   const fetchAll = useCallback(() => {
     setPage(1);
@@ -68,8 +86,10 @@ export function useRealtimePosts() {
 
     (async () => {
       try {
+        const currentBlocked = await fetchBlocks();
         unsub = await pb.collection('cplayz_posts').subscribe('*', e => {
           if (e.record.type === 'system_config' || e.record.type === 'pending') return;
+          if (currentBlocked.includes(e.record.userId)) return;
 
           if (e.action === 'create') {
             setPosts(prev => [e.record, ...prev]);
@@ -103,7 +123,7 @@ export function useRealtimePosts() {
         } catch {}
       }
     };
-  }, [fetchAll]);
+  }, [fetchAll, fetchBlocks]);
 
   return { posts, loading, loadMore, hasMore, loadingMore, refresh: fetchAll };
 }
@@ -401,6 +421,26 @@ export function useFollows(userId) {
   return { following, followers, refresh: fetchFollows };
 }
 
+export function useBlocks(userId) {
+  const [blocks, setBlocks] = useState([]);
+
+  const fetchBlocks = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const res = await pb.collection('cplayz_blocks').getList(1, 200, {
+        filter: `blockerId="${userId}"`
+      });
+      setBlocks(res.items);
+    } catch {}
+  }, [userId]);
+
+  useEffect(() => {
+    fetchBlocks();
+  }, [fetchBlocks]);
+
+  return { blocks, refresh: fetchBlocks };
+}
+
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    WRITE HELPERS
 ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
@@ -512,7 +552,7 @@ export async function createPost(userId, text, imageUrl, communityId) {
   const data = {
     userId,
     text: text || '',
-    imageUrl,
+    imageUrl: imageUrl || '',
     likedBy: [],
     viewedBy: [],
     repostedBy: [],
@@ -550,12 +590,11 @@ export async function purgeSignal(postId, userId) {
   }
 }
 
-export async function addEcho(postId, userId, text, authorName) {
-  const echo = await pb.collection('cplayz_comments').create({
-    postId,
-    userId,
-    text
-  });
+export async function addEcho(postId, userId, text, authorName, imageUrl = '') {
+  const data = { postId, userId, text };
+  if (imageUrl) data.imageUrl = imageUrl;
+  
+  const echo = await pb.collection('cplayz_comments').create(data);
 
   pb.collection('cplayz_posts')
     .getOne(postId)
@@ -615,6 +654,28 @@ export async function disconnectCore(followerId, followingId) {
 
 export async function updateProfile(userId, data) {
   return pb.collection('users').update(userId, data);
+}
+
+export async function blockUser(blockerId, blockedId) {
+  if (!blockerId || !blockedId || blockerId === blockedId) return null;
+  const existing = await pb.collection('cplayz_blocks').getList(1, 1, {
+    filter: `blockerId="${blockerId}" && blockedId="${blockedId}"`
+  });
+  if (existing.items.length) return existing.items[0];
+  return pb.collection('cplayz_blocks').create({ blockerId, blockedId });
+}
+
+export async function unblockUser(blockerId, blockedId) {
+  const existing = await pb.collection('cplayz_blocks').getList(1, 1, {
+    filter: `blockerId="${blockerId}" && blockedId="${blockedId}"`
+  });
+  if (!existing.items.length) return;
+  return pb.collection('cplayz_blocks').delete(existing.items[0].id);
+}
+
+export async function reportPost(reporterId, postId, reason = 'Inappropriate content') {
+  if (!reporterId || !postId) return null;
+  return pb.collection('cplayz_reports').create({ reporterId, postId, reason });
 }
 
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ

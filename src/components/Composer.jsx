@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
-import { X, Image as ImageIcon, Loader, Radio } from 'lucide-react';
+import { X, Image as ImageIcon, Loader, Radio, Film } from 'lucide-react';
 import { createPost } from '../hooks';
+import GifPicker from './GifPicker';
 
 const MAX = 280;
 
@@ -48,6 +49,7 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
   const [imgData, setImgData] = useState('');
   const [posting, setPosting] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [showGif, setShowGif] = useState(false);
 
   const fRef = useRef(null);
 
@@ -194,6 +196,23 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
                 <Loader size={17} className="spin" />
               ) : (
                 <ImageIcon size={17} />
+              )}
+            </button>
+
+            <button
+              className="sheet-tool relative"
+              onClick={() => setShowGif(v => !v)}
+            >
+              <Film size={17} />
+              {showGif && (
+                <GifPicker 
+                  onSelect={(url) => {
+                    setImgPrev(url);
+                    setImgData(url);
+                    setShowGif(false);
+                  }}
+                  onClose={() => setShowGif(false)}
+                />
               )}
             </button>
           </div>

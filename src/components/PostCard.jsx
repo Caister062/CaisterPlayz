@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Eye, MoreHorizontal, Trash2, Share2, Loader, CheckCircle, Pin } from 'lucide-react';
+import { Eye, MoreHorizontal, Trash2, Share2, Loader, CheckCircle, Pin, Flag, Film } from 'lucide-react';
 import { useComments, toggleLike, toggleRepost, toggleBookmark, addView, addComment, deletePost, editPost, deleteComment } from '../hooks';
 import { formatCount, formatTime, triggerHaptic } from '../utils';
+import GifPicker from './GifPicker';
+import { Avatar } from './Shared';
 
 export function timeAgo(ts) {
   if (!ts) return '';
@@ -134,7 +136,7 @@ export function GridCard({ post, users, onClick }) {
       )}
 
       <div className="g-card-head">
-        <Hex src={author.avatarUrl} name={author.displayName} size="sm" />
+        <Avatar src={author.avatarUrl} name={author.displayName} size="sm" isOnline={author.isOnline} />
 
         <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>
           {author.displayName}
@@ -230,7 +232,10 @@ export default function ExpandedBroadcast({
   post,
   currentUserId,
   users,
-  onClose
+  onClose,
+  onHashtagClick,
+  onMentionClick,
+  onProfileClick
 }) {
   const [echoText, setEchoText] = useState('');
   const [sending, setSending] = useState(false);
@@ -238,6 +243,9 @@ export default function ExpandedBroadcast({
   const [deleting, setDeleting] = useState(false);
   const [showLB, setShowLB] = useState(false);
   const [chipPop, setChipPop] = useState('');
+  const [reporting, setReporting] = useState(false);
+  const [showGif, setShowGif] = useState(false);
+  const [echoImg, setEchoImg] = useState('');
   
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.text);
@@ -255,6 +263,7 @@ export default function ExpandedBroadcast({
 
   const { comments } = useComments(post.id);
   const author = users.find(u => u.id === post.userId) || post.expand?.userId || { id: post.userId, displayName: post.authorName || 'Operator' };
+  const currentUser = users.find(u => u.id === currentUserId);
 
   const isVerified = window.cplayz_config?.verifiedUsers?.includes(author?.id);
   const isFeatured = window.cplayz_config?.featuredPosts?.includes(post.id);
@@ -373,17 +382,16 @@ export default function ExpandedBroadcast({
     ]
   );
 
-  const doEcho = useCallback(
-    async e => {
-      e.preventDefault();
-
-      if (!echoText.trim() || sending) return;
+  const doComment = useCallback(
+    async () => {
+      if ((!echoText.trim() && !echoImg) || sending) return;
 
       setSending(true);
 
       try {
-        await addComment(post.id, currentUserId, echoText.trim(), author.displayName);
+        await addComment(post.id, currentUserId, echoText.trim(), author.displayName, echoImg);
         setEchoText('');
+        setEchoImg('');
         triggerHaptic('success');
       } catch (err) {
         console.error(err);
@@ -391,7 +399,7 @@ export default function ExpandedBroadcast({
         setSending(false);
       }
     },
-    [echoText, sending, post.id, currentUserId]
+    [echoText, echoImg, sending, post.id, currentUserId]
   );
 
   const doDel = async () => {
@@ -479,12 +487,16 @@ export default function ExpandedBroadcast({
         <div className="expand-card" onClick={e => e.stopPropagation()}>
           <div className="expand-header" style={{ position: 'relative' }}>
             <div className="expand-author">
-              <Hex
+              <Avatar
                 src={author.avatarUrl}
                 name={author.displayName}
-                size="lg"
+                size="md"
+                onClick={e => {
+                  e.stopPropagation();
+                  if (onProfileClick) onProfileClick(author.id);
+                }}
+                isOnline={author.isOnline}
               />
-
               <div className="expand-meta">
                 <div className="expand-name">
                   {author?.displayName || 'Unknown Operator'}
@@ -579,6 +591,27 @@ export default function ExpandedBroadcast({
                   </button>
                   </>
                 )}
+                {post.userId !== currentUserId && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Are you sure you want to report this post?')) return;
+                      setShowMenu(false);
+                      setReporting(true);
+                      try {
+                        const { reportPost } = await import('../hooks');
+                        await reportPost(currentUserId, post.id);
+                        alert('Report submitted successfully.');
+                      } catch {
+                        alert('Error submitting report.');
+                      } finally {
+                        setReporting(false);
+                      }
+                    }}
+                    style={{ color: 'var(--hot)' }}
+                  >
+                    {reporting ? <Loader size={12} className="spin" /> : <Flag size={12} />} Report Signal
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -645,33 +678,55 @@ export default function ExpandedBroadcast({
           <div className="thread">
             <div className="thread-title">Signal Thread</div>
 
-            <form className="thread-form" onSubmit={doEcho}>
+            <div className="expand-add-comment">
               <Hex
-                src={users.find(u => u.id === currentUserId)?.avatarUrl}
-                name="Me"
+                src={currentUser?.avatarUrl}
+                name={currentUser?.displayName}
                 size="sm"
               />
-
-              <input
-                className="thread-input"
-                value={echoText}
-                onChange={e => setEchoText(e.target.value)}
-                placeholder="Transmit Echo..."
-                maxLength={280}
-              />
-
-              <button
-                type="submit"
-                className="thread-send"
-                disabled={!echoText.trim() || sending}
-              >
-                {sending ? (
-                  <Loader size={11} className="spin" />
-                ) : (
-                  'SEND'
+              <div className="flex-1 flex flex-col gap-2 relative">
+                {echoImg && (
+                  <div className="relative inline-block w-fit">
+                    <img src={echoImg} alt="GIF" className="max-h-32 rounded-lg" />
+                    <button onClick={() => setEchoImg('')} className="absolute top-1 right-1 bg-black/50 rounded-full p-1 text-white hover:bg-black/80">✕</button>
+                  </div>
                 )}
-              </button>
-            </form>
+                <div className="flex items-center gap-2">
+                  <input
+                    className="thread-input flex-1 bg-transparent border-none outline-none"
+                    placeholder="Echo back..."
+                    value={echoText}
+                    onChange={e => setEchoText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && doComment()}
+                    disabled={sending}
+                  />
+                  
+                  <button
+                    className="hud-btn relative p-1.5 rounded-full hover:bg-dark-surface"
+                    onClick={() => setShowGif(v => !v)}
+                  >
+                    <Film size={14} className="text-brand-primary" />
+                    {showGif && (
+                      <GifPicker 
+                        onSelect={(url) => {
+                          setEchoImg(url);
+                          setShowGif(false);
+                        }}
+                        onClose={() => setShowGif(false)}
+                      />
+                    )}
+                  </button>
+
+                  <button
+                    className="thread-send"
+                    onClick={doComment}
+                    disabled={(!echoText.trim() && !echoImg) || sending}
+                  >
+                    {sending ? <Loader size={11} className="spin" /> : 'SEND'}
+                  </button>
+                </div>
+              </div>
+            </div>
 
             {comments.length === 0 && (
               <p

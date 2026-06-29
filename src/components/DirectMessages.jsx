@@ -154,6 +154,7 @@ export default function DirectMessages({
           currentUserId,
           activeRecipientId,
           inputText.trim(),
+          '',
           imageFile || ''
         );
       }

@@ -968,8 +968,8 @@ export function useSquadMessages(squadId) {
   return { messages, loading };
 }
 
-export async function sendMessage(senderId, recipientId, text, imageUrl = '') {
-  if (!senderId || !recipientId || (!text.trim() && !imageUrl)) return null;
+export async function sendMessage(senderId, recipientId, text, squadId = '', imageUrl = '') {
+  if (!senderId || (!recipientId && !squadId) || (!text.trim() && !imageUrl)) return null;
 
   const msg = await pb.collection('cplayz_messages').create({
     senderId,
@@ -977,7 +977,9 @@ export async function sendMessage(senderId, recipientId, text, imageUrl = '') {
     text: text.trim(),
     imageUrl,
     read: false,
-    squadId: ''
+    squadId
+  }, {
+    headers: { 'X-User-Id': senderId }
   });
 
   const sender = pb.authStore.model;
@@ -1004,6 +1006,8 @@ export async function sendSquadMessage(senderId, squadId, text, imageUrl = '') {
     text: text.trim(),
     imageUrl,
     read: false
+  }, {
+    headers: { 'X-User-Id': senderId }
   });
 }
 

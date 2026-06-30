@@ -38,11 +38,11 @@ migrate((app) => {
       indexes: [
         "CREATE UNIQUE INDEX idx_cplayz_blocks_pair ON cplayz_blocks (blockerId, blockedId)"
       ],
-      listRule: "blockerId = @request.headers.x_user_id",
-      viewRule: "blockerId = @request.headers.x_user_id",
-      createRule: "blockerId = @request.headers.x_user_id && blockedId != @request.headers.x_user_id",
-      updateRule: "blockerId = @request.headers.x_user_id",
-      deleteRule: "blockerId = @request.headers.x_user_id"
+      listRule: "blockerId = @request.auth.id",
+      viewRule: "blockerId = @request.auth.id",
+      createRule: "blockerId = @request.auth.id && blockedId != @request.auth.id",
+      updateRule: "blockerId = @request.auth.id",
+      deleteRule: "blockerId = @request.auth.id"
     });
 
     app.save(blocksCol);
@@ -108,9 +108,9 @@ migrate((app) => {
         "CREATE INDEX idx_cplayz_reports_post ON cplayz_reports (postId)",
         "CREATE INDEX idx_cplayz_reports_user ON cplayz_reports (reportedUserId)"
       ],
-      listRule: "reporterId = @request.headers.x_user_id",
-      viewRule: "reporterId = @request.headers.x_user_id",
-      createRule: "reporterId = @request.headers.x_user_id",
+      listRule: "reporterId = @request.auth.id",
+      viewRule: "reporterId = @request.auth.id",
+      createRule: "reporterId = @request.auth.id",
       updateRule: null,
       deleteRule: null
     });

@@ -2,12 +2,14 @@
 
 migrate((app) => {
   // Apple requires working report and block actions. The frontend already calls
-  // cplayz_reports and cplayz_blocks, so create those collections if missing.
+  // cplayz_reports and cplayz_blocks, so create or update those collections.
 
+  // Fix cplayz_blocks collection
+  let blocksCol;
   try {
-    app.findCollectionByNameOrId("cplayz_blocks");
+    blocksCol = app.findCollectionByNameOrId("cplayz_blocks");
   } catch (e) {
-    const blocksCol = new Collection({
+    blocksCol = new Collection({
       id: "pbc_cplayzblocks",
       name: "cplayz_blocks",
       type: "base",
@@ -48,10 +50,22 @@ migrate((app) => {
     app.save(blocksCol);
   }
 
+  // Update rules if collection already exists
+  if (blocksCol && blocksCol.listRule && blocksCol.listRule.includes("@request.headers.x_user_id")) {
+    blocksCol.listRule = "blockerId = @request.auth.id";
+    blocksCol.viewRule = "blockerId = @request.auth.id";
+    blocksCol.createRule = "blockerId = @request.auth.id && blockedId != @request.auth.id";
+    blocksCol.updateRule = "blockerId = @request.auth.id";
+    blocksCol.deleteRule = "blockerId = @request.auth.id";
+    app.save(blocksCol);
+  }
+
+  // Fix cplayz_reports collection
+  let reportsCol;
   try {
-    app.findCollectionByNameOrId("cplayz_reports");
+    reportsCol = app.findCollectionByNameOrId("cplayz_reports");
   } catch (e) {
-    const reportsCol = new Collection({
+    reportsCol = new Collection({
       id: "pbc_cplayzreports",
       name: "cplayz_reports",
       type: "base",
@@ -115,6 +129,14 @@ migrate((app) => {
       deleteRule: null
     });
 
+    app.save(reportsCol);
+  }
+
+  // Update rules if collection already exists
+  if (reportsCol && reportsCol.listRule && reportsCol.listRule.includes("@request.headers.x_user_id")) {
+    reportsCol.listRule = "reporterId = @request.auth.id";
+    reportsCol.viewRule = "reporterId = @request.auth.id";
+    reportsCol.createRule = "reporterId = @request.auth.id";
     app.save(reportsCol);
   }
 }, (app) => {

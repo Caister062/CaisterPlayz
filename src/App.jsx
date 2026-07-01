@@ -79,6 +79,7 @@ export default function App() {
     handleOAuthRedirect();
 
     const adminKey = localStorage.getItem('caister_admin');
+    const adminEmails = ['caismoretton@gmail.com', 'nexusnpc0@gmail.com'];
 
     if (adminKey === 'CAISTER_CORE_ADMIN') {
       setIsAdmin(true);
@@ -91,6 +92,9 @@ export default function App() {
 
     const unsub = pb.authStore.onChange((token, model) => {
       setUserId(model?.id || null);
+      if (model?.email && adminEmails.includes(model.email.toLowerCase())) {
+        setIsAdmin(true);
+      }
     }, true);
 
     // Online Presence Heartbeat

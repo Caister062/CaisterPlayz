@@ -23,6 +23,7 @@ import {
   joinSquad,
   reportUser,
   blockUser,
+  useBlocks,
 } from '../hooks';
 import pb from '../pocketbase';
 
@@ -38,6 +39,8 @@ export default function DirectMessages({
 }) {
   const { threads, loading: threadsLoading } = useDMThreads(currentUserId);
   const { squads, loading: squadsLoading } = useSquads();
+  const { blocks } = useBlocks(currentUserId);
+  const blockedIds = useMemo(() => blocks.map(b => b.blockedId), [blocks]);
 
   const [activeRecipientId, setActiveRecipientId] = useState(null);
   const [activeSquadId, setActiveSquadId] = useState(null);
@@ -192,19 +195,22 @@ export default function DirectMessages({
     const q = userSearchQuery.toLowerCase();
     return users.filter(u =>
       u.id !== currentUserId &&
+      !blockedIds.includes(u.id) &&
       (!q || u.displayName?.toLowerCase().includes(q) || u.bio?.toLowerCase().includes(q))
     );
-  }, [users, currentUserId, userSearchQuery]);
+  }, [users, currentUserId, userSearchQuery, blockedIds]);
 
   const enrichedThreads = useMemo(() => {
-    return threads.map(t => {
-      const user = users.find(u => u.id === t.userId);
-      return {
-        ...t,
-        user: user || { id: t.userId, displayName: `User_${t.userId.slice(0, 5)}` }
-      };
-    });
-  }, [threads, users]);
+    return threads
+      .filter(t => !blockedIds.includes(t.userId))
+      .map(t => {
+        const user = users.find(u => u.id === t.userId);
+        return {
+          ...t,
+          user: user || { id: t.userId, displayName: `User_${t.userId.slice(0, 5)}` }
+        };
+      });
+  }, [threads, users, blockedIds]);
 
   if (!isOpen) return null;
 

@@ -687,9 +687,20 @@ export async function unblockUser(blockerId, blockedId) {
   return pb.collection('cplayz_blocks').delete(existing.items[0].id);
 }
 
-export async function reportPost(reporterId, postId, reason = 'Inappropriate content') {
+export async function reportPost(reporterId, postId, reason = 'Inappropriate content', authorId = null) {
   if (!reporterId || !postId) return null;
-  return pb.collection('cplayz_reports').create({ reporterId, postId, reason });
+  const data = {
+    reporterId,
+    targetId: postId,
+    targetType: 'post',
+    reason,
+    status: 'pending',
+  };
+  // reportedUserId is a relation field — only set it if we have a valid user ID
+  if (authorId && authorId !== reporterId) {
+    data.reportedUserId = authorId;
+  }
+  return pb.collection('cplayz_reports').create(data);
 }
 
 export async function reportUser(reporterId, reportedUserId, reason = 'Abusive account') {
@@ -697,8 +708,10 @@ export async function reportUser(reporterId, reportedUserId, reason = 'Abusive a
   return pb.collection('cplayz_reports').create({
     reporterId,
     reportedUserId,
+    targetId: reportedUserId,
+    targetType: 'user',
     reason,
-    type: 'user',
+    status: 'pending',
   });
 }
 

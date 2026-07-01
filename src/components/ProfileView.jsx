@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert, LogOut, ShieldBan } from 'lucide-react';
+import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert, LogOut, ShieldBan, Flag, AlertTriangle } from 'lucide-react';
 import pb from '../pocketbase';
 import { GridCard, timeAgo } from './PostCard';
 import ExpandedBroadcast from './PostCard';
-import { updateProfile, useBlocks, blockUser, unblockUser, toggleFollow, checkIsFollowing, getFollowStats } from '../hooks';
+import { updateProfile, useBlocks, blockUser, unblockUser, toggleFollow, checkIsFollowing, getFollowStats, reportUser } from '../hooks';
 import { formatCount, THEMES, applyTheme, formatNumber } from '../utils';
 
 function compressAv(file) {
@@ -48,6 +48,8 @@ export default function ProfileView({
   const [followStats, setFollowStats] = useState({ followers: 0, following: 0 });
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     if (profile?.id) {
@@ -255,6 +257,15 @@ export default function ProfileView({
               
               <button className="edit-btn" onClick={() => onMessageClick(profile.id)}>
                 Message
+              </button>
+
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="edit-btn"
+                title="Report User"
+                disabled={reporting}
+              >
+                <Flag size={14} />
               </button>
 
               <button
@@ -497,6 +508,75 @@ export default function ProfileView({
           users={users}
           onClose={() => setExpanded(null)}
         />
+      )}
+
+      {/* ── REPORT USER MODAL ── */}
+      {showReportModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+          onClick={() => setShowReportModal(false)}
+        >
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative', width: '100%', maxWidth: 420,
+              background: 'var(--surface)', borderRadius: '20px 20px 0 0',
+              padding: 20, paddingBottom: 32,
+              border: '1px solid var(--border)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>Report @{profile.displayName}</span>
+              <button
+                onClick={() => setShowReportModal(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 14 }}>
+              Why are you reporting this account? All reports are reviewed by our team.
+            </p>
+            {[
+              'Harassment or bullying',
+              'Spam or misleading',
+              'Impersonation',
+              'Hate speech',
+              'Inappropriate content',
+              'Other'
+            ].map((reason) => (
+              <button
+                key={reason}
+                onClick={async () => {
+                  setShowReportModal(false);
+                  setReporting(true);
+                  try {
+                    await reportUser(currentUserId, profile.id, reason);
+                    alert(`Report submitted: "${reason}". Thank you — our team will review this.`);
+                  } catch (err) {
+                    console.error('Report failed:', err);
+                    alert('Error submitting report. Please try again.');
+                  } finally {
+                    setReporting(false);
+                  }
+                }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '10px 14px', marginBottom: 6,
+                  background: 'var(--bg)', border: '1px solid var(--border)',
+                  borderRadius: 12, color: 'var(--text)', fontSize: 13,
+                  fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                {reason}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

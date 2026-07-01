@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Bell, Shield, Mail, Check, MessageSquare, AlertCircle } from 'lucide-react';
-import { updateProfile } from '../hooks';
+import { X, Bell, Shield, Mail, Check, MessageSquare, AlertCircle, ShieldBan, Loader } from 'lucide-react';
+import { updateProfile, useBlocks, unblockUser } from '../hooks';
 import { THEMES, applyTheme } from '../utils';
 
-export default function SettingsModal({ isOpen, onClose, user, profile, onProfileUpdate }) {
+export default function SettingsModal({ isOpen, onClose, user, profile, onProfileUpdate, users }) {
   const [notifPrefs, setNotifPrefs] = useState({
     likes: true,
     comments: true,
@@ -22,6 +22,10 @@ export default function SettingsModal({ isOpen, onClose, user, profile, onProfil
   const [sendingSupport, setSendingSupport] = useState(false);
 
   const [activeTheme, setActiveTheme] = useState(localStorage.getItem('cplayz_theme') || 'cyberpunk');
+
+  // Blocked accounts
+  const { blocks, refresh: refreshBlocks } = useBlocks(profile?.id);
+  const [unblockingId, setUnblockingId] = useState(null);
 
   // Load preferences
   useEffect(() => {
@@ -225,6 +229,62 @@ export default function SettingsModal({ isOpen, onClose, user, profile, onProfil
                 />
               </div>
 
+            </div>
+          </div>
+
+          {/* Section 2b: Blocked Accounts */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-dark-muted uppercase tracking-wider px-1">Blocked Accounts</h4>
+            <div className="bg-dark-surface border border-dark-border rounded-2xl p-4">
+              {blocks.length === 0 ? (
+                <div className="text-center py-4">
+                  <ShieldBan className="w-8 h-8 text-dark-muted mx-auto mb-2 opacity-40" />
+                  <p className="text-sm text-dark-muted">No blocked accounts</p>
+                  <p className="text-xs text-dark-muted mt-1">Users you block won't be able to message you or appear in your feed.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-dark-muted mb-3">{blocks.length} blocked account{blocks.length !== 1 ? 's' : ''}</p>
+                  {blocks.map((block) => {
+                    const blockedUser = (users || []).find(u => u.id === block.blockedId);
+                    const name = blockedUser?.displayName || `User_${block.blockedId.slice(0, 5)}`;
+                    const avatar = blockedUser?.avatarUrl;
+                    return (
+                      <div key={block.id} className="flex items-center justify-between py-2 border-b border-dark-border/30 last:border-0">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                            style={{
+                              background: avatar ? `url(${avatar}) center/cover` : 'var(--cyan)',
+                              color: avatar ? 'transparent' : '#000',
+                            }}
+                          >
+                            {!avatar && name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-semibold text-dark-text">@{name}</span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            setUnblockingId(block.id);
+                            try {
+                              await unblockUser(profile.id, block.blockedId);
+                              await refreshBlocks();
+                            } catch (err) {
+                              console.error('Unblock failed:', err);
+                            } finally {
+                              setUnblockingId(null);
+                            }
+                          }}
+                          disabled={unblockingId === block.id}
+                          className="px-3 py-1 rounded-full text-xs font-bold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
+                        >
+                          {unblockingId === block.id ? <Loader className="w-3 h-3 animate-spin" /> : 'Unblock'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

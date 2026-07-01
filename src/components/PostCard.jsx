@@ -541,67 +541,7 @@ export default function ExpandedBroadcast({
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              {/* ── ALWAYS-VISIBLE SAFETY BUTTONS (Apple requirement) ── */}
-              {post.userId !== currentUserId && (
-                <>
-                  {/* 🚩 Report Post */}
-                  <button
-                    className="hud-btn report-btn"
-                    title="Report this post"
-                    aria-label="Report post"
-                    onClick={() => {
-                      if (navigator.vibrate) navigator.vibrate(10);
-                      setShowMenu(false);
-                      setShowReportModal(true);
-                    }}
-                    style={{
-                      width: 32, height: 32,
-                      color: reporting ? 'var(--hot)' : 'var(--text3)',
-                      background: 'rgba(244,63,94,0.08)',
-                      border: '1px solid rgba(244,63,94,0.25)',
-                      borderRadius: 8,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {reporting ? <Loader size={13} className="spin" /> : <Flag size={13} />}
-                  </button>
-
-                  {/* 🚫 Block User */}
-                  <button
-                    className="hud-btn block-btn"
-                    title="Block this user"
-                    aria-label="Block user"
-                    onClick={async () => {
-                      if (!confirm(`Block ${author.displayName}? Their posts will be hidden from your feed immediately.`)) return;
-                      if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
-                      setBlocking(true);
-                      try {
-                        await blockUser(currentUserId, author.id);
-                        setBlocked(true);
-                        setTimeout(() => onClose(), 500);
-                      } catch {
-                        alert('Could not block user. Please try again.');
-                      } finally {
-                        setBlocking(false);
-                      }
-                    }}
-                    style={{
-                      width: 32, height: 32,
-                      color: blocking ? 'var(--hot)' : 'var(--text3)',
-                      background: 'rgba(244,63,94,0.08)',
-                      border: '1px solid rgba(244,63,94,0.25)',
-                      borderRadius: 8,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {blocking ? <Loader size={13} className="spin" /> : <ShieldOff size={13} />}
-                  </button>
-                </>
-              )}
-
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <button
                 className="hud-btn"
                 onClick={() => setShowMenu(v => !v)}
@@ -615,8 +555,42 @@ export default function ExpandedBroadcast({
               </button>
             </div>
 
-            {showMenu && (
+              {showMenu && (
               <div className="expand-menu">
+                {post.userId !== currentUserId && (
+                  <>
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setShowMenu(false);
+                        setShowReportModal(true);
+                      }}
+                      style={{ color: 'var(--hot)' }}
+                    >
+                      <Flag size={14} /> Report Post
+                    </button>
+                    <button
+                      className="menu-item"
+                      onClick={async () => {
+                        setShowMenu(false);
+                        if (!confirm(`Block ${author.displayName}? Their posts will be hidden from your feed.`)) return;
+                        setBlocking(true);
+                        try {
+                          await blockUser(currentUserId, author.id);
+                          setBlocked(true);
+                          setTimeout(() => onClose(), 400);
+                        } catch {
+                          alert('Could not block user.');
+                        } finally {
+                          setBlocking(false);
+                        }
+                      }}
+                      style={{ color: 'var(--hot)' }}
+                    >
+                      <ShieldOff size={14} /> Block {author.displayName}
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={() => {
                     setShowMenu(false);
@@ -721,11 +695,21 @@ export default function ExpandedBroadcast({
             <div className="thread-title">Signal Thread</div>
 
             <div className="expand-add-comment">
-              <Hex
-                src={currentUser?.avatarUrl}
-                name={currentUser?.displayName}
-                size="sm"
-              />
+              {/* Small user avatar */}
+              {currentUser && (
+                <div
+                  style={{
+                    width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                    background: currentUser.avatarUrl
+                      ? `url(${currentUser.avatarUrl}) center/cover`
+                      : 'linear-gradient(135deg, var(--cyan), var(--violet))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: 900, color: '#fff', overflow: 'hidden',
+                  }}
+                >
+                  {!currentUser.avatarUrl && (currentUser.displayName || '?')[0].toUpperCase()}
+                </div>
+              )}
               <div className="flex-1 flex flex-col gap-2 relative">
                 {echoImg && (
                   <div className="relative inline-block w-fit">
@@ -902,7 +886,7 @@ export default function ExpandedBroadcast({
                   setShowReportModal(false);
                   setReporting(true);
                   try {
-                    await reportPost(currentUserId, post.id, reason);
+                    await reportPost(currentUserId, post.id, reason, author?.id);
                     if (navigator.vibrate) navigator.vibrate(15);
                     alert(`Report submitted: "${reason}". Thank you for keeping the community safe.`);
                   } catch {

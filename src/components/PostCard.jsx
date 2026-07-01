@@ -578,6 +578,7 @@ export default function ExpandedBroadcast({
                         try {
                           await blockUser(currentUserId, author.id);
                           setBlocked(true);
+                          window.dispatchEvent(new Event('refreshPosts'));
                           setTimeout(() => onClose(), 400);
                         } catch {
                           alert('Could not block user.');

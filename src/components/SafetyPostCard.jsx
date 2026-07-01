@@ -274,17 +274,11 @@ function SafetyButtons({ post, author, currentUserId, onBlocked }) {
   );
 }
 
-function SafetyWrapper({ children, post, users, currentUserId, onBlocked }) {
-  const author = users.find(u => u.id === post.userId) || post.expand?.userId || {
-    id: post.userId,
-    displayName: post.authorName || 'Operator',
-  };
-
+function SafetyWrapper({ children }) {
   return (
-    <div style={{ position: 'relative' }}>
+    <>
       {children}
-      <SafetyButtons post={post} author={author} currentUserId={currentUserId} onBlocked={onBlocked} />
-    </div>
+    </>
   );
 }
 

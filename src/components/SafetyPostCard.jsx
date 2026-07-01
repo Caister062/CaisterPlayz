@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Flag, Loader, ShieldOff, X as XIcon } from 'lucide-react';
+import { AlertTriangle, Flag, Loader, ShieldOff, X as XIcon, MoreHorizontal } from 'lucide-react';
 import { blockUser, reportPost } from '../hooks';
 import { GridCard, DeckCard } from './PostCard';
 
@@ -57,6 +57,8 @@ function SafetyButtons({ post, author, currentUserId, onBlocked }) {
     }
   };
 
+  const [showMenu, setShowMenu] = useState(false);
+
   return (
     <>
       <div
@@ -67,55 +69,76 @@ function SafetyButtons({ post, author, currentUserId, onBlocked }) {
           top: 8,
           right: 8,
           zIndex: 25,
-          display: 'flex',
-          gap: 6,
         }}
       >
         <button
-          className="hud-btn report-btn"
-          title="Report this post"
-          aria-label="Report post"
+          className="hud-btn"
+          title="More options"
+          aria-label="More options"
           onClick={e => {
             stop(e);
-            setShowReportModal(true);
+            setShowMenu(v => !v);
           }}
           style={{
-            width: 34,
-            height: 34,
-            color: 'var(--hot)',
-            background: 'rgba(244,63,94,0.16)',
-            border: '1px solid rgba(244,63,94,0.45)',
-            borderRadius: 10,
+            width: 28,
+            height: 28,
+            color: 'var(--text3)',
+            background: 'rgba(0,0,0,0.4)',
+            border: 'none',
+            borderRadius: 8,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 8px 18px rgba(0,0,0,0.35)',
+            backdropFilter: 'blur(4px)',
           }}
         >
-          {reporting ? <Loader size={14} className="spin" /> : <Flag size={14} />}
+          <MoreHorizontal size={14} />
         </button>
 
-        <button
-          className="hud-btn block-btn"
-          title="Block this user"
-          aria-label="Block user"
-          onClick={submitBlock}
-          disabled={blocking}
-          style={{
-            width: 34,
-            height: 34,
-            color: 'var(--hot)',
-            background: 'rgba(244,63,94,0.16)',
-            border: '1px solid rgba(244,63,94,0.45)',
-            borderRadius: 10,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 8px 18px rgba(0,0,0,0.35)',
-          }}
-        >
-          {blocking ? <Loader size={14} className="spin" /> : <ShieldOff size={14} />}
-        </button>
+        {showMenu && (
+          <>
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+              onClick={e => { stop(e); setShowMenu(false); }}
+            />
+            <div
+              style={{
+                position: 'absolute', right: 0, top: '100%', marginTop: 6,
+                background: 'var(--card)', border: '1px solid var(--border)',
+                borderRadius: 12, padding: 6, zIndex: 100, minWidth: 140,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                display: 'flex', flexDirection: 'column', gap: 4
+              }}
+              onClick={stop}
+            >
+              <button
+                className="menu-item"
+                style={{ color: 'var(--hot)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '12px', fontWeight: 600 }}
+                onClick={e => {
+                  stop(e);
+                  setShowMenu(false);
+                  setShowReportModal(true);
+                }}
+                disabled={reporting}
+              >
+                {reporting ? <Loader size={12} className="spin" /> : <Flag size={12} />} Report Post
+              </button>
+              
+              <button
+                className="menu-item"
+                style={{ color: 'var(--hot)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '12px', fontWeight: 600 }}
+                onClick={e => {
+                  stop(e);
+                  setShowMenu(false);
+                  submitBlock(e);
+                }}
+                disabled={blocking}
+              >
+                {blocking ? <Loader size={12} className="spin" /> : <ShieldOff size={12} />} Block User
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {showReportModal && (

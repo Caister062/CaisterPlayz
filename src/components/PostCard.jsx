@@ -694,7 +694,7 @@ export default function ExpandedBroadcast({
           <div className="thread">
             <div className="thread-title">Signal Thread</div>
 
-            <div className="expand-add-comment">
+            <div className="expand-add-comment" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginTop: '8px', marginBottom: '24px' }}>
               {/* Small user avatar */}
               {currentUser && (
                 <div

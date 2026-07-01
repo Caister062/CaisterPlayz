@@ -87,22 +87,32 @@ export default function FeedView({
             }}
             style={{
               pointerEvents: 'auto',
-              background: 'var(--cyan)',
-              color: '#000',
-              border: 'none',
+              background: 'rgba(0, 0, 0, 0.75)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid var(--cyan)',
+              color: 'var(--cyan)',
               borderRadius: 24,
               padding: '6px 16px',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 8,
-              fontSize: 14,
+              gap: 10,
+              fontSize: 12,
               fontWeight: 800,
-              boxShadow: '0 4px 12px rgba(0, 229, 255, 0.4)',
+              fontFamily: '"SF Mono", monospace',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              boxShadow: '0 4px 20px rgba(0, 229, 255, 0.25)',
               cursor: 'pointer',
-              transition: 'transform 0.2s',
+              transition: 'all 0.2s',
             }}
-            onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseOver={e => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.background = 'rgba(0, 229, 255, 0.1)';
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.background = 'rgba(0, 0, 0, 0.75)';
+            }}
           >
             <span style={{ fontSize: 16 }}>↑</span>
             
@@ -120,7 +130,7 @@ export default function FeedView({
                         height: 24,
                         borderRadius: '50%',
                         marginLeft: i > 0 ? -8 : 0,
-                        border: '2px solid var(--cyan)',
+                        border: '1px solid var(--cyan)',
                         background: u.avatarUrl ? `url(${u.avatarUrl}) center/cover` : 'var(--bg2)',
                         display: 'flex',
                         alignItems: 'center',
@@ -128,7 +138,8 @@ export default function FeedView({
                         fontSize: 10,
                         color: '#fff',
                         zIndex: 3 - i,
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
                       }}
                     >
                       {!u.avatarUrl && (u.displayName || '?')[0].toUpperCase()}
@@ -136,7 +147,7 @@ export default function FeedView({
                   );
                 })}
             </div>
-            <span>posted</span>
+            <span>New Signals</span>
           </button>
         </div>
       )}

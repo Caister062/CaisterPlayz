@@ -79,15 +79,66 @@ export default function FeedView({
       </div>
 
       {newPostsQueue.length > 0 && (
-        <button
-          onClick={() => {
-            flushNewPosts?.();
-            window.scrollTo(0, 0);
-          }}
-          className="w-full bg-dark-card border border-brand-primary text-brand-primary font-bold py-3 mb-4 rounded hover:bg-brand-primary hover:text-black transition-colors"
-        >
-          SHOW {newPostsQueue.length} NEW POST{newPostsQueue.length !== 1 ? 'S' : ''}
-        </button>
+        <div style={{ position: 'sticky', top: 16, zIndex: 50, display: 'flex', justifyContent: 'center', pointerEvents: 'none', marginBottom: -40, transform: 'translateY(-10px)' }}>
+          <button
+            onClick={() => {
+              flushNewPosts?.();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{
+              pointerEvents: 'auto',
+              background: 'var(--cyan)',
+              color: '#000',
+              border: 'none',
+              borderRadius: 24,
+              padding: '6px 16px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 14,
+              fontWeight: 800,
+              boxShadow: '0 4px 12px rgba(0, 229, 255, 0.4)',
+              cursor: 'pointer',
+              transition: 'transform 0.2s',
+            }}
+            onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <span style={{ fontSize: 16 }}>↑</span>
+            
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {Array.from(new Set(newPostsQueue.map(p => p.userId)))
+                .slice(0, 3)
+                .map((uid, i) => {
+                  const u = users.find(x => x.id === uid);
+                  if (!u) return null;
+                  return (
+                    <div
+                      key={uid}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        marginLeft: i > 0 ? -8 : 0,
+                        border: '2px solid var(--cyan)',
+                        background: u.avatarUrl ? `url(${u.avatarUrl}) center/cover` : 'var(--bg2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 10,
+                        color: '#fff',
+                        zIndex: 3 - i,
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {!u.avatarUrl && (u.displayName || '?')[0].toUpperCase()}
+                    </div>
+                  );
+                })}
+            </div>
+            <span>posted</span>
+          </button>
+        </div>
       )}
 
       {posts.length === 0 ? (

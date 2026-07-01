@@ -28,7 +28,7 @@ export default function AuthView({ onAuthSuccess }) {
       const provider = authMethods.oauth2.providers.find(p => p.name === 'apple');
       if (!provider) throw new Error('Apple login not configured');
       
-      const redirectUrl = 'https://caisterplayz-caisterplayz-backend.hf.space/api/oauth-redirect';
+      const redirectUrl = window.location.origin + window.location.pathname;
       localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
       window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
     } catch(err) {
@@ -44,7 +44,7 @@ export default function AuthView({ onAuthSuccess }) {
       const provider = authMethods.oauth2.providers.find(p => p.name === 'google');
       if (!provider) throw new Error('Google login not configured');
 
-      const redirectUrl = 'https://caisterplayz-caisterplayz-backend.hf.space/api/oauth-redirect';
+      const redirectUrl = window.location.origin + window.location.pathname;
       localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
       window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
     } catch(err) {

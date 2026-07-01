@@ -56,31 +56,48 @@ export default function AdminView({ posts, users, currentUserId }) {
   useEffect(() => {
     if (activeTab !== 'radar') return;
 
-    let unsub;
+    let unsubPosts;
+    let unsubMsgs;
+    let unsubComments;
 
     pb.collection('cplayz_posts')
       .subscribe('*', e => {
         if (e.record.type === 'system_config') return;
-
         const u = users.find(x => x.id === e.record.userId);
-
-        setRadarEvents(prev =>
-          [
-            {
-              id: Date.now(),
-              text: `[${e.action.toUpperCase()}] Signal by ${
-                u?.displayName || 'Unknown Player'
-              }`
-            },
-            ...prev
-          ].slice(0, 50)
-        );
+        setRadarEvents(prev => [
+          { id: Date.now() + Math.random(), text: `[SIGNAL] ${u?.displayName || 'Unknown'}: "${e.record.text?.substring(0, 60) || 'Media'}"` },
+          ...prev
+        ].slice(0, 100));
       })
-      .then(u => {
-        unsub = u;
-      });
+      .then(u => { unsubPosts = u; });
 
-    return () => unsub && unsub();
+    pb.collection('cplayz_messages')
+      .subscribe('*', e => {
+        const u = users.find(x => x.id === e.record.senderId);
+        const recipient = users.find(x => x.id === e.record.recipientId);
+        const target = e.record.squadId ? `Squad(${e.record.squadId})` : `@${recipient?.displayName || 'Unknown'}`;
+        setRadarEvents(prev => [
+          { id: Date.now() + Math.random(), text: `[MESSAGE] ${u?.displayName || 'Unknown'} -> ${target}: "${e.record.text?.substring(0, 60) || 'Image'}"` },
+          ...prev
+        ].slice(0, 100));
+      })
+      .then(u => { unsubMsgs = u; });
+
+    pb.collection('cplayz_comments')
+      .subscribe('*', e => {
+        const u = users.find(x => x.id === e.record.userId);
+        setRadarEvents(prev => [
+          { id: Date.now() + Math.random(), text: `[ECHO] ${u?.displayName || 'Unknown'} on post: "${e.record.text?.substring(0, 60)}"` },
+          ...prev
+        ].slice(0, 100));
+      })
+      .then(u => { unsubComments = u; });
+
+    return () => {
+      if (unsubPosts) unsubPosts();
+      if (unsubMsgs) unsubMsgs();
+      if (unsubComments) unsubComments();
+    };
   }, [activeTab, users]);
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert, LogOut, ShieldBan, Flag, AlertTriangle } from 'lucide-react';
+import { Camera, Check, X, Loader, CheckCircle, Trash2, ShieldAlert, LogOut, ShieldBan, Flag, AlertTriangle, MoreHorizontal, Shield, ShieldOff } from 'lucide-react';
 import pb from '../pocketbase';
 import { GridCard, timeAgo } from './PostCard';
 import ExpandedBroadcast from './PostCard';
@@ -50,6 +50,7 @@ export default function ProfileView({
   const [followLoading, setFollowLoading] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
     if (profile?.id) {
@@ -254,37 +255,67 @@ export default function ProfileView({
               >
                 {followLoading ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
               </button>
-              
               <button className="edit-btn" onClick={() => onMessageClick(profile.id)}>
                 Message
               </button>
 
-              <button
-                onClick={() => setShowReportModal(true)}
-                className="edit-btn"
-                title="Report User"
-                disabled={reporting}
-              >
-                <Flag size={14} />
-              </button>
-
-              <button
-                onClick={async () => {
-                  setActionLoading(true);
-                  if (isBlocked) {
-                    await unblockUser(currentUserId, profile.id);
-                  } else {
-                    await blockUser(currentUserId, profile.id);
-                  }
-                  await refreshBlocks();
-                  setActionLoading(false);
-                }}
-                className={`edit-btn ${isBlocked ? 'text-red-500 border-red-500' : ''}`}
-                title={isBlocked ? "Unblock User" : "Block User"}
-                disabled={actionLoading}
-              >
-                <ShieldBan size={14} />
-              </button>
+              <div style={{ position: 'relative' }}>
+                <button
+                  className="edit-btn"
+                  style={{ padding: '6px 8px' }}
+                  onClick={() => setShowMenu(v => !v)}
+                >
+                  <MoreHorizontal size={16} />
+                </button>
+                
+                {showMenu && (
+                  <>
+                    <div
+                      style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                      onClick={() => setShowMenu(false)}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute', right: 0, top: '100%', marginTop: 8,
+                        background: 'var(--card)', border: '1px solid var(--border)',
+                        borderRadius: 12, padding: 6, zIndex: 100, minWidth: 160,
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                        display: 'flex', flexDirection: 'column', gap: 4
+                      }}
+                    >
+                      <button
+                        className="menu-item"
+                        style={{ color: 'var(--hot)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '13px', fontWeight: 600 }}
+                        onClick={() => {
+                          setShowMenu(false);
+                          setShowReportModal(true);
+                        }}
+                        disabled={reporting}
+                      >
+                        <Flag size={14} /> Report User
+                      </button>
+                      <button
+                        className="menu-item"
+                        style={{ color: 'var(--hot)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '13px', fontWeight: 600 }}
+                        onClick={async () => {
+                          setShowMenu(false);
+                          setActionLoading(true);
+                          if (isBlocked) {
+                            await unblockUser(currentUserId, profile.id);
+                          } else {
+                            await blockUser(currentUserId, profile.id);
+                          }
+                          await refreshBlocks();
+                          setActionLoading(false);
+                        }}
+                        disabled={actionLoading}
+                      >
+                        {isBlocked ? <Shield size={14} /> : <ShieldOff size={14} />} {isBlocked ? "Unblock User" : "Block User"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
 

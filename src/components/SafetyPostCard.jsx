@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { AlertTriangle, Flag, Loader, ShieldOff, X as XIcon, MoreHorizontal } from 'lucide-react';
-import { blockUser, reportPost } from '../hooks';
+import { AlertTriangle, Flag, Loader, ShieldOff, X as XIcon, MoreHorizontal, Share2, Trash2 } from 'lucide-react';
+import { blockUser, reportPost, deletePost, editPost } from '../hooks';
 import { GridCard, DeckCard } from './PostCard';
 
 const REPORT_REASONS = [
@@ -16,7 +16,8 @@ function SafetyButtons({ post, author, currentUserId, onBlocked }) {
   const [reporting, setReporting] = useState(false);
   const [blocking, setBlocking] = useState(false);
 
-  if (!currentUserId || post.userId === currentUserId) return null;
+  const [deleting, setDeleting] = useState(false);
+  const isOwnPost = currentUserId && post.userId === currentUserId;
 
   const stop = e => {
     e.preventDefault();
@@ -105,37 +106,97 @@ function SafetyButtons({ post, author, currentUserId, onBlocked }) {
               style={{
                 position: 'absolute', right: 0, top: '100%', marginTop: 6,
                 background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 12, padding: 6, zIndex: 100, minWidth: 140,
+                borderRadius: 12, padding: 6, zIndex: 100, minWidth: 160,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
                 display: 'flex', flexDirection: 'column', gap: 4
               }}
               onClick={stop}
             >
+              {!isOwnPost && (
+                <>
+                  <button
+                    className="menu-item"
+                    style={{ color: 'var(--hot)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '12px', fontWeight: 600 }}
+                    onClick={e => {
+                      stop(e);
+                      setShowMenu(false);
+                      setShowReportModal(true);
+                    }}
+                    disabled={reporting}
+                  >
+                    {reporting ? <Loader size={12} className="spin" /> : <Flag size={12} />} Report Post
+                  </button>
+                  
+                  <button
+                    className="menu-item"
+                    style={{ color: 'var(--hot)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '12px', fontWeight: 600 }}
+                    onClick={e => {
+                      stop(e);
+                      setShowMenu(false);
+                      submitBlock(e);
+                    }}
+                    disabled={blocking}
+                  >
+                    {blocking ? <Loader size={12} className="spin" /> : <ShieldOff size={12} />} Block User
+                  </button>
+                </>
+              )}
+
               <button
                 className="menu-item"
-                style={{ color: 'var(--hot)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '12px', fontWeight: 600 }}
+                style={{ color: 'var(--text)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '12px', fontWeight: 600 }}
                 onClick={e => {
                   stop(e);
                   setShowMenu(false);
-                  setShowReportModal(true);
+                  navigator.share?.({ text: post.text }) || navigator.clipboard?.writeText(location.href);
                 }}
-                disabled={reporting}
               >
-                {reporting ? <Loader size={12} className="spin" /> : <Flag size={12} />} Report Post
+                <Share2 size={12} /> Transmit Signal
               </button>
-              
-              <button
-                className="menu-item"
-                style={{ color: 'var(--hot)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '12px', fontWeight: 600 }}
-                onClick={e => {
-                  stop(e);
-                  setShowMenu(false);
-                  submitBlock(e);
-                }}
-                disabled={blocking}
-              >
-                {blocking ? <Loader size={12} className="spin" /> : <ShieldOff size={12} />} Block User
-              </button>
+
+              {isOwnPost && (
+                <>
+                  <button
+                    className="menu-item"
+                    style={{ color: 'var(--text)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '12px', fontWeight: 600 }}
+                    onClick={async e => {
+                      stop(e);
+                      setShowMenu(false);
+                      const newText = prompt('Edit your signal:', post.text);
+                      if (newText !== null && newText.trim() && newText !== post.text) {
+                        try {
+                          await editPost(post.id, newText.trim());
+                        } catch (err) {
+                          alert('Could not edit signal.');
+                        }
+                      }
+                    }}
+                  >
+                    <MoreHorizontal size={12} /> Edit Signal
+                  </button>
+
+                  <button
+                    className="menu-item"
+                    style={{ color: 'var(--hot)', width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '8px', textAlign: 'left', fontSize: '12px', fontWeight: 600 }}
+                    onClick={async e => {
+                      stop(e);
+                      setShowMenu(false);
+                      if (!confirm('Purge this signal?')) return;
+                      setDeleting(true);
+                      try {
+                        await deletePost(post.id);
+                        window.dispatchEvent(new Event('refreshPosts'));
+                      } catch {
+                        alert('Could not purge signal.');
+                      }
+                      setDeleting(false);
+                    }}
+                    disabled={deleting}
+                  >
+                    {deleting ? <Loader size={12} className="spin" /> : <Trash2 size={12} />} Purge Signal
+                  </button>
+                </>
+              )}
             </div>
           </>
         )}

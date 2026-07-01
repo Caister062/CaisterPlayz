@@ -862,7 +862,7 @@ export function useSquads() {
   useEffect(() => {
     const fetchSquads = async () => {
       try {
-        const res = await pb.collection('cplayz_squads').getList(1, 100, { sort: '-created' });
+        const res = await pb.collection('cplayz_squads').getList(1, 100);
         setSquads(res.items);
       } catch (err) {
         console.error(err);

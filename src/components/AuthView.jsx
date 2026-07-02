@@ -60,7 +60,10 @@ export default function AuthView({ onAuthSuccess }) {
       if (isEmail) {
         data.email = email;
       } else {
+        // PocketBase requires an email by default. If the user only provided a username,
+        // we map it to username and generate a dummy email so it passes backend validation.
         data.username = email;
+        data.email = `${email.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
       }
 
       await pb.collection('users').create(data);

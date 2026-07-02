@@ -33,41 +33,22 @@ export function AnimatedNumber({ value, className = '' }) {
 }
 
 export function Avatar({ src, name, size = 'md', onClick, isOnline = false }) {
-  const sizes = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-16 h-16',
-    xl: 'w-20 h-20'
-  };
-
-  const textSizes = {
-    sm: 'text-xs',
-    md: 'text-sm',
-    lg: 'text-xl',
-    xl: 'text-2xl'
-  };
+  const i = (name || '?')[0].toUpperCase();
+  const sizeClass = size === 'md' ? '' : size; 
 
   return (
-    <div className="relative inline-block">
-      <div
-        onClick={onClick}
-        className={`${sizes[size]} rounded-2xl overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center cursor-pointer ring-2 ring-brand-primary/20 hover:ring-brand-primary transition-all duration-200 shadow-sm`}
-      >
-        {src ? (
-          <img
-            src={src}
-            alt={name || 'signal core'}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span className={`${textSizes[size]} font-black text-white`}>
-            {(name || '?')[0].toUpperCase()}
-          </span>
-        )}
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <div className={`hex ${sizeClass}`.trim()} onClick={onClick}>
+        {src ? <img src={src} alt={name || 'Operator'} loading="lazy" /> : i}
       </div>
-
       {isOnline && (
-        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-brand-success rounded-full border-2 border-dark-bg shadow-sm animate-pulse-live" />
+        <div style={{
+          position: 'absolute', bottom: -2, right: -2,
+          width: 12, height: 12, borderRadius: '50%',
+          background: 'var(--lime)',
+          border: '2px solid var(--bg2)',
+          boxShadow: '0 0 8px var(--lime)'
+        }} />
       )}
     </div>
   );

@@ -26,7 +26,7 @@ export default function AuthView({ onAuthSuccess }) {
       onAuthSuccess(authData.record.id);
     } catch (err) {
       console.error(err);
-      setError('Authentication failed. Check your email and password.');
+      setError(`Login failed: ${err.data?.message || err.message || 'Check your credentials.'}`);
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ export default function AuthView({ onAuthSuccess }) {
       onAuthSuccess(authData.record.id);
     } catch (err) {
       console.error(err);
-      setError('Signup failed. Ensure email is valid and password is at least 8 characters.');
+      setError(`Signup failed: ${err.data?.message || err.message || 'Ensure email is valid and password is at least 8 characters.'}`);
     } finally {
       setLoading(false);
     }

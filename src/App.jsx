@@ -212,7 +212,6 @@ export default function App() {
     { id: 'daily_quest', icon: Radio, label: 'Daily Quest' },
     { id: 'workouts', icon: Search, label: 'Workouts' },
     { id: 'challenges', icon: Trophy, label: 'Challenges' },
-    { id: 'home', icon: Bell, label: 'Community' },
     { id: 'profile', icon: User, label: 'Profile' },
   ];
 
@@ -310,25 +309,7 @@ export default function App() {
                 {tab === 'daily_quest' && <DailyQuestView user={me} config={config} onOpenComposer={() => setShowCompose(true)} />}
                 {tab === 'workouts' && <WorkoutsView onOpenComposer={() => setShowCompose(true)} />}
                 {tab === 'challenges' && <ChallengesView />}
-                {tab === 'home' && (
-                  <FeedView
-                    posts={posts}
-                    newPostsQueue={newPostsQueue}
-                    flushNewPosts={flushNewPosts}
-                    latestPostId={latestPostId}
-                    loading={loading}
-                    users={users}
-                    currentUserId={userId}
-                    notifications={notifications}
-                    loadMore={loadMore}
-                    hasMore={hasMore}
-                    loadingMore={loadingMore}
-                    onProfileClick={goProfile}
-                    onHashtagClick={goHashtag}
-                    onMentionClick={goMention}
-                    config={config}
-                  />
-                )}
+
 
                 {tab === 'profile' && (
                   <ProfileView

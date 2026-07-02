@@ -9,8 +9,6 @@ import Composer from './components/Composer';
 
 import DailyQuestView from './components/DailyQuestView';
 import WorkoutsView from './components/WorkoutsView';
-import SplashView from './components/SplashView';
-import WelcomeView from './components/WelcomeView';
 import ChallengesView from './components/ChallengesView';
 import ProgressView from './components/ProgressView';
 import PlayerStatsView from './components/PlayerStatsView';

@@ -280,6 +280,8 @@ export function useUserProfile(userId) {
     } catch {
       if (localStorage.getItem('cplayz_user_id') === userId) {
         localStorage.removeItem('cplayz_user_id');
+        pb.authStore.clear();
+        window.location.reload();
       }
     }
   }, [userId]);

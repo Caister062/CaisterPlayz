@@ -117,8 +117,8 @@ export default function App() {
             lastActive: new Date().toISOString()
           });
         } catch (err) {
-          if (err.status === 401) {
-            console.warn('Session expired. Logging out.');
+          if (err.status === 401 || err.status === 404) {
+            console.warn('Session expired or account deleted. Logging out.');
             pb.authStore.clear();
             localStorage.removeItem('cplayz_user_id');
             setUserId(null);

@@ -19,7 +19,7 @@ export default function AuthView({ onAuthSuccess }) {
       setLoading(true);
       setError('');
       const authMethods = await pb.collection('users').listAuthMethods();
-      const provider = authMethods.authProviders.find((p) => p.name === providerName);
+      const provider = authMethods.oauth2?.providers?.find((p) => p.name === providerName);
       if (!provider) throw new Error(`${providerName} login is not enabled in backend.`);
       
       const redirectUrl = window.location.origin + window.location.pathname;

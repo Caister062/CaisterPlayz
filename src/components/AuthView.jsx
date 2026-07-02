@@ -29,8 +29,10 @@ export default function AuthView({ onAuthSuccess }) {
       
       let errorText = err.message || 'Login failed.';
       
-      if (err.data && typeof err.data === 'object') {
-        const fieldErrors = Object.entries(err.data)
+      const validationData = err.response?.data || err.data?.data;
+      
+      if (validationData && typeof validationData === 'object') {
+        const fieldErrors = Object.entries(validationData)
           .map(([field, errorObj]) => {
             if (errorObj && errorObj.message) {
               return `${field}: ${errorObj.message}`;
@@ -96,8 +98,10 @@ export default function AuthView({ onAuthSuccess }) {
       
       let errorText = err.message || 'Signup failed.';
       
-      if (err.data && typeof err.data === 'object') {
-        const fieldErrors = Object.entries(err.data)
+      const validationData = err.response?.data || err.data?.data;
+      
+      if (validationData && typeof validationData === 'object') {
+        const fieldErrors = Object.entries(validationData)
           .map(([field, errorObj]) => {
             if (errorObj && errorObj.message) {
               return `${field}: ${errorObj.message}`;

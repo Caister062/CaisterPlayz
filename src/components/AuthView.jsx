@@ -20,8 +20,13 @@ export default function AuthView({ onAuthSuccess }) {
     setMessage('');
     setLoading(true);
 
+    let loginEmail = email;
+    if (!email.includes('@')) {
+      loginEmail = `${email.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
+    }
+
     try {
-      const authData = await pb.collection('users').authWithPassword(email, password);
+      const authData = await pb.collection('users').authWithPassword(loginEmail, password);
       localStorage.setItem('cplayz_user_id', authData.record.id);
       onAuthSuccess(authData.record.id);
     } catch (err) {
@@ -94,7 +99,7 @@ export default function AuthView({ onAuthSuccess }) {
       await pb.collection('users').create(data);
       
       // Auto-login after signup
-      const authData = await pb.collection('users').authWithPassword(email, password);
+      const authData = await pb.collection('users').authWithPassword(data.email, password);
       localStorage.setItem('cplayz_user_id', authData.record.id);
       onAuthSuccess(authData.record.id);
     } catch (err) {

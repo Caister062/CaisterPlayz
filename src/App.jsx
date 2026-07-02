@@ -35,7 +35,55 @@ export default function App() {
   const [dismissedAnnounce, setDismissedAnnounce] = useState(localStorage.getItem('cp_dismissed_announce'));
 
   useEffect(() => {
-    // OAuth is now handled natively via popup in AuthView.jsx
+    const handleOAuthRedirect = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const state = urlParams.get('state');
+      const code = urlParams.get('code');
+
+      if (state && code) {
+        try {
+          // Try localStorage first, then fallback to cookie to survive Safari ITP
+          let providerStr = localStorage.getItem('oauth_provider');
+          if (!providerStr) {
+            const match = document.cookie.match(new RegExp('(^| )oauth_provider=([^;]+)'));
+            if (match) providerStr = decodeURIComponent(match[2]);
+          }
+
+          if (providerStr) {
+            localStorage.removeItem('oauth_provider');
+            document.cookie = 'oauth_provider=; Max-Age=0; path=/';
+            
+            const provider = JSON.parse(providerStr);
+            const redirectUrl = provider.redirectUrl || (window.location.origin + window.location.pathname);
+            
+            const authData = await pb.collection('users').authWithOAuth2Code(
+              provider.name,
+              code,
+              provider.codeVerifier,
+              redirectUrl,
+              { displayName: 'Operator' }
+            );
+            
+            if (authData.record.displayName === 'Operator' && authData.meta?.name) {
+              await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name });
+            }
+            
+            localStorage.setItem('cplayz_user_id', authData.record.id);
+            setUserId(authData.record.id);
+          } else {
+            throw new Error('Login session expired. Please try again.');
+          }
+        } catch (e) {
+          console.error('OAuth callback failed', e);
+          alert('Authentication failed: ' + e.message);
+        } finally {
+          localStorage.removeItem('oauth_provider');
+          document.cookie = 'oauth_provider=; Max-Age=0; path=/';
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      }
+    };
+    handleOAuthRedirect();
 
     const adminKey = localStorage.getItem('caister_admin');
     const adminEmails = ['caismoretton@gmail.com', 'nexusnpc0@gmail.com'];

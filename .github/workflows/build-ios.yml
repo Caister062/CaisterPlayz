@@ -95,6 +95,8 @@ jobs:
               <string>manual</string>
               <key>destination</key>
               <string>export</string>
+              <key>teamID</key>
+              <string>35S59BJ792</string>
               <key>provisioningProfiles</key>
               <dict>
                   <key>com.caisterplayz200.caimo</key>

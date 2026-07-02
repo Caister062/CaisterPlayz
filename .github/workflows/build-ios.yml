@@ -97,8 +97,8 @@ jobs:
               <string>export</string>
               <key>provisioningProfiles</key>
               <dict>
-                  <key>com.caisterplayz.social</key>
-                  <string>CaisterPlayz2</string>
+                  <key>com.caisterplayz200.caimo</key>
+                  <string>*[expo] com.caisterplayz200.caimo AppStore 2026-06-20T03:13:20.910Z</string>
               </dict>
           </dict>
           </plist>

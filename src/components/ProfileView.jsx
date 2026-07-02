@@ -240,9 +240,22 @@ export default function ProfileView({
           <div />
 
           {isOwn && !editing && (
-            <button className="edit-btn" onClick={startEdit}>
-              Edit Profile
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="edit-btn" onClick={startEdit}>
+                Edit Profile
+              </button>
+              <button 
+                className="edit-btn" 
+                style={{ color: 'var(--hot)', borderColor: 'var(--hot)' }}
+                onClick={() => {
+                  pb.authStore.clear();
+                  localStorage.removeItem('cplayz_user_id');
+                  window.location.reload();
+                }}
+              >
+                Log Out
+              </button>
+            </div>
           )}
 
           {!isOwn && onMessageClick && (

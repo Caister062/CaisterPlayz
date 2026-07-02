@@ -1,49 +1,38 @@
-import { Dumbbell, Heart, Utensils, Target, Flame, Users, Gamepad2, Trophy, Lightbulb, MessageCircle, TrendingUp } from 'lucide-react';
+import { Dumbbell, Target, Flame, Trophy, TrendingUp } from 'lucide-react';
 
-const FITNESS_CATEGORIES = [
-  { id: 'All',        label: 'All',       icon: null },
-  { id: 'Workout',    label: 'Workout',   icon: Dumbbell },
-  { id: 'Progress',   label: 'Progress',  icon: TrendingUp },
-  { id: 'Meal',       label: 'Meal Prep', icon: Utensils },
-  { id: 'Challenge',  label: 'Challenge', icon: Target },
-  { id: 'Motivation', label: 'Motivation',icon: Flame },
-  { id: 'Question',   label: 'Questions', icon: MessageCircle },
+const CATEGORIES = [
+  { id: 'All',        label: 'All Activity', icon: null },
+  { id: 'Raid',       label: 'Raids',        icon: Target },
+  { id: 'Workout',    label: 'Grind',        icon: Dumbbell },
+  { id: 'Progress',   label: 'Level Up',     icon: TrendingUp },
+  { id: 'Achievement',label: 'Achievements', icon: Trophy },
+  { id: 'Motivation', label: 'Boosts',       icon: Flame },
 ];
 
-const FITNESS_GAMES = [
-  { id: 'All Games',     label: 'All',       icon: null },
-  { id: 'Battle Royale',  label: 'Battle Royale', icon: Gamepad2 },
-  { id: 'Roblox',        label: 'Roblox',    icon: Trophy },
-  { id: 'Minecraft',     label: 'Minecraft', icon: Target },
-];
-
-const TIER_COLORS = {
-  fitness: ['#10b981','#059669'],
-  gaming:  ['#7c3aed','#a78bfa'],
-};
-
-export default function CategoryTabs({ selectedCategory, onSelectCategory, activeTab }) {
-  const items = activeTab === 'fitness' ? FITNESS_CATEGORIES : FITNESS_GAMES;
-  
+export default function CategoryTabs({ selectedCategory, onSelectCategory }) {
   return (
-    <div className="category-tabs">
-      {/* Tab toggle */}
-      <div className="tab-toggle-bar">
-        <button className={`toggle-tab${activeTab==='fitness'?' lit':''}`} onClick={() => onSelectCategory(null,activeTab===activeTab?'fitness':'fitness')}>
-          Fitness
-        </button>
-        <button className={`toggle-tab${activeTab==='gaming'?' lit':''}`} onClick={() => onSelectCategory(null,'gaming')}>
-          Gaming
-        </button>
-      </div>
-      
+    <div className="category-tabs" style={{ marginBottom: 16 }}>
       {/* Items */}
-      <div className="tabs-row">
-        {items.map(cat => (
+      <div className="tabs-row" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+        {CATEGORIES.map(cat => (
           <button
             key={cat.id}
             className={`tab-chip${selectedCategory===cat.id?' selected':''}`}
-            onClick={() => onSelectCategory(cat.id,activeTab)}
+            onClick={() => onSelectCategory(cat.id)}
+            style={{ 
+              background: selectedCategory === cat.id ? 'var(--cyan)' : 'var(--surface)',
+              color: selectedCategory === cat.id ? '#000' : 'var(--text1)',
+              border: '1px solid var(--border)',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontWeight: 800,
+              fontSize: 13,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
           >
             {cat.icon && <span className="tab-icon"><cat.icon size={14} /></span>}
             <span>{cat.label}</span>

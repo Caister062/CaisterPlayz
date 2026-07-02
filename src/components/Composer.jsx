@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { X, Image as ImageIcon, Loader, Radio, Film } from 'lucide-react';
-import { createPost } from '../hooks';
+import { logWorkout } from '../hooks';
 import GifPicker from './GifPicker';
 
 const MAX = 280;
@@ -89,7 +89,8 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
     setPosting(true);
 
     try {
-      await createPost(currentUserId, text.trim(), imgData);
+      // Pass workoutXP for the "Fitness for Gamers" integration
+      await logWorkout(currentUserId, text.trim(), imgData, { xp: 500 });
       onClose();
     } catch (err) {
       console.error(err);
@@ -116,13 +117,13 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
             <X size={12} />
           </button>
 
-          <span className="sheet-title">Drop a Post</span>
+          <span className="sheet-title">Log Workout</span>
 
           <button className="go-btn" onClick={go} disabled={!ok}>
             {posting ? (
               <Loader size={12} className="spin" style={{ display: 'block' }} />
             ) : (
-              'DROP'
+              'LOG'
             )}
           </button>
         </div>
@@ -134,9 +135,9 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
             </div>
 
             <div>
-              <div className="text-sm font-black">Ready to Drop</div>
+              <div className="text-sm font-black">Ready to Grind</div>
               <div className="text-xs text-dark-muted">
-                Share your gaming wins or fitness gains.
+                Log your fitness quest or share your progress.
               </div>
             </div>
           </div>
@@ -153,7 +154,7 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
 
           <textarea
             className="sheet-ta"
-            placeholder="What's your drop? Gaming clips, gym PRs, grind updates..."
+            placeholder="What did you conquer today? Distance run, weight lifted, or boss defeated..."
             value={text}
             onChange={e => setText(e.target.value.slice(0, MAX))}
             rows={4}

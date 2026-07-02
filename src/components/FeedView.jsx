@@ -160,14 +160,14 @@ export default function FeedView({
             </svg>
           </div>
           <h3>The Island is empty</h3>
-          <p>Drop the first post about your latest workout or Gaming Win!</p>
+          <p>Drop the first post to share your latest quest or workout grind!</p>
         </div>
       ) : (
         <>
           {primeSignals.length > 0 && (
             <>
               <div className="sec">
-                <span className="sec-label">Top PRs & Wins</span>
+                <span className="sec-label">Top Quests & Grinds</span>
                 <span className="sec-badge">{primeSignals.length}</span>
               </div>
               <div className="deck">

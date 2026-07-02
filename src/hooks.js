@@ -583,6 +583,52 @@ export async function createPost(userId, text, imageUrl, communityId) {
   return post;
 }
 
+export async function logWorkout(userId, text, imageUrl, workoutDetails) {
+  const data = {
+    userId,
+    text: text || '',
+    imageUrl: imageUrl || '',
+    likedBy: [],
+    viewedBy: [],
+    repostedBy: [],
+    favoritedBy: [],
+    type: 'workout_log',
+    // We can store workout specific details in the text as JSON if there's no custom field,
+    // but typically we'd just put it in a metadata field. We'll append it to text or use a new field if available.
+  };
+
+  if (workoutDetails) {
+    data.text = `[WORKOUT_LOG: ${workoutDetails.xp} XP Earned]\n\n` + data.text;
+  }
+
+  const post = await pb.collection('cplayz_posts').create(data);
+  
+  // Award XP to the user
+  try {
+    const user = await pb.collection('users').getOne(userId);
+    const currentXp = user.xp || 0;
+    const currentLevel = user.level || 1;
+    const currentStreak = user.streak || 0;
+    
+    const xpGained = workoutDetails?.xp || 100;
+    const newXp = currentXp + xpGained;
+    const newLevel = Math.floor(newXp / 500) + 1; // 500 xp per level
+    
+    // Simplistic streak increment (in reality we'd check lastWorkoutDate)
+    const newStreak = currentStreak + 1;
+
+    await pb.collection('users').update(userId, {
+      xp: newXp,
+      level: newLevel,
+      streak: newStreak
+    });
+  } catch (err) {
+    console.error('Failed to update user stats:', err);
+  }
+
+  return post;
+}
+
 export async function editPost(postId, newText) {
   return pb.collection('cplayz_posts').update(postId, {
     text: newText,

@@ -4,14 +4,13 @@ import pb from './pocketbase';
 import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig, useSquads } from './hooks';
 import { applyTheme } from './utils';
 import FeedView from './components/FeedView';
-import ExploreView from './components/ExploreView';
-import NotificationsView from './components/NotificationsView';
-import LeaderboardView from './components/LeaderboardView';
 import ProfileView from './components/ProfileView';
-import VaultView from './components/VaultView';
 import AdminView from './components/AdminView';
 import Composer from './components/Composer';
 import DirectMessages from './components/DirectMessages';
+import DailyQuestView from './components/DailyQuestView';
+import WorkoutsView from './components/WorkoutsView';
+import ChallengesView from './components/ChallengesView';
 function CpMark({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -23,7 +22,7 @@ function CpMark({ size = 18 }) {
 import AuthView from './components/AuthView';
 
 export default function App() {
-  const [tab, setTab] = useState('home');
+  const [tab, setTab] = useState('daily_quest');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [dmRecipientId, setDmRecipientId] = useState(null);
   const [showCompose, setShowCompose] = useState(false);
@@ -108,13 +107,20 @@ export default function App() {
     // Online Presence Heartbeat
     let presenceInterval;
     if (pb.authStore.isValid) {
-      const pingPresence = () => {
+      const pingPresence = async () => {
         try {
-          pb.collection('users').update(pb.authStore.model.id, {
+          await pb.collection('users').update(pb.authStore.model.id, {
             isOnline: true,
             lastActive: new Date().toISOString()
           });
-        } catch {}
+        } catch (err) {
+          if (err.status === 401) {
+            console.warn('Session expired. Logging out.');
+            pb.authStore.clear();
+            localStorage.removeItem('cplayz_user_id');
+            setUserId(null);
+          }
+        }
       };
       pingPresence();
       presenceInterval = setInterval(pingPresence, 60000); // Every minute
@@ -203,11 +209,11 @@ export default function App() {
   }
 
   const NAV = [
-    { id: 'home', icon: Radio, label: 'Feed' },
-    { id: 'explore', icon: Search, label: 'Explore' },
-    { id: 'leaderboard', icon: Trophy, label: 'Rankings' },
-    { id: 'vault', icon: Lock, label: 'Vault' },
-    { id: 'profile', icon: User, label: 'Stats' },
+    { id: 'daily_quest', icon: Radio, label: 'Daily Quest' },
+    { id: 'workouts', icon: Search, label: 'Workouts' },
+    { id: 'challenges', icon: Trophy, label: 'Challenges' },
+    { id: 'home', icon: Bell, label: 'Community' },
+    { id: 'profile', icon: User, label: 'Profile' },
   ];
 
   return (
@@ -301,6 +307,9 @@ export default function App() {
           <main className="main tab-container">
             <div className={`tab-content ${isTransitioning ? 'tab-slide-enter' : ''}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ flex: 1 }}>
+                {tab === 'daily_quest' && <DailyQuestView user={me} config={config} onOpenComposer={() => setShowCompose(true)} />}
+                {tab === 'workouts' && <WorkoutsView onOpenComposer={() => setShowCompose(true)} />}
+                {tab === 'challenges' && <ChallengesView />}
                 {tab === 'home' && (
                   <FeedView
                     posts={posts}
@@ -318,52 +327,6 @@ export default function App() {
                     onHashtagClick={goHashtag}
                     onMentionClick={goMention}
                     config={config}
-                  />
-                )}
-
-                {tab === 'explore' && (
-                  <ExploreView
-                    posts={posts}
-                    users={users}
-                    squads={squads}
-                    currentUserId={userId}
-                    onProfileClick={goProfile}
-                    onHashtagClick={goHashtag}
-                    onMentionClick={goMention}
-                    config={config}
-                    loadMore={loadMore}
-                    hasMore={hasMore}
-                    loadingMore={loadingMore}
-                    initialQuery={exploreQuery}
-                  />
-                )}
-
-                {tab === 'leaderboard' && (
-                  <LeaderboardView
-                    users={users}
-                    onProfileClick={goProfile}
-                  />
-                )}
-
-                {tab === 'vault' && (
-                  <VaultView
-                    posts={posts}
-                    currentUserId={userId}
-                    users={users}
-                    onProfileClick={goProfile}
-                    onHashtagClick={goHashtag}
-                    onMentionClick={goMention}
-                    config={config}
-                  />
-                )}
-
-                {tab === 'notifications' && (
-                  <NotificationsView
-                    notifications={notifications}
-                    users={users}
-                    currentUserId={userId}
-                    onRefresh={refNotif}
-                    onProfileClick={goProfile}
                   />
                 )}
 
@@ -395,7 +358,7 @@ export default function App() {
               </div>
 
               <div className="brand-footer">
-                Powered by CaisterPlayz — Gaming & Fitness
+                Powered by CaisterPlayz — Level Up Your Fitness
               </div>
             </div>
           </main>

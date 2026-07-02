@@ -1,59 +1,91 @@
 import { useState } from 'react';
-import { Loader, ShieldAlert } from 'lucide-react';
+import { Loader, ShieldAlert, Mail, Lock, User as UserIcon } from 'lucide-react';
 import pb from '../pocketbase';
 
-const GoogleIcon = ({ size }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-  </svg>
-);
-
-const AppleIcon = ({ size, fill }) => (
-  <svg width={size} height={size} viewBox="0 0 384 512" fill={fill}>
-    <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
-  </svg>
-);
-
 export default function AuthView({ onAuthSuccess }) {
-  const [loadingApple, setLoadingApple] = useState(false);
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const [view, setView] = useState('LOGIN'); // LOGIN, SIGNUP, FORGOT
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
-  const handleAppleAuth = async () => {
+  // Form State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [displayName, setDisplayName] = useState('');
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    setLoading(true);
+
     try {
-      setLoadingApple(true);
-      const authMethods = await pb.collection('users').listAuthMethods();
-      const provider = authMethods.oauth2.providers.find(p => p.name === 'apple');
-      if (!provider) throw new Error('Apple login not configured');
-      
-      const redirectUrl = window.location.origin + window.location.pathname;
-      const providerStr = JSON.stringify({ ...provider, redirectUrl });
-      localStorage.setItem('oauth_provider', providerStr);
-      document.cookie = `oauth_provider=${encodeURIComponent(providerStr)}; path=/; max-age=600`;
-      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
-    } catch(err) {
-      alert(err.message);
-      setLoadingApple(false);
+      const authData = await pb.collection('users').authWithPassword(email, password);
+      localStorage.setItem('cplayz_user_id', authData.record.id);
+      onAuthSuccess(authData.record.id);
+    } catch (err) {
+      console.error(err);
+      setError('Authentication failed. Check your email and password.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleGoogleAuth = async () => {
-    try {
-      setLoadingGoogle(true);
-      const authMethods = await pb.collection('users').listAuthMethods();
-      const provider = authMethods.oauth2.providers.find(p => p.name === 'google');
-      if (!provider) throw new Error('Google login not configured');
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    setLoading(true);
 
-      const redirectUrl = window.location.origin + window.location.pathname;
-      const providerStr = JSON.stringify({ ...provider, redirectUrl });
-      localStorage.setItem('oauth_provider', providerStr);
-      document.cookie = `oauth_provider=${encodeURIComponent(providerStr)}; path=/; max-age=600`;
-      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
-    } catch(err) {
-      alert(err.message);
-      setLoadingGoogle(false);
+    if (password !== passwordConfirm) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Create user with default Gamified Fitness Stats
+      const data = {
+        email,
+        password,
+        passwordConfirm,
+        displayName: displayName || 'Player_' + Math.floor(Math.random() * 10000),
+        xp: 0,
+        level: 1,
+        streak: 0,
+        badges: []
+      };
+
+      await pb.collection('users').create(data);
+      
+      // Auto-login after signup
+      const authData = await pb.collection('users').authWithPassword(email, password);
+      localStorage.setItem('cplayz_user_id', authData.record.id);
+      onAuthSuccess(authData.record.id);
+    } catch (err) {
+      console.error(err);
+      setError('Signup failed. Ensure email is valid and password is at least 8 characters.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgot = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    setLoading(true);
+
+    try {
+      await pb.collection('users').requestPasswordReset(email);
+      setMessage('Password reset email sent. Check your inbox.');
+      setView('LOGIN');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to send reset email.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,58 +98,103 @@ export default function AuthView({ onAuthSuccess }) {
         <ShieldAlert size={40} color="#fff" style={{ position: 'absolute', zIndex: 10 }} />
       </div>
 
-      <h1 style={{ fontSize: 32, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: '"Anton", sans-serif', textShadow: '0 0 20px rgba(0, 240, 255, 0.5)', marginBottom: 40 }}>
+      <h1 style={{ fontSize: 32, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: '"Anton", sans-serif', textShadow: '0 0 20px rgba(0, 240, 255, 0.5)', marginBottom: 10 }}>
         CaisterPlayz
       </h1>
+      
+      <p style={{ color: 'var(--cyan)', textTransform: 'uppercase', fontSize: 14, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 30 }}>
+        Level Up Your Fitness
+      </p>
 
-      <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <button
-          onClick={handleAppleAuth}
-          disabled={loadingApple || loadingGoogle}
-          style={{
-            width: '100%',
-            padding: '14px',
-            borderRadius: 12,
-            border: 'none',
-            background: '#fff',
-            color: '#000',
-            fontSize: 16,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-            cursor: 'pointer',
-            transition: 'transform 0.2s',
-          }}
-        >
-          {loadingApple ? <Loader size={20} className="spin" /> : <AppleIcon size={20} fill="#000" />}
-          Sign in with Apple
-        </button>
+      {error && (
+        <div style={{ background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', padding: '12px 16px', borderRadius: 8, marginBottom: 20, fontSize: 14, border: '1px solid rgba(244, 63, 94, 0.3)', width: '100%', maxWidth: 320, textAlign: 'center' }}>
+          {error}
+        </div>
+      )}
 
-        <button
-          onClick={handleGoogleAuth}
-          disabled={loadingGoogle || loadingApple}
-          style={{
-            width: '100%',
-            padding: '14px',
-            borderRadius: 12,
-            border: 'none',
-            background: '#fff',
-            color: '#000',
-            fontSize: 16,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-            cursor: 'pointer',
-            transition: 'transform 0.2s',
-          }}
-        >
-          {loadingGoogle ? <Loader size={20} className="spin" /> : <GoogleIcon size={20} />}
-          Continue with Google
-        </button>
+      {message && (
+        <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '12px 16px', borderRadius: 8, marginBottom: 20, fontSize: 14, border: '1px solid rgba(16, 185, 129, 0.3)', width: '100%', maxWidth: 320, textAlign: 'center' }}>
+          {message}
+        </div>
+      )}
+
+      <div style={{ width: '100%', maxWidth: 320 }}>
+        {view === 'LOGIN' && (
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="input-group">
+              <Mail size={18} color="var(--text2)" style={{ position: 'absolute', left: 16, top: 15 }} />
+              <input type="email" placeholder="Email Address" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
+            </div>
+            
+            <div className="input-group" style={{ position: 'relative' }}>
+              <Lock size={18} color="var(--text2)" style={{ position: 'absolute', left: 16, top: 15 }} />
+              <input type="password" placeholder="Password" required value={password} onChange={e => setPassword(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
+            </div>
+
+            <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 12, fontWeight: 900, fontSize: 16, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+              {loading ? <Loader className="spin" size={20} /> : 'Login'}
+            </button>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 8 }}>
+              <button type="button" onClick={() => { setView('FORGOT'); setError(''); }} style={{ background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer' }}>Forgot Password?</button>
+              <button type="button" onClick={() => { setView('SIGNUP'); setError(''); }} style={{ background: 'none', border: 'none', color: 'var(--cyan)', cursor: 'pointer', fontWeight: 800 }}>Create Account</button>
+            </div>
+          </form>
+        )}
+
+        {view === 'SIGNUP' && (
+          <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="input-group" style={{ position: 'relative' }}>
+              <UserIcon size={18} color="var(--text2)" style={{ position: 'absolute', left: 16, top: 15 }} />
+              <input type="text" placeholder="Gamer Tag / Username" required value={displayName} onChange={e => setDisplayName(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
+            </div>
+
+            <div className="input-group" style={{ position: 'relative' }}>
+              <Mail size={18} color="var(--text2)" style={{ position: 'absolute', left: 16, top: 15 }} />
+              <input type="email" placeholder="Email Address" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
+            </div>
+            
+            <div className="input-group" style={{ position: 'relative' }}>
+              <Lock size={18} color="var(--text2)" style={{ position: 'absolute', left: 16, top: 15 }} />
+              <input type="password" placeholder="Password (Min 8 chars)" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
+            </div>
+
+            <div className="input-group" style={{ position: 'relative' }}>
+              <Lock size={18} color="var(--text2)" style={{ position: 'absolute', left: 16, top: 15 }} />
+              <input type="password" placeholder="Confirm Password" required minLength={8} value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
+            </div>
+
+            <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', background: 'linear-gradient(90deg, #10b981, #3b82f6)', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 900, fontSize: 16, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+              {loading ? <Loader className="spin" size={20} /> : 'Start The Grind'}
+            </button>
+
+            <div style={{ textAlign: 'center', fontSize: 13, marginTop: 8 }}>
+              <span style={{ color: 'var(--text2)' }}>Already playing? </span>
+              <button type="button" onClick={() => { setView('LOGIN'); setError(''); }} style={{ background: 'none', border: 'none', color: 'var(--cyan)', cursor: 'pointer', fontWeight: 800 }}>Log In</button>
+            </div>
+          </form>
+        )}
+
+        {view === 'FORGOT' && (
+          <form onSubmit={handleForgot} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <p style={{ color: 'var(--text2)', fontSize: 14, textAlign: 'center', marginBottom: 8 }}>
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+
+            <div className="input-group" style={{ position: 'relative' }}>
+              <Mail size={18} color="var(--text2)" style={{ position: 'absolute', left: 16, top: 15 }} />
+              <input type="email" placeholder="Email Address" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
+            </div>
+
+            <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+              {loading ? <Loader className="spin" size={20} /> : 'Send Reset Link'}
+            </button>
+
+            <div style={{ textAlign: 'center', fontSize: 13, marginTop: 8 }}>
+              <button type="button" onClick={() => { setView('LOGIN'); setError(''); }} style={{ background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer' }}>Back to Login</button>
+            </div>
+          </form>
+        )}
       </div>
 
       <style>{`
@@ -129,6 +206,13 @@ export default function AuthView({ onAuthSuccess }) {
         }
         button:active {
           transform: scale(0.98);
+        }
+        .input-group {
+          position: relative;
+        }
+        input:focus {
+          border-color: var(--cyan) !important;
+          box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
         }
       `}</style>
     </div>

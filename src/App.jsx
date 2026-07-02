@@ -11,6 +11,7 @@ import DirectMessages from './components/DirectMessages';
 import DailyQuestView from './components/DailyQuestView';
 import WorkoutsView from './components/WorkoutsView';
 import ChallengesView from './components/ChallengesView';
+import ProgressView from './components/ProgressView';
 function CpMark({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -209,10 +210,11 @@ export default function App() {
   }
 
   const NAV = [
-    { id: 'daily_quest', icon: Radio, label: 'Daily Quest' },
+    { id: 'daily_quest', icon: Radio, label: 'Quest' },
     { id: 'workouts', icon: Search, label: 'Workouts' },
     { id: 'challenges', icon: Trophy, label: 'Challenges' },
-    { id: 'profile', icon: User, label: 'Profile' },
+    { id: 'progress', icon: User, label: 'Progress' },
+    { id: 'home', icon: Bell, label: 'Community' },
   ];
 
   return (
@@ -307,9 +309,28 @@ export default function App() {
             <div className={`tab-content ${isTransitioning ? 'tab-slide-enter' : ''}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ flex: 1 }}>
                 {tab === 'daily_quest' && <DailyQuestView user={me} config={config} onOpenComposer={() => setShowCompose(true)} />}
-                {tab === 'workouts' && <WorkoutsView onOpenComposer={() => setShowCompose(true)} />}
-                {tab === 'challenges' && <ChallengesView />}
-
+                {tab === 'workouts' && <WorkoutsView onOpenComposer={() => setShowCompose(true)} posts={posts.filter(p => p.type === 'workout_log' && p.userId === userId)} users={users} currentUserId={userId} />}
+                {tab === 'challenges' && <ChallengesView posts={posts} users={users} currentUserId={userId} />}
+                {tab === 'progress' && <ProgressView user={me} onRefresh={refMe} />}
+                {tab === 'home' && (
+                  <FeedView
+                    posts={posts.filter(p => p.type === 'workout_log')}
+                    newPostsQueue={newPostsQueue}
+                    flushNewPosts={flushNewPosts}
+                    latestPostId={latestPostId}
+                    loading={loading}
+                    users={users}
+                    currentUserId={userId}
+                    notifications={notifications}
+                    loadMore={loadMore}
+                    hasMore={hasMore}
+                    loadingMore={loadingMore}
+                    onProfileClick={goProfile}
+                    onHashtagClick={goHashtag}
+                    onMentionClick={goMention}
+                    config={config}
+                  />
+                )}
 
                 {tab === 'profile' && (
                   <ProfileView

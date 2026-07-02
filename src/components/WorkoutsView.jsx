@@ -1,17 +1,7 @@
 import React from 'react';
-import { Activity, Dumbbell, History, ChevronRight } from 'lucide-react';
+import QuestCard from './QuestCard';
 
-/* =========================
-   WORKOUTS VIEW
-   Logging and tracking fitness sessions
-========================= */
-export default function WorkoutsView({ onOpenComposer }) {
-  const dummyWorkouts = [
-    { id: 1, name: 'Upper Body Grind', duration: '45 min', xp: 450, date: 'Today' },
-    { id: 2, name: 'Cardio Speedrun', duration: '30 min', xp: 300, date: 'Yesterday' },
-    { id: 3, name: 'Core Raid', duration: '20 min', xp: 200, date: '2 days ago' }
-  ];
-
+export default function WorkoutsView({ onOpenComposer, posts = [], users = [], currentUserId }) {
   return (
     <div className="page-container" style={{ padding: '24px 16px', paddingBottom: 100 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -25,58 +15,27 @@ export default function WorkoutsView({ onOpenComposer }) {
           color: '#fff',
           border: 'none',
           padding: '8px 16px',
-          borderRadius: 20,
-          fontWeight: 800,
+          borderRadius: 8,
           fontSize: 14,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
+          fontWeight: 800,
+          textTransform: 'uppercase',
           cursor: 'pointer'
         }}>
-          <Activity size={16} /> New Session
+          Log Session
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-        <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
-          <div style={{ color: 'var(--text2)', fontSize: 12, textTransform: 'uppercase', marginBottom: 4 }}>Total Sessions</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: '#3b82f6' }}>42</div>
-        </div>
-        <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
-          <div style={{ color: 'var(--text2)', fontSize: 12, textTransform: 'uppercase', marginBottom: 4 }}>XP Earned</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: '#10b981' }}>12.4k</div>
-        </div>
-      </div>
-
-      <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text2)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <History size={16} /> RECENT LOGS
-      </h2>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {dummyWorkouts.map(w => (
-          <div key={w.id} style={{
-            background: 'var(--surface)',
-            padding: 16,
-            borderRadius: 12,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            border: '1px solid var(--border)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Dumbbell size={20} color="#3b82f6" />
-              </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 2 }}>{w.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text3)' }}>{w.duration} • {w.date}</div>
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: 800, color: '#10b981', fontSize: 14 }}>+{w.xp} XP</div>
-            </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {posts.length > 0 ? (
+          posts.map(p => (
+            <QuestCard key={p.id} post={p} users={users} currentUserId={currentUserId} />
+          ))
+        ) : (
+          <div style={{ padding: 40, background: 'var(--surface)', borderRadius: 16, textAlign: 'center', border: '1px solid var(--border)' }}>
+            <h3 style={{ color: 'var(--text1)', marginBottom: 8, fontSize: 18, fontWeight: 800 }}>No workouts logged</h3>
+            <p style={{ color: 'var(--text2)', fontSize: 14 }}>Tap Log Session to start your grind.</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

@@ -22,30 +22,30 @@ export default function ChallengesView({ posts = [], users = [], currentUserId }
   return (
     <div className="page-container" style={{ padding: '24px 16px', paddingBottom: 100 }}>
       <h1 style={{ fontSize: 24, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 24 }}>
-        Active Boss Fights
+        Active Epic Challenges
       </h1>
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--hot)', borderRadius: 16, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--emerald)', borderRadius: 16, overflow: 'hidden', position: 'relative' }}>
         <div style={{ padding: 24, position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 900, textTransform: 'uppercase', color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ShieldAlert size={20} color="var(--hot)" /> The Iron Titan
+                <ShieldAlert size={20} color="var(--emerald)" /> The Iron Titan
               </h2>
               <p style={{ color: 'var(--text2)', fontSize: 14 }}>Global Community Raid</p>
             </div>
-            <div style={{ background: 'rgba(244, 63, 94, 0.1)', color: 'var(--hot)', padding: '4px 12px', borderRadius: 12, fontWeight: 800, fontSize: 12, textTransform: 'uppercase' }}>
+            <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--emerald)', padding: '4px 12px', borderRadius: 12, fontWeight: 800, fontSize: 12, textTransform: 'uppercase' }}>
               Legendary
             </div>
           </div>
 
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 800, marginBottom: 8, color: 'var(--text1)' }}>
-              <span>Boss HP</span>
+              <span>Challenge Goal Progress</span>
               <span>{Math.max(0, BOSS_MAX_HP - currentDamage).toLocaleString()} / {BOSS_MAX_HP.toLocaleString()}</span>
             </div>
             <div style={{ height: 12, background: 'var(--bg2)', borderRadius: 6, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${healthPercent}%`, background: 'var(--hot)', transition: 'width 1s ease' }} />
+              <div style={{ height: '100%', width: `${healthPercent}%`, background: 'var(--emerald)', transition: 'width 1s ease' }} />
             </div>
             <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, textAlign: 'right' }}>
               {currentDamage.toLocaleString()} DMG dealt by community

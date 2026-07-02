@@ -10,28 +10,32 @@
   --cyan:       #00f0ff;
   --cyan-dim:   rgba(0, 240, 255, 0.10);
   --cyan-glow:  0 0 20px rgba(0,240,255,0.25);
-  --violet:     #b042ff;
-  --violet-dim: rgba(176, 66, 255, 0.10);
-  --lime:       #39ff14;
-  --lime-dim:   rgba(57, 255, 20, 0.08);
-  --hot:        #ff2a2a;
-  --hot-dim:    rgba(255, 42, 42, 0.08);
-  --amber:      #ffd700;
-  --amber-dim:  rgba(255, 215, 0, 0.08);
+  --purple:     #8b5cf6;
+  --purple-dim: rgba(139, 92, 246, 0.15);
+  --emerald:    #10b981;
+  --emerald-dim:rgba(16, 185, 129, 0.15);
+  --hot:        #10b981; /* mapping old --hot to emerald to fix broken UIs safely */
+  --hot-dim:    rgba(16, 185, 129, 0.15);
+  --amber:      #f59e0b;
+  --amber-dim:  rgba(245, 158, 11, 0.15);
 
-  --bg:         #050811;
-  --bg2:        #090d1c;
-  --bg3:        #0f172a;
-  --surface:    #131b2f;
-  --surface2:   #1a243d;
+  --navy-dark:  #0A0F1D;
+  --navy-med:   #111827;
+  --navy-light: #1F2937;
+
+  --bg:         var(--navy-dark);
+  --bg2:        var(--navy-med);
+  --bg3:        var(--navy-light);
+  --surface:    #172033;
+  --surface2:   #1E293B;
   --border:     rgba(255,255,255,0.06);
   --border-b:   rgba(255,255,255,0.1);
   --text:       #f8fafc;
   --text2:      #94a3b8;
   --text3:      #475569;
   --glow-line:  linear-gradient(90deg, transparent, var(--cyan), transparent);
-  --caister-grad: linear-gradient(135deg, #00f0ff, #b042ff, #ffd700);
-  --caister-glow: 0 0 24px rgba(0,240,255,0.3), 0 0 48px rgba(176,66,255,0.15);
+  --caister-grad: linear-gradient(135deg, var(--cyan), var(--purple), var(--emerald));
+  --caister-glow: 0 0 24px rgba(0,240,255,0.2), 0 0 48px rgba(139,92,246,0.15);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

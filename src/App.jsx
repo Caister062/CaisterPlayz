@@ -9,10 +9,13 @@ import Composer from './components/Composer';
 
 import DailyQuestView from './components/DailyQuestView';
 import WorkoutsView from './components/WorkoutsView';
+import SplashView from './components/SplashView';
+import WelcomeView from './components/WelcomeView';
 import ChallengesView from './components/ChallengesView';
 import ProgressView from './components/ProgressView';
 import PlayerStatsView from './components/PlayerStatsView';
 import NotificationsView from './components/NotificationsView';
+import LoadingScreen from './components/LoadingScreen';
 
 function CpMark({ size = 18 }) {
   return (
@@ -132,7 +135,7 @@ export default function App() {
     if (window.location.search.includes('code=')) {
       // Don't disable booting yet, wait for OAuth to finish in the handleOAuthRedirect promise
     } else {
-      setTimeout(() => setBooting(false), 500); // Boot animation delay
+      setTimeout(() => setBooting(false), 800); // Fast load that completes animation
     }
     
     return () => {
@@ -195,20 +198,7 @@ export default function App() {
   };
 
   if (booting) {
-    return (
-      <div style={{ minHeight:'100dvh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24,background:'var(--bg)' }}>
-        <div className="boot-shield-container">
-          <div className="boot-shield-outline">
-            <div className="boot-shield-fill" />
-          </div>
-          <ShieldAlert size={40} color="#fff" style={{ position: 'absolute', zIndex: 10 }} />
-        </div>
-
-        <div style={{ fontSize:16,fontWeight:900,letterSpacing:'0.12em',color:'var(--cyan)',fontFamily:'"Anton", sans-serif',textTransform:'uppercase' }}>
-          Loading…
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!userId) {

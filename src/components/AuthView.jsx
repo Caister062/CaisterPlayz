@@ -29,7 +29,7 @@ export default function AuthView({ onAuthSuccess }) {
       
       let errorText = err.message || 'Login failed.';
       
-      const validationData = err.response?.data || err.data?.data;
+      const validationData = err.response?.data || err.data?.data || err.data;
       
       if (validationData && typeof validationData === 'object') {
         const fieldErrors = Object.entries(validationData)
@@ -44,7 +44,11 @@ export default function AuthView({ onAuthSuccess }) {
           
         if (fieldErrors) {
           errorText = fieldErrors;
+        } else {
+          errorText = `Raw Error: ${JSON.stringify(err.response || err.data || err)}`;
         }
+      } else {
+        errorText = `Raw Error: ${JSON.stringify(err.response || err.data || err)}`;
       }
       
       setError(errorText);
@@ -98,7 +102,7 @@ export default function AuthView({ onAuthSuccess }) {
       
       let errorText = err.message || 'Signup failed.';
       
-      const validationData = err.response?.data || err.data?.data;
+      const validationData = err.response?.data || err.data?.data || err.data;
       
       if (validationData && typeof validationData === 'object') {
         const fieldErrors = Object.entries(validationData)
@@ -113,7 +117,11 @@ export default function AuthView({ onAuthSuccess }) {
           
         if (fieldErrors) {
           errorText = fieldErrors;
+        } else {
+          errorText = `Raw Error: ${JSON.stringify(err.response || err.data || err)}`;
         }
+      } else {
+        errorText = `Raw Error: ${JSON.stringify(err.response || err.data || err)}`;
       }
       
       setError(errorText);

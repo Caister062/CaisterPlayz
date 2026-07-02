@@ -9,7 +9,7 @@ export default function ChallengesView({ posts = [], users = [], currentUserId }
   }, [users]);
 
   // Boss Health Logic
-  const BOSS_MAX_HP = 50000;
+  const BOSS_MAX_HP = 5000000;
   const currentDamage = totalCommunityXp;
   const healthPercent = Math.max(0, 100 - ((currentDamage / BOSS_MAX_HP) * 100));
   

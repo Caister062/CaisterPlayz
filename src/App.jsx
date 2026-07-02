@@ -11,6 +11,7 @@ import DailyQuestView from './components/DailyQuestView';
 import WorkoutsView from './components/WorkoutsView';
 import ChallengesView from './components/ChallengesView';
 import ProgressView from './components/ProgressView';
+import PlayerStatsView from './components/PlayerStatsView';
 import NotificationsView from './components/NotificationsView';
 
 function CpMark({ size = 18 }) {
@@ -153,8 +154,12 @@ export default function App() {
   if (config) window.cplayz_config = config;
 
   const goProfile = uid => {
-    setViewProfile(uid);
-    setTab('profile');
+    if (uid === userId) {
+      setTab('progress');
+    } else {
+      setViewProfile(uid);
+      setTab('player_stats');
+    }
   };
 
   const goHashtag = tag => {
@@ -279,13 +284,7 @@ export default function App() {
                 <ShieldAlert size={18} />
               </button>
 
-              <button
-                className="hud-btn"
-                onClick={() => setShowCompose(true)}
-                title="Drop a Post"
-              >
-                <Plus size={18} strokeWidth={2.5} />
-              </button>
+
 
               <button
                 className={`hud-btn${tab === 'notifications' ? ' lit' : ''}`}
@@ -306,6 +305,7 @@ export default function App() {
                 {tab === 'workouts' && <WorkoutsView onOpenComposer={() => setShowCompose(true)} posts={posts.filter(p => p.type === 'workout_log' && p.userId === userId)} users={users} currentUserId={userId} />}
                 {tab === 'challenges' && <ChallengesView posts={posts} users={users} currentUserId={userId} />}
                 {tab === 'progress' && <ProgressView user={me} onRefresh={refMe} />}
+                {tab === 'player_stats' && <PlayerStatsView user={pUser} onBack={() => setTab('home')} />}
                 {tab === 'notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} />}
                 {tab === 'home' && (
                   <FeedView

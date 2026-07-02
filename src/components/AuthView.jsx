@@ -26,7 +26,26 @@ export default function AuthView({ onAuthSuccess }) {
       onAuthSuccess(authData.record.id);
     } catch (err) {
       console.error(err);
-      setError(`Login failed: ${err.data?.message || err.message || 'Check your credentials.'}`);
+      
+      let errorText = err.message || 'Login failed.';
+      
+      if (err.data && typeof err.data === 'object') {
+        const fieldErrors = Object.entries(err.data)
+          .map(([field, errorObj]) => {
+            if (errorObj && errorObj.message) {
+              return `${field}: ${errorObj.message}`;
+            }
+            return null;
+          })
+          .filter(Boolean)
+          .join(' | ');
+          
+        if (fieldErrors) {
+          errorText = fieldErrors;
+        }
+      }
+      
+      setError(errorText);
     } finally {
       setLoading(false);
     }
@@ -74,7 +93,26 @@ export default function AuthView({ onAuthSuccess }) {
       onAuthSuccess(authData.record.id);
     } catch (err) {
       console.error(err);
-      setError(`Signup failed: ${err.data?.message || err.message || 'Ensure email is valid and password is at least 8 characters.'}`);
+      
+      let errorText = err.message || 'Signup failed.';
+      
+      if (err.data && typeof err.data === 'object') {
+        const fieldErrors = Object.entries(err.data)
+          .map(([field, errorObj]) => {
+            if (errorObj && errorObj.message) {
+              return `${field}: ${errorObj.message}`;
+            }
+            return null;
+          })
+          .filter(Boolean)
+          .join(' | ');
+          
+        if (fieldErrors) {
+          errorText = fieldErrors;
+        }
+      }
+      
+      setError(errorText);
     } finally {
       setLoading(false);
     }

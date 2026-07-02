@@ -46,16 +46,22 @@ export default function AuthView({ onAuthSuccess }) {
 
     try {
       // Create user with default Gamified Fitness Stats
+      const isEmail = email.includes('@');
       const data = {
-        email,
         password,
         passwordConfirm,
-        displayName: displayName || 'Player_' + Math.floor(Math.random() * 10000),
+        displayName: displayName || (isEmail ? email.split('@')[0] : email),
         xp: 0,
         level: 1,
         streak: 0,
         badges: []
       };
+      
+      if (isEmail) {
+        data.email = email;
+      } else {
+        data.username = email;
+      }
 
       await pb.collection('users').create(data);
       
@@ -123,7 +129,7 @@ export default function AuthView({ onAuthSuccess }) {
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="input-group">
               <Mail size={18} color="var(--text2)" style={{ position: 'absolute', left: 16, top: 15 }} />
-              <input type="email" placeholder="Email Address" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
+              <input type="text" placeholder="Email Address or Username" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
             </div>
             
             <div className="input-group" style={{ position: 'relative' }}>
@@ -151,7 +157,7 @@ export default function AuthView({ onAuthSuccess }) {
 
             <div className="input-group" style={{ position: 'relative' }}>
               <Mail size={18} color="var(--text2)" style={{ position: 'absolute', left: 16, top: 15 }} />
-              <input type="email" placeholder="Email Address" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
+              <input type="text" placeholder="Email Address or Username" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '14px 14px 14px 44px', background: 'var(--surface)', border: '1px solid var(--border)', color: '#fff', borderRadius: 12, outline: 'none' }} />
             </div>
             
             <div className="input-group" style={{ position: 'relative' }}>

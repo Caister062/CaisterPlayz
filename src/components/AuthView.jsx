@@ -24,15 +24,16 @@ export default function AuthView({ onAuthSuccess }) {
   const handleAppleAuth = async () => {
     try {
       setLoadingApple(true);
-      const authMethods = await pb.collection('users').listAuthMethods();
-      const provider = authMethods.oauth2.providers.find(p => p.name === 'apple');
-      if (!provider) throw new Error('Apple login not configured');
-      
-      const redirectUrl = window.location.origin + window.location.pathname;
-      localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
-      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
+      const authData = await pb.collection('users').authWithOAuth2({ provider: 'apple' });
+      if (authData.record.displayName === 'Operator' && authData.meta?.name) {
+        await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name });
+      }
+      localStorage.setItem('cplayz_user_id', authData.record.id);
+      if (onAuthSuccess) onAuthSuccess(authData.record.id);
     } catch(err) {
-      alert(err.message);
+      console.error(err);
+      alert(err.message || 'Authentication failed');
+    } finally {
       setLoadingApple(false);
     }
   };
@@ -40,15 +41,16 @@ export default function AuthView({ onAuthSuccess }) {
   const handleGoogleAuth = async () => {
     try {
       setLoadingGoogle(true);
-      const authMethods = await pb.collection('users').listAuthMethods();
-      const provider = authMethods.oauth2.providers.find(p => p.name === 'google');
-      if (!provider) throw new Error('Google login not configured');
-
-      const redirectUrl = window.location.origin + window.location.pathname;
-      localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
-      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
+      const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' });
+      if (authData.record.displayName === 'Operator' && authData.meta?.name) {
+        await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name });
+      }
+      localStorage.setItem('cplayz_user_id', authData.record.id);
+      if (onAuthSuccess) onAuthSuccess(authData.record.id);
     } catch(err) {
-      alert(err.message);
+      console.error(err);
+      alert(err.message || 'Authentication failed');
+    } finally {
       setLoadingGoogle(false);
     }
   };

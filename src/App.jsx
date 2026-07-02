@@ -80,6 +80,7 @@ export default function App() {
           localStorage.removeItem('oauth_provider');
           document.cookie = 'oauth_provider=; Max-Age=0; path=/';
           window.history.replaceState(null, '', window.location.pathname);
+          setBooting(false);
         }
       }
     };
@@ -119,7 +120,11 @@ export default function App() {
       presenceInterval = setInterval(pingPresence, 60000); // Every minute
     }
 
-    setTimeout(() => setBooting(false), 500); // Boot animation delay
+    if (window.location.search.includes('code=')) {
+      // Don't disable booting yet, wait for OAuth to finish in the handleOAuthRedirect promise
+    } else {
+      setTimeout(() => setBooting(false), 500); // Boot animation delay
+    }
     
     return () => {
       unsub();

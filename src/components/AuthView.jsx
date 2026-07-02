@@ -20,9 +20,9 @@ export default function AuthView({ onAuthSuccess }) {
     setMessage('');
     setLoading(true);
 
-    let loginEmail = email;
-    if (!email.includes('@')) {
-      loginEmail = `${email.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
+    let loginEmail = email.trim();
+    if (!loginEmail.includes('@')) {
+      loginEmail = `${loginEmail.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
     }
 
     try {
@@ -75,12 +75,12 @@ export default function AuthView({ onAuthSuccess }) {
     }
 
     try {
-      // Create user with default Gamified Fitness Stats
-      const isEmail = email.includes('@');
+      const trimmedEmail = email.trim();
+      const isEmail = trimmedEmail.includes('@');
       const data = {
         password,
         passwordConfirm,
-        displayName: displayName || (isEmail ? email.split('@')[0] : email),
+        displayName: displayName || (isEmail ? trimmedEmail.split('@')[0] : trimmedEmail),
         xp: 0,
         level: 1,
         streak: 0,
@@ -88,12 +88,12 @@ export default function AuthView({ onAuthSuccess }) {
       };
       
       if (isEmail) {
-        data.email = email;
+        data.email = trimmedEmail;
       } else {
         // PocketBase requires an email by default. If the user only provided a username,
         // we map it to username and generate a dummy email so it passes backend validation.
-        data.username = email;
-        data.email = `${email.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
+        data.username = trimmedEmail;
+        data.email = `${trimmedEmail.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
       }
 
       await pb.collection('users').create(data);

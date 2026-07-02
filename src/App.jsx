@@ -4,14 +4,15 @@ import pb from './pocketbase';
 import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig, useSquads } from './hooks';
 import { applyTheme } from './utils';
 import FeedView from './components/FeedView';
-import ProfileView from './components/ProfileView';
 import AdminView from './components/AdminView';
 import Composer from './components/Composer';
-import DirectMessages from './components/DirectMessages';
+
 import DailyQuestView from './components/DailyQuestView';
 import WorkoutsView from './components/WorkoutsView';
 import ChallengesView from './components/ChallengesView';
 import ProgressView from './components/ProgressView';
+import NotificationsView from './components/NotificationsView';
+
 function CpMark({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -295,13 +296,6 @@ export default function App() {
                 {unreadCount > 0 && <span className="hud-pip" />}
               </button>
 
-              <button
-                className={`hud-btn${tab === 'messages' ? ' lit' : ''}`}
-                onClick={() => goTab('messages')}
-                title="Direct Messages"
-              >
-                <MessageSquare size={18} />
-              </button>
             </div>
           </header>
 
@@ -312,6 +306,7 @@ export default function App() {
                 {tab === 'workouts' && <WorkoutsView onOpenComposer={() => setShowCompose(true)} posts={posts.filter(p => p.type === 'workout_log' && p.userId === userId)} users={users} currentUserId={userId} />}
                 {tab === 'challenges' && <ChallengesView posts={posts} users={users} currentUserId={userId} />}
                 {tab === 'progress' && <ProgressView user={me} onRefresh={refMe} />}
+                {tab === 'notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} />}
                 {tab === 'home' && (
                   <FeedView
                     posts={posts.filter(p => p.type === 'workout_log')}
@@ -332,23 +327,7 @@ export default function App() {
                   />
                 )}
 
-                {tab === 'profile' && (
-                  <ProfileView
-                    profile={pUser || me}
-                    currentUserId={userId}
-                    posts={posts}
-                    users={users}
-                    followData={viewProfile ? {} : followData}
-                    onProfileClick={goProfile}
-                    onHashtagClick={goHashtag}
-                    onMessageClick={(uid) => {
-                      setDmRecipientId(uid);
-                      goTab('messages');
-                    }}
-                    onRefresh={refMe}
-                    config={config}
-                  />
-                )}
+
 
                 {tab === 'admin' && isAdmin && (
                   <AdminView
@@ -365,15 +344,7 @@ export default function App() {
             </div>
           </main>
 
-          {tab === 'messages' && (
-            <DirectMessages
-              isOpen={true}
-              onClose={() => goTab('home')}
-              currentUserId={userId}
-              users={users}
-              initialRecipientId={dmRecipientId}
-            />
-          )}
+
 
           {/* ─ Composer ─ */}
           {showCompose && userId && (

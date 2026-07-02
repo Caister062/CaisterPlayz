@@ -32,7 +32,7 @@ export default function AuthView({ onAuthSuccess }) {
       const providerStr = JSON.stringify({ ...provider, redirectUrl });
       localStorage.setItem('oauth_provider', providerStr);
       document.cookie = `oauth_provider=${encodeURIComponent(providerStr)}; path=/; max-age=600`;
-      window.location.href = provider.authUrl + redirectUrl;
+      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
     } catch(err) {
       alert(err.message);
       setLoadingApple(false);
@@ -50,7 +50,7 @@ export default function AuthView({ onAuthSuccess }) {
       const providerStr = JSON.stringify({ ...provider, redirectUrl });
       localStorage.setItem('oauth_provider', providerStr);
       document.cookie = `oauth_provider=${encodeURIComponent(providerStr)}; path=/; max-age=600`;
-      window.location.href = provider.authUrl + redirectUrl;
+      window.location.href = provider.authUrl + encodeURIComponent(redirectUrl);
     } catch(err) {
       alert(err.message);
       setLoadingGoogle(false);

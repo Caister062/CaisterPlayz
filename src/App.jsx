@@ -71,7 +71,7 @@ export default function App() {
             );
             
             if (authData.record.displayName === 'Operator' && authData.meta?.name) {
-              await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name });
+              pb.collection('users').update(authData.record.id, { displayName: authData.meta.name }).catch(console.error);
             }
             
             localStorage.setItem('cplayz_user_id', authData.record.id);

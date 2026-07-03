@@ -146,7 +146,7 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
           <Target size={24} color="var(--cyan)" style={{ margin: '0 auto 8px' }} />
           <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Weekly Goal</div>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginTop: 4 }}>
-            {profile.streak >= 3 ? '3/3' : `${profile.streak}/3`} <span style={{ fontSize: 12, color: 'var(--text2)' }}>Days</span>
+            {profile?.streak >= 3 ? '3/3' : `${profile?.streak || 0}/3`} <span style={{ fontSize: 12, color: 'var(--text2)' }}>Days</span>
           </div>
         </div>
 

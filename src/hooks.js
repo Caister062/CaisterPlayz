@@ -1149,6 +1149,88 @@ export async function toggleGuildMembership(guildId, userId) {
   }
 }
 
+// ==========================================
+// RAIDS (Zero-Migration using cplayz_posts)
+// ==========================================
+
+export function useActiveRaid() {
+  const [raid, setRaid] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRaid = async () => {
+      try {
+        const res = await pb.collection('cplayz_posts').getList(1, 1, {
+          filter: 'type="raid"',
+          sort: '-created'
+        });
+        
+        if (res.items.length > 0) {
+          const post = res.items[0];
+          try {
+            const match = post.text.match(/<!--RAID_DATA:(.*?)-->/);
+            if (match) {
+              const data = JSON.parse(match[1]);
+              setRaid({
+                id: post.id,
+                name: data.name,
+                maxHp: data.maxHp,
+                image: data.image,
+                startCommunityXp: data.startCommunityXp || 0,
+                created: post.created
+              });
+            }
+          } catch(e) {}
+        } else {
+          setRaid(null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch active raid:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchRaid();
+
+    let unsub;
+    pb.collection('cplayz_posts').subscribe('*', (e) => {
+      if (e.record.type === 'raid') {
+        fetchRaid();
+      }
+    })
+    .then(u => unsub = u)
+    .catch(console.error);
+
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  return { raid, loading };
+}
+
+export async function spawnRaid(userId, name, maxHp, image, currentTotalCommunityXp) {
+  const raidData = {
+    name,
+    maxHp,
+    image,
+    startCommunityXp: currentTotalCommunityXp
+  };
+  
+  const data = {
+    userId,
+    text: `<!--RAID_DATA:${JSON.stringify(raidData)}-->\nA new World Boss has spawned: ${name}!`,
+    imageUrl: image,
+    likedBy: [],
+    viewedBy: [],
+    repostedBy: [],
+    favoritedBy: [],
+    type: 'raid'
+  };
+
+  return pb.collection('cplayz_posts').create(data);
+}
+
+
 
 export function useDirectMessages(userId, recipientId) {
   const [messages, setMessages] = useState([]);

@@ -1,11 +1,15 @@
-import React from 'react';
-import { Flame, Star, Trophy, Activity, Target, Award, ArrowUpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Flame, Star, Trophy, Activity, Target, Award, ArrowUpCircle, Skull } from 'lucide-react';
+import { useActiveRaid, spawnRaid } from '../hooks';
 
 /* =========================
    DAILY QUEST VIEW
    Premium RPG Dashboard
 ========================= */
 export default function DailyQuestView({ user, config, users = [], onOpenComposer }) {
+  const { raid, loading } = useActiveRaid();
+  const [spawning, setSpawning] = useState(false);
+
   // Use real data or fallback
   const profile = user || {
     displayName: 'Player',
@@ -20,14 +24,34 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
   const xpProgress = (currentLevelXp / 500) * 100;
   const xpRemaining = 500 - currentLevelXp;
   
-  const raid = config?.liveRaid;
-  
-  // Calculate dynamic boss health from community XP to avoid permissions issues
-  const BOSS_MAX_HP = 100000;
+  // Calculate dynamic boss health from new community XP since spawn
   const totalCommunityXp = users.reduce((acc, u) => acc + (u.xp || 0), 0);
-  const totalCommunityDamage = totalCommunityXp * 1.5;
-  const currentHp = Math.max(0, BOSS_MAX_HP - totalCommunityDamage);
-  const raidHpPercent = (currentHp / BOSS_MAX_HP) * 100;
+  
+  let currentHp = 0;
+  let raidHpPercent = 0;
+  let isDefeated = false;
+
+  if (raid) {
+    const totalCommunityDamage = (totalCommunityXp - raid.startCommunityXp) * 1.5;
+    currentHp = Math.max(0, raid.maxHp - totalCommunityDamage);
+    raidHpPercent = (currentHp / raid.maxHp) * 100;
+    isDefeated = currentHp <= 0;
+  }
+
+  const handleSpawnRaid = async () => {
+    if (spawning) return;
+    setSpawning(true);
+    try {
+      // Create a test boss with reasonable HP for the current community size
+      const maxHp = 50000;
+      await spawnRaid(profile.id, 'Void Behemoth', maxHp, 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=800&auto=format&fit=crop', totalCommunityXp);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to spawn raid');
+    } finally {
+      setSpawning(false);
+    }
+  };
 
   return (
     <div className="page-container" style={{ padding: '24px 16px', paddingBottom: 100 }}>
@@ -154,17 +178,17 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
       </div>
 
       {/* LIVE RAID BOSS */}
-      {raid && raid.active && (
+      {raid && !isDefeated ? (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--rose)', borderRadius: 16, padding: 20, marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: -50, right: -50, width: 100, height: 100, background: 'var(--rose)', opacity: 0.1, filter: 'blur(30px)', borderRadius: '50%' }} />
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <div>
               <div style={{ fontSize: 10, color: 'var(--rose)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {raid.bossRarity}
+                Legendary World Boss
               </div>
               <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {raid.bossName}
+                {raid.name}
               </div>
             </div>
             <div style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--rose)', fontSize: 11, fontWeight: 900, padding: '4px 8px', borderRadius: 8 }}>
@@ -175,19 +199,10 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text1)', fontWeight: 800, marginBottom: 8 }}>
               <span>HP</span>
-              <span>{currentHp.toLocaleString()} / {BOSS_MAX_HP.toLocaleString()}</span>
+              <span>{currentHp.toLocaleString()} / {raid.maxHp.toLocaleString()}</span>
             </div>
             <div style={{ height: 12, background: 'var(--bg2)', borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
               <div style={{ height: '100%', width: `${raidHpPercent}%`, background: 'var(--hot)', borderRadius: 6, transition: 'width 1s ease' }} />
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 700 }}>
-              Top Raider: <span style={{ color: 'var(--cyan)' }}>{raid.topRaider}</span>
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--amber)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-              Ends Soon
             </div>
           </div>
 
@@ -213,6 +228,35 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
             }}
           >
             <Flame size={16} /> ATTACK BOSS
+          </button>
+        </div>
+      ) : (
+        <div style={{ background: 'var(--surface)', border: '1px dashed var(--rose)', borderRadius: 16, padding: 32, marginBottom: 24, textAlign: 'center' }}>
+          <Skull size={48} color="var(--rose)" style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+          <h3 style={{ fontSize: 20, fontWeight: 900, color: '#fff', textTransform: 'uppercase', marginBottom: 8 }}>
+            {raid ? 'RAID CLEARED' : 'NO ACTIVE RAID'}
+          </h3>
+          <p style={{ color: 'var(--text2)', fontSize: 13, marginBottom: 24 }}>
+            {raid ? 'The community successfully defeated the World Boss!' : 'The world is safe for now.'}
+          </p>
+          <button 
+            onClick={handleSpawnRaid}
+            disabled={spawning || loading}
+            style={{
+              background: 'var(--rose)',
+              color: '#fff',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: 12,
+              fontSize: 14,
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              cursor: (spawning || loading) ? 'not-allowed' : 'pointer',
+              opacity: (spawning || loading) ? 0.5 : 1
+            }}
+          >
+            {spawning ? 'SUMMONING...' : 'SPAWN NEXT RAID'}
           </button>
         </div>
       )}

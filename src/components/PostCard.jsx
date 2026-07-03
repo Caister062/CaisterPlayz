@@ -438,7 +438,7 @@ export default function ExpandedBroadcast({
     {
       key: 'boost',
       emoji: '🔥',
-      label: 'Hype',
+      label: 'Boost',
       count: likeN,
       active: liked,
       cls: 'active-zap'
@@ -446,7 +446,7 @@ export default function ExpandedBroadcast({
     {
       key: 'relay',
       emoji: '🔁',
-      label: 'Share',
+      label: 'Echo',
       count: repostN,
       active: reposted,
       cls: 'active-fire'
@@ -472,7 +472,7 @@ export default function ExpandedBroadcast({
     {
       key: 'anchor',
       emoji: '📌',
-      label: 'Pin',
+      label: 'Vault',
       count: 0,
       active: pinned,
       cls: 'active-pin'
@@ -685,15 +685,15 @@ export default function ExpandedBroadcast({
           <div className="react-meta">
             {viewN > 0 && (
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Eye size={13} /> {formatCount(viewN)} signal scans
+                <Eye size={13} /> {formatCount(viewN)} views
               </span>
             )}
 
-            <span>{formatCount(comments.length)} echoes</span>
+            <span>{formatCount(comments.length)} rallies</span>
           </div>
 
           <div className="thread">
-            <div className="thread-title">Signal Thread</div>
+            <div className="thread-title">Rally Thread</div>
 
             <div className="expand-add-comment" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginTop: '8px', marginBottom: '24px' }}>
               {/* Small user avatar */}
@@ -721,7 +721,7 @@ export default function ExpandedBroadcast({
                 <div className="flex items-center gap-2">
                   <input
                     className="thread-input flex-1 bg-transparent border-none outline-none"
-                    placeholder="Echo back..."
+                    placeholder="Rally the squad..."
                     value={echoText}
                     onChange={e => setEchoText(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && doComment()}

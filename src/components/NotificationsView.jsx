@@ -11,9 +11,9 @@ const ICONS = {
 };
 
 const MSGS = {
-  like: 'cheered your workout!',
-  comment: 'dropped a tip on your workout log',
-  repost: 'highlighted your fitness milestone',
+  like: 'boosted your workout!',
+  comment: 'rallied to your workout log!',
+  repost: 'echoed your fitness milestone!',
 };
 
 export default function NotificationsView({

@@ -1,78 +1,170 @@
-import React, { useMemo } from 'react';
-import { Target, Users, Zap, ShieldAlert } from 'lucide-react';
+import React, { useState } from 'react';
+import { Trophy, Activity, Flame, ShieldAlert, Star, TrendingUp } from 'lucide-react';
 
-export default function ChallengesView({ posts = [], users = [], currentUserId }) {
-  
-  // Calculate total community XP from actual users
-  const totalCommunityXp = useMemo(() => {
-    return users.reduce((acc, u) => acc + (u.xp || 0), 0);
-  }, [users]);
+export default function ChallengesView({ users = [], currentUserId }) {
+  const [boardType, setBoardType] = useState('xp'); // 'xp', 'damage', 'streak'
 
-  // Boss Health Logic
-  const BOSS_MAX_HP = 5000000;
-  const currentDamage = totalCommunityXp;
-  const healthPercent = Math.max(0, 100 - ((currentDamage / BOSS_MAX_HP) * 100));
-  
-  // Find top contributors
-  const activeRaiders = [...users]
-    .filter(u => u.xp > 0)
-    .sort((a, b) => (b.xp || 0) - (a.xp || 0))
-    .slice(0, 5);
+  // Sort users based on selected board
+  const sortedUsers = [...users].sort((a, b) => {
+    if (boardType === 'xp') return (b.xp || 0) - (a.xp || 0);
+    if (boardType === 'streak') return (b.streak || 0) - (a.streak || 0);
+    
+    // For damage, we'll mock it based on XP if they don't have a direct damage stat
+    if (boardType === 'damage') {
+      const dmgA = (a.xp || 0) * 1.5;
+      const dmgB = (b.xp || 0) * 1.5;
+      return dmgB - dmgA;
+    }
+    return 0;
+  });
+
+  const getRankColor = (index) => {
+    if (index === 0) return 'var(--amber)'; // Gold
+    if (index === 1) return '#94a3b8'; // Silver
+    if (index === 2) return '#b45309'; // Bronze
+    return 'var(--text2)';
+  };
 
   return (
     <div className="page-container" style={{ padding: '24px 16px', paddingBottom: 100 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 24 }}>
-        Active Epic Challenges
-      </h1>
+      <div style={{ marginBottom: 24, textAlign: 'center' }}>
+        <h1 style={{ 
+          fontSize: 28, 
+          fontWeight: 900, 
+          fontFamily: '"Anton", sans-serif',
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          background: 'var(--caister-grad)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          marginBottom: 8
+        }}>
+          Global Rankings
+        </h1>
+        <p style={{ color: 'var(--text2)', fontSize: 14 }}>
+          Compete against the world. Become a legend.
+        </p>
+      </div>
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--emerald)', borderRadius: 16, overflow: 'hidden', position: 'relative' }}>
-        <div style={{ padding: 24, position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-            <div>
-              <h2 style={{ fontSize: 20, fontWeight: 900, textTransform: 'uppercase', color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ShieldAlert size={20} color="var(--emerald)" /> The Iron Titan
-              </h2>
-              <p style={{ color: 'var(--text2)', fontSize: 14 }}>Global Community Raid</p>
-            </div>
-            <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--emerald)', padding: '4px 12px', borderRadius: 12, fontWeight: 800, fontSize: 12, textTransform: 'uppercase' }}>
-              Legendary
-            </div>
-          </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, overflowX: 'auto', paddingBottom: 8, msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+        <button
+          onClick={() => setBoardType('xp')}
+          style={{
+            background: boardType === 'xp' ? 'var(--cyan)' : 'var(--surface)',
+            color: boardType === 'xp' ? '#000' : 'var(--text1)',
+            border: `1px solid ${boardType === 'xp' ? 'var(--cyan)' : 'var(--border)'}`,
+            padding: '8px 16px',
+            borderRadius: 20,
+            fontWeight: 800,
+            fontSize: 13,
+            textTransform: 'uppercase',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <Trophy size={14} /> Total XP
+        </button>
+        <button
+          onClick={() => setBoardType('damage')}
+          style={{
+            background: boardType === 'damage' ? 'var(--rose)' : 'var(--surface)',
+            color: boardType === 'damage' ? '#fff' : 'var(--text1)',
+            border: `1px solid ${boardType === 'damage' ? 'var(--rose)' : 'var(--border)'}`,
+            padding: '8px 16px',
+            borderRadius: 20,
+            fontWeight: 800,
+            fontSize: 13,
+            textTransform: 'uppercase',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <ShieldAlert size={14} /> Boss Damage
+        </button>
+        <button
+          onClick={() => setBoardType('streak')}
+          style={{
+            background: boardType === 'streak' ? 'var(--amber)' : 'var(--surface)',
+            color: boardType === 'streak' ? '#000' : 'var(--text1)',
+            border: `1px solid ${boardType === 'streak' ? 'var(--amber)' : 'var(--border)'}`,
+            padding: '8px 16px',
+            borderRadius: 20,
+            fontWeight: 800,
+            fontSize: 13,
+            textTransform: 'uppercase',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <Flame size={14} /> Longest Streak
+        </button>
+      </div>
 
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 800, marginBottom: 8, color: 'var(--text1)' }}>
-              <span>Challenge Goal Progress</span>
-              <span>{Math.max(0, BOSS_MAX_HP - currentDamage).toLocaleString()} / {BOSS_MAX_HP.toLocaleString()}</span>
-            </div>
-            <div style={{ height: 12, background: 'var(--bg2)', borderRadius: 6, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${healthPercent}%`, background: 'var(--emerald)', transition: 'width 1s ease' }} />
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, textAlign: 'right' }}>
-              {currentDamage.toLocaleString()} DMG dealt by community
-            </div>
-          </div>
+      {/* Leaderboard List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {sortedUsers.map((u, i) => {
+          const isMe = u.id === currentUserId;
+          const rankColor = getRankColor(i);
+          
+          let scoreText = '';
+          if (boardType === 'xp') scoreText = `${(u.xp || 0).toLocaleString()} XP`;
+          if (boardType === 'damage') scoreText = `${((u.xp || 0) * 1.5).toLocaleString()} DMG`;
+          if (boardType === 'streak') scoreText = `${u.streak || 0} Days`;
 
-          <div style={{ background: 'var(--bg)', borderRadius: 12, padding: 16 }}>
-            <h3 style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: 'var(--text2)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Users size={14} /> Top Raiders
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {activeRaiders.length > 0 ? activeRaiders.map((u, i) => (
-                <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ color: 'var(--text2)', fontWeight: 800, fontSize: 12 }}>#{i + 1}</span>
-                    <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>{u.displayName}</span>
-                  </div>
-                  <span style={{ color: 'var(--cyan)', fontWeight: 800, fontSize: 13 }}>{u.xp} DMG</span>
+          return (
+            <div 
+              key={u.id}
+              style={{
+                background: isMe ? 'var(--bg2)' : 'var(--surface)',
+                border: `1px solid ${isMe ? 'var(--brand-primary)' : 'var(--border)'}`,
+                borderRadius: 16,
+                padding: 16,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {isMe && <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: 'var(--brand-primary)' }} />}
+
+              <div style={{ width: 30, textAlign: 'center', fontSize: 18, fontWeight: 900, color: rankColor }}>
+                #{i + 1}
+              </div>
+
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {u.avatarUrl ? <img src={u.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.displayName[0] || '?').toUpperCase()}
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>
+                  {u.displayName}
+                  {isMe && <span style={{ fontSize: 10, background: 'var(--brand-primary)', color: '#fff', padding: '2px 6px', borderRadius: 4, marginLeft: 8, verticalAlign: 'middle' }}>YOU</span>}
                 </div>
-              )) : (
-                <div style={{ fontSize: 13, color: 'var(--text2)' }}>No players have attacked yet.</div>
-              )}
-            </div>
-          </div>
-        </div>
+                <div style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600 }}>
+                  Lvl {u.level || 1}
+                </div>
+              </div>
 
-        <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, background: 'var(--hot)', opacity: 0.1, filter: 'blur(50px)', borderRadius: '50%' }} />
+              <div style={{ fontSize: 16, fontWeight: 900, color: boardType === 'damage' ? 'var(--rose)' : (boardType === 'streak' ? 'var(--amber)' : 'var(--cyan)') }}>
+                {scoreText}
+              </div>
+            </div>
+          );
+        })}
+        
+        {sortedUsers.length === 0 && (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text2)', background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)' }}>
+            No players found on this server.
+          </div>
+        )}
       </div>
 
     </div>

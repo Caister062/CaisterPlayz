@@ -11,6 +11,8 @@ import DailyQuestView from './components/DailyQuestView';
 import WorkoutsView from './components/WorkoutsView';
 import ChallengesView from './components/ChallengesView';
 import ProgressView from './components/ProgressView';
+import SeasonsView from './components/SeasonsView';
+import GuildsView from './components/GuildsView';
 import PlayerStatsView from './components/PlayerStatsView';
 import NotificationsView from './components/NotificationsView';
 import LoadingScreen from './components/LoadingScreen';
@@ -206,7 +208,9 @@ export default function App() {
   const NAV = [
     { id: 'daily_quest', icon: Radio, label: 'Quest' },
     { id: 'workouts', icon: Search, label: 'Workouts' },
-    { id: 'challenges', icon: Trophy, label: 'Challenges' },
+    { id: 'leaderboards', icon: Trophy, label: 'Leaderboards' },
+    { id: 'guilds', icon: ShieldAlert, label: 'Guilds' },
+    { id: 'seasons', icon: Star, label: 'Seasons' },
     { id: 'progress', icon: User, label: 'Progress' },
     { id: 'home', icon: Bell, label: 'Community' },
   ];
@@ -289,9 +293,11 @@ export default function App() {
           <main className="main tab-container">
             <div className={`tab-content ${isTransitioning ? 'tab-slide-enter' : ''}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ flex: 1 }}>
-                {tab === 'daily_quest' && <DailyQuestView user={me} config={config} onOpenComposer={() => setShowCompose(true)} />}
+                {tab === 'daily_quest' && <DailyQuestView user={me} config={config} users={users} onOpenComposer={() => setShowCompose(true)} />}
                 {tab === 'workouts' && <WorkoutsView onOpenComposer={() => setShowCompose(true)} posts={posts.filter(p => p.type === 'workout_log' && p.userId === userId)} users={users} currentUserId={userId} />}
-                {tab === 'challenges' && <ChallengesView posts={posts} users={users} currentUserId={userId} />}
+                {tab === 'leaderboards' && <ChallengesView posts={posts} users={users} currentUserId={userId} />}
+                {tab === 'guilds' && <GuildsView currentUserId={userId} users={users} />}
+                {tab === 'seasons' && <SeasonsView config={config} />}
                 {tab === 'progress' && <ProgressView user={me} onRefresh={refMe} />}
                 {tab === 'player_stats' && <PlayerStatsView user={pUser} onBack={() => setTab('home')} />}
                 {tab === 'notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} />}

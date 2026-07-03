@@ -15,9 +15,19 @@ export default function PlayerStats({ user }) {
       }}>
         {user.level || 1}
       </div>
-      <h1 style={{ fontSize: 24, fontWeight: 900, color: '#fff', textTransform: 'uppercase' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 900, color: '#fff', textTransform: 'uppercase', marginBottom: 4 }}>
         {user.displayName || 'Player'}
       </h1>
+      
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: 'var(--amber)', padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>
+          Iron Titan
+        </span>
+        <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--emerald)', padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>
+          Guild: Iron Titans
+        </span>
+      </div>
+
       <p style={{ color: 'var(--text2)', fontSize: 14, marginTop: 4 }}>
         {user.xp || 0} Total XP
       </p>

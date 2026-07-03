@@ -5,7 +5,8 @@ export default function FeedView({
   posts,
   users,
   currentUserId,
-  loading
+  loading,
+  config
 }) {
   if (loading) {
     return (
@@ -20,9 +21,52 @@ export default function FeedView({
     return [...posts].sort((a, b) => new Date(b.created) - new Date(a.created));
   }, [posts]);
 
+  // Dynamic Boss Damage
+  const raid = config?.liveRaid;
+  const totalCommunityXp = users.reduce((acc, u) => acc + (u.xp || 0), 0);
+  const currentHp = raid ? Math.max(0, raid.maxHp - (totalCommunityXp * 1.5)) : 0;
+  const raidHpPercent = raid ? (currentHp / raid.maxHp) * 100 : 0;
+
   return (
     <div style={{ paddingBottom: 100 }}>
-      <div className="feed-header" style={{ marginBottom: 16 }}>
+      {/* GLOBAL LIVE RAID BOSS */}
+      {config && config.liveRaid && config.liveRaid.active && (
+        <div style={{ padding: '16px 16px 0 16px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--rose)', borderRadius: 16, padding: 16, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: -50, right: -50, width: 80, height: 80, background: 'var(--rose)', opacity: 0.1, filter: 'blur(30px)', borderRadius: '50%' }} />
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 9, color: 'var(--rose)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {config.liveRaid.bossRarity}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {config.liveRaid.bossName}
+                </div>
+              </div>
+              <div style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--rose)', fontSize: 10, fontWeight: 900, padding: '4px 8px', borderRadius: 8 }}>
+                LIVE RAID
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text1)', fontWeight: 800, marginBottom: 4 }}>
+                <span>HP</span>
+                <span>{currentHp.toLocaleString()} / {config.liveRaid.maxHp.toLocaleString()}</span>
+              </div>
+              <div style={{ height: 8, background: 'var(--bg2)', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                <div style={{ height: '100%', width: `${raidHpPercent}%`, background: 'var(--hot)', borderRadius: 4, transition: 'width 1s ease' }} />
+              </div>
+            </div>
+            
+            <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 700 }}>
+              Top Raider: <span style={{ color: 'var(--cyan)' }}>{config.liveRaid.topRaider}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="feed-header" style={{ marginBottom: 16, marginTop: 16 }}>
         <h2 className="feed-title" style={{ fontSize: 24, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Global Quests
         </h2>

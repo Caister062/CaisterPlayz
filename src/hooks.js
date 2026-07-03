@@ -150,7 +150,20 @@ export function useSystemConfig() {
     bannedWords: [],
     verifiedUsers: [],
     featuredPosts: [],
-    lockdown: false
+    lockdown: false,
+    liveRaid: {
+      active: true,
+      bossName: "THE IRON TITAN",
+      bossRarity: "Legendary World Boss",
+      maxHp: 500000000,
+      currentHp: 489000000,
+      endTime: new Date(Date.now() + 86400000 * 2.5).toISOString(),
+      topRaider: "CaisterPlayz Gaming"
+    },
+    season: {
+      name: "Season 1: Iron Awakening",
+      level: 1
+    }
   });
 
   const [configId, setConfigId] = useState(null);
@@ -167,7 +180,39 @@ export function useSystemConfig() {
           setConfigId(currentConfigId);
           try {
             const parsed = JSON.parse(rec.text);
+            
+            // Inject default MMO state if missing
+            if (!parsed.liveRaid) {
+              parsed.liveRaid = {
+                active: true,
+                bossName: "THE IRON TITAN",
+                bossRarity: "Legendary World Boss",
+                maxHp: 500000000,
+                currentHp: 489000000,
+                endTime: new Date(Date.now() + 86400000 * 2.5).toISOString(),
+                topRaider: "CaisterPlayz Gaming"
+              };
+            }
+            if (!parsed.season) {
+              parsed.season = {
+                name: "Season 1: Iron Awakening",
+                level: 1
+              };
+            }
+            
+            // Patch existing if HP is too low
+            let needsUpdate = false;
+            if (parsed.liveRaid && parsed.liveRaid.maxHp < 50000000) {
+              parsed.liveRaid.maxHp = 500000000;
+              parsed.liveRaid.currentHp = 489000000;
+              needsUpdate = true;
+            }
+
             setConfig(parsed);
+
+            if (needsUpdate) {
+              updateSystemConfig(currentConfigId, parsed);
+            }
           } catch(e) {}
         } else {
           // Create the config record if it doesn't exist.
@@ -176,7 +221,25 @@ export function useSystemConfig() {
             const newConf = await pb.collection('cplayz_posts').create({
               userId,
               type: 'system_config',
-              text: JSON.stringify({ bannedWords: [], verifiedUsers: [], featuredPosts: [], lockdown: false })
+              text: JSON.stringify({ 
+                bannedWords: [], 
+                verifiedUsers: [], 
+                featuredPosts: [], 
+                lockdown: false,
+                liveRaid: {
+                  active: true,
+                  bossName: "THE IRON TITAN",
+                  bossRarity: "Legendary World Boss",
+                  maxHp: 500000000,
+                  currentHp: 489000000,
+                  endTime: new Date(Date.now() + 86400000 * 2.5).toISOString(),
+                  topRaider: "CaisterPlayz Gaming"
+                },
+                season: {
+                  name: "Season 1: Iron Awakening",
+                  level: 1
+                }
+              })
             });
             currentConfigId = newConf.id;
             setConfigId(currentConfigId);
@@ -215,6 +278,23 @@ export async function updateSystemConfig(configId, newConfigObj) {
   await pb.collection('cplayz_posts').update(configId, {
     text: JSON.stringify(newConfigObj)
   });
+}
+
+export async function attackLiveBoss(configId, currentConfig, damage, playerName) {
+  if (!configId || !currentConfig || !currentConfig.liveRaid || !currentConfig.liveRaid.active) return;
+  
+  const newHp = Math.max(0, currentConfig.liveRaid.currentHp - damage);
+  const updatedConfig = {
+    ...currentConfig,
+    liveRaid: {
+      ...currentConfig.liveRaid,
+      currentHp: newHp,
+      topRaider: damage > 500 ? playerName : currentConfig.liveRaid.topRaider // Simulate changing top raider
+    }
+  };
+  
+  await updateSystemConfig(configId, updatedConfig);
+  return updatedConfig;
 }
 
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
@@ -626,6 +706,8 @@ export async function logWorkout(userId, text, imageUrl, workoutDetails) {
   } catch (err) {
     console.error('Failed to update user stats:', err);
   }
+
+
 
   return post;
 }

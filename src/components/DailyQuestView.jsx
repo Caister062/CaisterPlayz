@@ -5,7 +5,7 @@ import { Flame, Star, Trophy, Activity, Target, Award, ArrowUpCircle } from 'luc
    DAILY QUEST VIEW
    Premium RPG Dashboard
 ========================= */
-export default function DailyQuestView({ user, config, onOpenComposer }) {
+export default function DailyQuestView({ user, config, users = [], onOpenComposer }) {
   // Use real data or fallback
   const profile = user || {
     displayName: 'Player',
@@ -19,6 +19,14 @@ export default function DailyQuestView({ user, config, onOpenComposer }) {
   const currentLevelXp = (profile.xp || 0) % 500;
   const xpProgress = (currentLevelXp / 500) * 100;
   const xpRemaining = 500 - currentLevelXp;
+  
+  const raid = config?.liveRaid;
+  
+  // Calculate dynamic boss health from community XP to avoid permissions issues
+  const totalCommunityXp = users.reduce((acc, u) => acc + (u.xp || 0), 0);
+  const totalCommunityDamage = totalCommunityXp * 1.5;
+  const currentHp = raid ? Math.max(0, raid.maxHp - totalCommunityDamage) : 0;
+  const raidHpPercent = raid ? (currentHp / raid.maxHp) * 100 : 0;
 
   return (
     <div className="page-container" style={{ padding: '24px 16px', paddingBottom: 100 }}>
@@ -144,16 +152,69 @@ export default function DailyQuestView({ user, config, onOpenComposer }) {
 
       </div>
 
-      {/* Upcoming Community Raid */}
-      <div style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid var(--violet)', borderRadius: 16, padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ fontSize: 11, color: 'var(--violet)', fontWeight: 900, textTransform: 'uppercase', marginBottom: 2 }}>Global Raid</div>
-          <div style={{ fontSize: 14, color: '#fff', fontWeight: 800 }}>10,000 km Run Challenge</div>
+      {/* LIVE RAID BOSS */}
+      {raid && raid.active && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--rose)', borderRadius: 16, padding: 20, marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -50, right: -50, width: 100, height: 100, background: 'var(--rose)', opacity: 0.1, filter: 'blur(30px)', borderRadius: '50%' }} />
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 10, color: 'var(--rose)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {raid.bossRarity}
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {raid.bossName}
+              </div>
+            </div>
+            <div style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--rose)', fontSize: 11, fontWeight: 900, padding: '4px 8px', borderRadius: 8 }}>
+              LIVE
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text1)', fontWeight: 800, marginBottom: 8 }}>
+              <span>HP</span>
+              <span>{currentHp.toLocaleString()} / {raid.maxHp.toLocaleString()}</span>
+            </div>
+            <div style={{ height: 12, background: 'var(--bg2)', borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
+              <div style={{ height: '100%', width: `${raidHpPercent}%`, background: 'var(--hot)', borderRadius: 6, transition: 'width 1s ease' }} />
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 700 }}>
+              Top Raider: <span style={{ color: 'var(--cyan)' }}>{raid.topRaider}</span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--amber)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+              Ends Soon
+            </div>
+          </div>
+
+          <button 
+            onClick={onOpenComposer}
+            style={{
+              width: '100%',
+              background: 'linear-gradient(90deg, var(--hot), #e11d48)',
+              color: '#fff',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: 12,
+              fontSize: 14,
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              boxShadow: '0 4px 15px rgba(244, 63, 94, 0.4)'
+            }}
+          >
+            <Flame size={16} /> ATTACK BOSS
+          </button>
         </div>
-        <div style={{ background: 'var(--violet)', color: '#fff', fontSize: 12, fontWeight: 900, padding: '6px 12px', borderRadius: 8 }}>
-          JOIN
-        </div>
-      </div>
+      )}
 
       {/* Active Quest */}
       <h2 style={{ fontSize: 16, fontWeight: 900, color: 'var(--text2)', textTransform: 'uppercase', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -155,7 +155,7 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
           <Flame size={24} color="var(--hot)" style={{ margin: '0 auto 8px' }} />
           <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Weekly Cals</div>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginTop: 4 }}>
-            2,450 <span style={{ fontSize: 12, color: 'var(--text2)' }}>kcal</span>
+            {profile?.weeklyCals || 0} <span style={{ fontSize: 12, color: 'var(--text2)' }}>kcal</span>
           </div>
         </div>
 
@@ -164,7 +164,7 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
           <Activity size={24} color="var(--emerald)" style={{ margin: '0 auto 8px' }} />
           <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Time Trained</div>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginTop: 4 }}>
-            185 <span style={{ fontSize: 12, color: 'var(--text2)' }}>min</span>
+            {profile?.timeTrained || 0} <span style={{ fontSize: 12, color: 'var(--text2)' }}>min</span>
           </div>
         </div>
 
@@ -173,7 +173,7 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
           <Award size={24} color="var(--amber)" style={{ margin: '0 auto 8px' }} />
           <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Latest PR</div>
           <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--amber)', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Bench 225x5
+            {profile?.latestPR || 'None'}
           </div>
         </div>
 

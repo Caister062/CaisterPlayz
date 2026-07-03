@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Flame, Star, Trophy, Activity, Target, Award, ArrowUpCircle, Skull } from 'lucide-react';
 import { useActiveRaid, spawnRaid } from '../hooks';
+import RaidCombatModal from './RaidCombatModal';
 
 /* =========================
    DAILY QUEST VIEW
@@ -9,6 +10,7 @@ import { useActiveRaid, spawnRaid } from '../hooks';
 export default function DailyQuestView({ user, config, users = [], onOpenComposer }) {
   const { raid, loading } = useActiveRaid();
   const [spawning, setSpawning] = useState(false);
+  const [showRaidModal, setShowRaidModal] = useState(false);
 
   // Use real data or fallback
   const profile = user || {
@@ -207,7 +209,7 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
           </div>
 
           <button 
-            onClick={onOpenComposer}
+            onClick={() => setShowRaidModal(true)}
             style={{
               width: '100%',
               background: 'linear-gradient(90deg, var(--hot), #e11d48)',
@@ -316,6 +318,13 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
         </button>
       </div>
 
+      {showRaidModal && raid && !isDefeated && (
+        <RaidCombatModal 
+          boss={raid}
+          currentUserId={user?.id}
+          onClose={() => setShowRaidModal(false)}
+        />
+      )}
     </div>
   );
 }

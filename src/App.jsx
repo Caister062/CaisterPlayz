@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert, MessageSquare, Trophy } from 'lucide-react';
+import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert, MessageSquare, Trophy, Star, Play } from 'lucide-react';
 import pb from './pocketbase';
 import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig, useSquads } from './hooks';
 import { applyTheme } from './utils';
@@ -14,6 +14,7 @@ import ProgressView from './components/ProgressView';
 import SeasonsView from './components/SeasonsView';
 import GuildsView from './components/GuildsView';
 import PlayerStatsView from './components/PlayerStatsView';
+import QuestClipsView from './components/QuestClipsView';
 import NotificationsView from './components/NotificationsView';
 import LoadingScreen from './components/LoadingScreen';
 
@@ -212,6 +213,7 @@ export default function App() {
     { id: 'guilds', icon: ShieldAlert, label: 'Guilds' },
     { id: 'seasons', icon: Star, label: 'Seasons' },
     { id: 'progress', icon: User, label: 'Progress' },
+    { id: 'clips', icon: Play, label: 'Clips' },
     { id: 'home', icon: Bell, label: 'Community' },
   ];
 
@@ -301,6 +303,7 @@ export default function App() {
                 {tab === 'progress' && <ProgressView user={me} onRefresh={refMe} />}
                 {tab === 'player_stats' && <PlayerStatsView user={pUser} onBack={() => setTab('home')} />}
                 {tab === 'notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} />}
+                {tab === 'clips' && <QuestClipsView currentUserId={userId} users={users} posts={posts} />}
                 {tab === 'home' && (
                   <FeedView
                     posts={posts.filter(p => p.type === 'workout_log')}

@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Flame } from 'lucide-react';
+import { Flame, Crosshair } from 'lucide-react';
 import { useActiveRaid } from '../hooks';
 import QuestCard from './QuestCard';
+import RaidCombatModal from './RaidCombatModal';
 
 export default function FeedView({
   posts,
@@ -25,6 +26,7 @@ export default function FeedView({
 
   // Dynamic Boss Damage
   const { raid } = useActiveRaid();
+  const [showRaidModal, setShowRaidModal] = useState(false);
   const totalCommunityXp = users.reduce((acc, u) => acc + Number(u.xp || 0), 0);
   
   let currentHp = 0;
@@ -61,8 +63,23 @@ export default function FeedView({
                 <div style={{ height: '100%', width: `${raidHpPercent}%`, background: 'var(--hot)', borderRadius: 4, transition: 'width 1s ease' }} />
               </div>
             </div>
+            
+            <button 
+              onClick={() => setShowRaidModal(true)}
+              style={{ width: '100%', padding: '8px', background: 'var(--rose)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 900, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 4px 10px rgba(244, 63, 94, 0.4)' }}
+            >
+              <Crosshair size={14} /> ATTACK BOSS
+            </button>
           </div>
         </div>
+      )}
+
+      {showRaidModal && raid && !isDefeated && (
+        <RaidCombatModal 
+          boss={raid}
+          currentUserId={currentUserId}
+          onClose={() => setShowRaidModal(false)}
+        />
       )}
 
       <div className="feed-header" style={{ marginBottom: 16, marginTop: 16 }}>

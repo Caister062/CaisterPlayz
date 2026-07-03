@@ -1,9 +1,9 @@
 import React from 'react';
 import { Star, Shield, Zap, Lock, Unlock, Trophy } from 'lucide-react';
 
-export default function SeasonsView({ config }) {
-  const season = config?.season || { name: 'Season 1: Iron Awakening', level: 1 };
-  const currentLevel = season.level || 1;
+export default function SeasonsView({ config, profile }) {
+  const season = config?.season || { name: 'Season 1: Iron Awakening' };
+  const currentLevel = profile?.level || 0;
 
   const REWARDS = [
     { level: 1, title: 'Rookie Badge', type: 'badge', icon: Shield, unlocked: currentLevel >= 1 },

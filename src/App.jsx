@@ -299,7 +299,7 @@ export default function App() {
                 {tab === 'workouts' && <WorkoutsView onOpenComposer={() => setShowCompose(true)} posts={posts.filter(p => p.type === 'workout_log' && p.userId === userId)} users={users} currentUserId={userId} />}
                 {tab === 'leaderboards' && <ChallengesView posts={posts} users={users} currentUserId={userId} />}
                 {tab === 'guilds' && <GuildsView currentUserId={userId} users={users} />}
-                {tab === 'seasons' && <SeasonsView config={config} />}
+                {tab === 'seasons' && <SeasonsView config={config} profile={me} />}
                 {tab === 'progress' && <ProgressView user={me} onRefresh={refMe} />}
                 {tab === 'player_stats' && <PlayerStatsView user={pUser} onBack={() => setTab('home')} />}
                 {tab === 'notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} />}

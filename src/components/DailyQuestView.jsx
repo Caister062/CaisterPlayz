@@ -25,7 +25,7 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
   const xpRemaining = 500 - currentLevelXp;
   
   // Calculate dynamic boss health from new community XP since spawn
-  const totalCommunityXp = users.reduce((acc, u) => acc + (u.xp || 0), 0);
+  const totalCommunityXp = users.reduce((acc, u) => acc + Number(u.xp || 0), 0);
   
   let currentHp = 0;
   let raidHpPercent = 0;

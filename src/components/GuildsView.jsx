@@ -16,7 +16,7 @@ export default function GuildsView({ currentUserId, users = [] }) {
       // Calculate total XP by summing the XP of all users in the members array
       const totalXp = g.members.reduce((sum, memberId) => {
         const u = users.find(user => user.id === memberId);
-        return sum + (u?.xp || 0);
+        return sum + Number(u?.xp || 0);
       }, 0);
       
       const level = Math.floor(totalXp / 5000) + 1; // Level up every 5000 guild XP

@@ -25,7 +25,7 @@ export default function FeedView({
 
   // Dynamic Boss Damage
   const { raid } = useActiveRaid();
-  const totalCommunityXp = users.reduce((acc, u) => acc + (u.xp || 0), 0);
+  const totalCommunityXp = users.reduce((acc, u) => acc + Number(u.xp || 0), 0);
   
   let currentHp = 0;
   let raidHpPercent = 0;

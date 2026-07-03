@@ -135,7 +135,7 @@ export default function App() {
     if (window.location.search.includes('code=')) {
       // Don't disable booting yet, wait for OAuth to finish in the handleOAuthRedirect promise
     } else {
-      setTimeout(() => setBooting(false), 800); // Fast load that completes animation
+      setTimeout(() => setBooting(false), 3000); // Match the new 2.5s premium loading animation + small buffer
     }
     
     return () => {

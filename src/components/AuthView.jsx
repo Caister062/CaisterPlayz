@@ -41,12 +41,21 @@ export default function AuthView({ onAuthSuccess }) {
     setLoading(true);
 
     let loginEmail = email.trim();
-    if (!loginEmail.includes('@')) {
-      loginEmail = `${loginEmail.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
-    }
-
+    
     try {
-      const authData = await pb.collection('users').authWithPassword(loginEmail, password);
+      // First try native PocketBase login (works for real emails and exact PocketBase usernames)
+      let authData;
+      try {
+        authData = await pb.collection('users').authWithPassword(loginEmail, password);
+      } catch (firstErr) {
+        // If native login fails and it doesn't look like an email, try the guest email fallback
+        if (!loginEmail.includes('@')) {
+          const guestEmail = `${loginEmail.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
+          authData = await pb.collection('users').authWithPassword(guestEmail, password);
+        } else {
+          throw firstErr;
+        }
+      }
       localStorage.setItem('cplayz_user_id', authData.record.id);
       onAuthSuccess(authData.record.id);
     } catch (err) {

@@ -1,122 +1,150 @@
 import React from 'react';
-import { Target, Flame, Trophy, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Target, Flame, Trophy, CheckCircle, Activity, BrainCircuit } from 'lucide-react';
 import { timeAgo } from './PostCard';
 
 export default function QuestCard({ post, users, currentUserId }) {
   const author = users.find(u => u.id === post.userId) || post.expand?.userId || { id: post.userId, displayName: 'Player' };
   
-  let xpMatch = post.text.match(/\[WORKOUT_LOG:\s*(\d+)\s*XP Earned\]/i);
-  let xp = xpMatch ? parseInt(xpMatch[1], 10) : 100;
-  let caption = post.text.replace(/\[WORKOUT_LOG:.*?\]\s*/i, '');
-
-  let title = "Daily Grind";
-  let difficulty = "Normal";
+  // Parse legacy WORKOUT_LOG format
+  let legacyXPMatch = post.text.match(/\[WORKOUT_LOG:\s*(\d+)\s*XP Earned\]/i);
+  let legacyXP = legacyXPMatch ? parseInt(legacyXPMatch[1], 10) : 0;
   
-  if (xp >= 500) {
-    title = "Boss Raid";
-    difficulty = "Legendary";
-  } else if (xp >= 300) {
-    title = "Elite Quest";
-    difficulty = "Hard";
+  // Parse new WORKOUT_DATA JSON format
+  let workoutData = null;
+  const dataMatch = post.text.match(/<!--WORKOUT_DATA:(.*?)-->/);
+  if (dataMatch) {
+    try {
+      workoutData = JSON.parse(dataMatch[1]);
+    } catch(e) {
+      console.error("Failed to parse workout data", e);
+    }
   }
 
+  // Clean caption
+  let caption = post.text
+    .replace(/\[WORKOUT_LOG:.*?\]\s*/i, '')
+    .replace(/<!--WORKOUT_DATA:.*?-->\s*/, '')
+    .trim();
+
+  // Derived values
+  const isLegacy = !workoutData && legacyXP > 0;
+  const xp = workoutData ? workoutData.xp : (legacyXP || 100);
+  const title = workoutData ? `${workoutData.type} Session` : (xp >= 500 ? "Boss Raid" : (xp >= 300 ? "Elite Quest" : "Daily Grind"));
+  const difficulty = workoutData ? workoutData.difficulty : (xp >= 500 ? "Legendary" : (xp >= 300 ? "Hard" : "Normal"));
+  
+  const isEpic = xp >= 500 || difficulty === 'Legendary';
   const isOwn = post.userId === currentUserId;
 
   return (
-    <div style={{
-      background: 'var(--surface)',
-      border: `1px solid ${xp >= 500 ? 'var(--hot)' : 'var(--border)'}`,
-      borderRadius: '16px',
-      padding: '16px',
-      marginBottom: '16px',
-      boxShadow: xp >= 500 ? '0 4px 20px rgba(244, 63, 94, 0.15)' : 'none',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Decorative background glow for high XP */}
-      {xp >= 500 && (
-        <div style={{
-          position: 'absolute',
-          top: -50,
-          right: -50,
-          width: 150,
-          height: 150,
-          background: 'var(--hot)',
-          opacity: 0.1,
-          filter: 'blur(40px)',
-          borderRadius: '50%',
-          pointerEvents: 'none'
-        }} />
+    <div className={`bg-dark-surface border rounded-2xl p-4 mb-4 relative overflow-hidden transition ${
+      isEpic ? 'border-rose-500 shadow-[0_4px_20px_rgba(244,63,94,0.15)]' : 'border-white/10'
+    }`}>
+      {/* Decorative background glow for Epic Workouts */}
+      {isEpic && (
+        <div className="absolute -top-12 -right-12 w-32 h-32 bg-rose-500/10 blur-[40px] rounded-full pointer-events-none" />
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            {author.avatarUrl ? <img src={author.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (author.displayName[0] || '?').toUpperCase()}
+      <div className="flex justify-between items-center mb-3 relative z-10">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-black/50 flex items-center justify-center overflow-hidden">
+            {author.avatarUrl ? <img src={author.avatarUrl} alt="" className="w-full h-full object-cover" /> : (author.displayName[0] || '?').toUpperCase()}
           </div>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text)' }}>
+            <div className="text-[13px] font-black text-white">
               {author.displayName}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text2)', fontWeight: 600 }}>
+            <div className="text-[11px] font-bold text-dark-muted">
               {timeAgo(post.created)}
             </div>
           </div>
         </div>
         
-        <div style={{ background: xp >= 500 ? 'rgba(244, 63, 94, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: xp >= 500 ? 'var(--hot)' : '#10b981', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase' }}>
-          <CheckCircle size={12} /> Complete
+        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+          isEpic ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'
+        }`}>
+          <CheckCircle size={10} /> Complete
         </div>
       </div>
 
-      {/* Quest Details Box */}
-      <div style={{ background: 'var(--bg)', borderRadius: '12px', padding: '12px', marginBottom: '12px', border: '1px solid var(--bg2)' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Target size={16} color="var(--cyan)" /> {title}
+      {/* Main Stats Box */}
+      <div className="bg-black/40 border border-white/5 rounded-xl p-3 mb-3 relative z-10">
+        <h3 className="text-sm font-black uppercase mb-2 flex items-center gap-1.5 text-white">
+          <Target size={14} className="text-brand-primary" /> {title}
         </h3>
         
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-          <div style={{ background: 'var(--surface)', padding: '8px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text2)', textTransform: 'uppercase', fontWeight: 800 }}>XP Earned</span>
-            <span style={{ fontSize: '14px', fontWeight: 900, color: 'var(--cyan)' }}>+{xp}</span>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="bg-white/5 p-2 rounded-lg flex flex-col gap-0.5">
+            <span className="text-[9px] font-black text-dark-muted uppercase">XP Earned</span>
+            <span className="text-xs font-black text-brand-primary">+{xp}</span>
           </div>
-          <div style={{ background: 'var(--surface)', padding: '8px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text2)', textTransform: 'uppercase', fontWeight: 800 }}>Difficulty</span>
-            <span style={{ fontSize: '14px', fontWeight: 900, color: xp >= 500 ? 'var(--hot)' : '#3b82f6' }}>{difficulty}</span>
+          <div className="bg-white/5 p-2 rounded-lg flex flex-col gap-0.5">
+            <span className="text-[9px] font-black text-dark-muted uppercase">Duration</span>
+            <span className="text-xs font-black text-white">{workoutData ? `${workoutData.duration}m` : '--'}</span>
+          </div>
+          <div className="bg-white/5 p-2 rounded-lg flex flex-col gap-0.5">
+            <span className="text-[9px] font-black text-dark-muted uppercase">Difficulty</span>
+            <span className={`text-xs font-black ${isEpic ? 'text-rose-400' : 'text-blue-400'}`}>{difficulty}</span>
           </div>
         </div>
 
-        {/* Progress Bar Mock */}
-        <div style={{ height: '6px', background: 'var(--surface)', borderRadius: '3px', overflow: 'hidden' }}>
-          <div style={{ width: '100%', height: '100%', background: xp >= 500 ? 'var(--hot)' : 'var(--cyan)', borderRadius: '3px' }} />
-        </div>
+        {/* Exercises List (if any) */}
+        {workoutData && workoutData.exercises && workoutData.exercises.length > 0 && (
+          <div className="bg-black/40 rounded-lg p-2 mb-3 border border-white/5">
+            <div className="text-[9px] font-black text-dark-muted uppercase mb-2 flex items-center gap-1">
+              <Activity size={10} /> Exercises Logged
+            </div>
+            <div className="space-y-1.5">
+              {workoutData.exercises.map(ex => (
+                <div key={ex.id} className="flex justify-between items-center text-[11px]">
+                  <span className="text-white font-bold">{ex.name}</span>
+                  <div className="text-dark-muted font-bold">
+                    <span className="text-white">{ex.sets}</span>×<span className="text-white">{ex.reps}</span>
+                    {ex.weight && <span className="ml-1 text-emerald-400">{ex.weight}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* AI Coach Summary (if any) */}
+        {workoutData && workoutData.coachSummary && (
+          <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-lg p-2.5">
+            <div className="text-[9px] font-black text-brand-primary uppercase mb-1 flex items-center gap-1">
+              <BrainCircuit size={10} /> AI Coach Analysis
+            </div>
+            <p className="text-[11px] text-white/80 font-medium leading-relaxed whitespace-pre-wrap">
+              {workoutData.coachSummary}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Caption */}
       {caption && (
-        <p style={{ fontSize: '14px', color: 'var(--text1)', marginBottom: '12px', lineHeight: 1.4 }}>
+        <p className="text-[13px] text-white/90 mb-3 leading-relaxed relative z-10 font-medium">
           {caption}
         </p>
       )}
 
       {/* Media */}
       {post.imageUrl && (
-        <div style={{ width: '100%', borderRadius: '12px', overflow: 'hidden', marginBottom: '12px', background: 'var(--bg2)' }}>
-          <img src={post.imageUrl} alt="Quest Proof" style={{ width: '100%', display: 'block' }} loading="lazy" />
+        <div className="w-full rounded-xl overflow-hidden mb-3 bg-black/50 border border-white/5 relative z-10">
+          <img src={post.imageUrl} alt="Quest Proof" className="w-full block object-cover" loading="lazy" />
         </div>
       )}
 
-      {/* Footer Stats */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--bg2)', paddingTop: '12px' }}>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text2)', fontWeight: 600 }}>
-            <Flame size={14} color="#f59e0b" /> Streak Maintained
+      {/* Footer */}
+      <div className="flex justify-between border-t border-white/5 pt-3 relative z-10">
+        <div className="flex gap-4">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-dark-muted">
+            <Flame size={12} className="text-amber-500" /> Streak Up
           </div>
         </div>
-        {xp >= 500 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--hot)', fontWeight: 800 }}>
-            <Trophy size={14} /> Boss Defeated
+        {workoutData && workoutData.bossDamage > 0 && (
+          <div className="flex items-center gap-1 text-[11px] font-black text-rose-400">
+            <Trophy size={12} /> {workoutData.bossDamage.toLocaleString()} Boss DMG
           </div>
         )}
       </div>

@@ -594,13 +594,12 @@ export async function logWorkout(userId, text, imageUrl, workoutDetails) {
     viewedBy: [],
     repostedBy: [],
     favoritedBy: [],
-    type: 'workout_log',
-    // We can store workout specific details in the text as JSON if there's no custom field,
-    // but typically we'd just put it in a metadata field. We'll append it to text or use a new field if available.
+    type: 'workout_log'
   };
 
   if (workoutDetails) {
-    data.text = `[WORKOUT_LOG: ${workoutDetails.xp} XP Earned]\n\n` + data.text;
+    // Encode the structured data securely within a hidden tag
+    data.text = `<!--WORKOUT_DATA:${JSON.stringify(workoutDetails)}-->\n${data.text}`;
   }
 
   const post = await pb.collection('cplayz_posts').create(data);

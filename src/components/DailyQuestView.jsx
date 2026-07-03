@@ -109,21 +109,50 @@ export default function DailyQuestView({ user, config, onOpenComposer }) {
         {/* Weekly Goal Progress */}
         <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 16, border: '1px solid var(--border)', textAlign: 'center' }}>
           <Target size={24} color="var(--cyan)" style={{ margin: '0 auto 8px' }} />
-          <div style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Weekly Goal</div>
+          <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Weekly Goal</div>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginTop: 4 }}>
-            {profile.streak >= 3 ? '3/3' : `${profile.streak}/3`} <span style={{ fontSize: 14, color: 'var(--text2)' }}>Days</span>
+            {profile.streak >= 3 ? '3/3' : `${profile.streak}/3`} <span style={{ fontSize: 12, color: 'var(--text2)' }}>Days</span>
           </div>
         </div>
 
-        {/* Recent Achievement */}
+        {/* Calories Burned */}
+        <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 16, border: '1px solid var(--border)', textAlign: 'center' }}>
+          <Flame size={24} color="var(--hot)" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Weekly Cals</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginTop: 4 }}>
+            2,450 <span style={{ fontSize: 12, color: 'var(--text2)' }}>kcal</span>
+          </div>
+        </div>
+
+        {/* Workout Minutes */}
+        <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 16, border: '1px solid var(--border)', textAlign: 'center' }}>
+          <Activity size={24} color="var(--emerald)" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Time Trained</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginTop: 4 }}>
+            185 <span style={{ fontSize: 12, color: 'var(--text2)' }}>min</span>
+          </div>
+        </div>
+
+        {/* Recent PR */}
         <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 16, border: '1px solid var(--border)', textAlign: 'center' }}>
           <Award size={24} color="var(--amber)" style={{ margin: '0 auto 8px' }} />
-          <div style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Latest Badge</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--amber)', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {profile.badges && profile.badges.length > 0 ? profile.badges[profile.badges.length - 1] : 'Rookie'}
+          <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase' }}>Latest PR</div>
+          <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--amber)', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            Bench 225x5
           </div>
         </div>
 
+      </div>
+
+      {/* Upcoming Community Raid */}
+      <div style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid var(--violet)', borderRadius: 16, padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--violet)', fontWeight: 900, textTransform: 'uppercase', marginBottom: 2 }}>Global Raid</div>
+          <div style={{ fontSize: 14, color: '#fff', fontWeight: 800 }}>10,000 km Run Challenge</div>
+        </div>
+        <div style={{ background: 'var(--violet)', color: '#fff', fontSize: 12, fontWeight: 900, padding: '6px 12px', borderRadius: 8 }}>
+          JOIN
+        </div>
       </div>
 
       {/* Active Quest */}

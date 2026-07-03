@@ -23,9 +23,10 @@ export default function FeedView({
 
   // Dynamic Boss Damage
   const raid = config?.liveRaid;
+  const BOSS_MAX_HP = 100000;
   const totalCommunityXp = users.reduce((acc, u) => acc + (u.xp || 0), 0);
-  const currentHp = raid ? Math.max(0, raid.maxHp - (totalCommunityXp * 1.5)) : 0;
-  const raidHpPercent = raid ? (currentHp / raid.maxHp) * 100 : 0;
+  const currentHp = Math.max(0, BOSS_MAX_HP - (totalCommunityXp * 1.5));
+  const raidHpPercent = (currentHp / BOSS_MAX_HP) * 100;
 
   return (
     <div style={{ paddingBottom: 100 }}>
@@ -52,7 +53,7 @@ export default function FeedView({
             <div style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text1)', fontWeight: 800, marginBottom: 4 }}>
                 <span>HP</span>
-                <span>{currentHp.toLocaleString()} / {config.liveRaid.maxHp.toLocaleString()}</span>
+                <span>{currentHp.toLocaleString()} / {BOSS_MAX_HP.toLocaleString()}</span>
               </div>
               <div style={{ height: 8, background: 'var(--bg2)', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ height: '100%', width: `${raidHpPercent}%`, background: 'var(--hot)', borderRadius: 4, transition: 'width 1s ease' }} />

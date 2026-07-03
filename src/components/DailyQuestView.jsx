@@ -23,10 +23,11 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
   const raid = config?.liveRaid;
   
   // Calculate dynamic boss health from community XP to avoid permissions issues
+  const BOSS_MAX_HP = 100000;
   const totalCommunityXp = users.reduce((acc, u) => acc + (u.xp || 0), 0);
   const totalCommunityDamage = totalCommunityXp * 1.5;
-  const currentHp = raid ? Math.max(0, raid.maxHp - totalCommunityDamage) : 0;
-  const raidHpPercent = raid ? (currentHp / raid.maxHp) * 100 : 0;
+  const currentHp = Math.max(0, BOSS_MAX_HP - totalCommunityDamage);
+  const raidHpPercent = (currentHp / BOSS_MAX_HP) * 100;
 
   return (
     <div className="page-container" style={{ padding: '24px 16px', paddingBottom: 100 }}>
@@ -174,7 +175,7 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text1)', fontWeight: 800, marginBottom: 8 }}>
               <span>HP</span>
-              <span>{currentHp.toLocaleString()} / {raid.maxHp.toLocaleString()}</span>
+              <span>{currentHp.toLocaleString()} / {BOSS_MAX_HP.toLocaleString()}</span>
             </div>
             <div style={{ height: 12, background: 'var(--bg2)', borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
               <div style={{ height: '100%', width: `${raidHpPercent}%`, background: 'var(--hot)', borderRadius: 6, transition: 'width 1s ease' }} />

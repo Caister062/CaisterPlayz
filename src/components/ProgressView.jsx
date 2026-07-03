@@ -52,42 +52,42 @@ export default function ProgressView({ user, onRefresh }) {
           
           <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Total Workouts</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>42</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{user?.workoutsLogged || 0}</div>
           </div>
 
           <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Hours Trained</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>68 <span style={{fontSize: 12, color: 'var(--text2)'}}>hrs</span></div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{Math.floor((user?.timeTrained || 0) / 60)} <span style={{fontSize: 12, color: 'var(--text2)'}}>hrs</span></div>
           </div>
 
           <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Calories Burned</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>24.5<span style={{fontSize: 12, color: 'var(--text2)'}}>k</span></div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{user?.weeklyCals || 0}<span style={{fontSize: 12, color: 'var(--text2)'}}></span></div>
           </div>
 
           <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Boss Damage</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--rose)' }}>142<span style={{fontSize: 12, color: 'var(--text2)'}}>k</span></div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--rose)' }}>{user?.bossDamage || 0}<span style={{fontSize: 12, color: 'var(--text2)'}}></span></div>
           </div>
 
           <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Avg Session</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>58 <span style={{fontSize: 12, color: 'var(--text2)'}}>min</span></div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{user?.workoutsLogged ? Math.floor((user.timeTrained || 0) / user.workoutsLogged) : 0} <span style={{fontSize: 12, color: 'var(--text2)'}}>min</span></div>
           </div>
 
           <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Fav Exercise</div>
-            <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--cyan)' }}>Deadlift</div>
+            <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--cyan)' }}>{user?.favExercise || 'None'}</div>
           </div>
 
           <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Best Streak</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--amber)' }}>14 <span style={{fontSize: 12, color: 'var(--text2)'}}>Days</span></div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--amber)' }}>{user?.bestStreak || user?.streak || 0} <span style={{fontSize: 12, color: 'var(--text2)'}}>Days</span></div>
           </div>
 
           <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--hot)' }}>
             <div style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>Legendary Sessions</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--hot)' }}>8</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--hot)' }}>{user?.legendarySessions || 0}</div>
           </div>
 
         </div>

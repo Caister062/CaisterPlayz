@@ -1048,6 +1048,108 @@ export async function joinSquad(squad, userId) {
   return squad;
 }
 
+// ==========================================
+// GUILDS (Zero-Migration using cplayz_posts)
+// ==========================================
+
+export function useGuilds() {
+  const [guilds, setGuilds] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGuilds = async () => {
+      try {
+        const res = await pb.collection('cplayz_posts').getList(1, 100, {
+          filter: 'type="guild"',
+          sort: '-created'
+        });
+        
+        const parsedGuilds = res.items.map(post => {
+          let data = { name: 'Unknown Guild', motto: 'No motto set.' };
+          try {
+            const match = post.text.match(/<!--GUILD_DATA:(.*?)-->/);
+            if (match) {
+              data = JSON.parse(match[1]);
+            }
+          } catch(e) {}
+          
+          return {
+            id: post.id,
+            name: data.name,
+            motto: data.motto,
+            members: post.likedBy || [],
+            bossDefeats: data.bossDefeats || 0,
+            creatorId: post.userId
+          };
+        });
+        
+        setGuilds(parsedGuilds);
+      } catch (err) {
+        console.error('Failed to fetch guilds:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchGuilds();
+
+    let unsub;
+    pb.collection('cplayz_posts').subscribe('*', (e) => {
+      if (e.record.type === 'guild') {
+        fetchGuilds();
+      }
+    })
+    .then(u => unsub = u)
+    .catch(console.error);
+
+    return () => { if (unsub) unsub(); };
+  }, []);
+
+  return { guilds, loading };
+}
+
+export async function createGuild(userId, name, motto) {
+  const guildData = {
+    name: name,
+    motto: motto || 'We forge our strength in iron.',
+    bossDefeats: 0
+  };
+  
+  const data = {
+    userId,
+    text: `<!--GUILD_DATA:${JSON.stringify(guildData)}-->`,
+    imageUrl: '',
+    likedBy: [userId], // Creator is the first member
+    viewedBy: [],
+    repostedBy: [],
+    favoritedBy: [],
+    type: 'guild'
+  };
+
+  return pb.collection('cplayz_posts').create(data);
+}
+
+export async function toggleGuildMembership(guildId, userId) {
+  try {
+    const record = await pb.collection('cplayz_posts').getOne(guildId);
+    let members = record.likedBy || [];
+    
+    if (members.includes(userId)) {
+      members = members.filter(id => id !== userId);
+    } else {
+      members.push(userId);
+    }
+    
+    return pb.collection('cplayz_posts').update(guildId, {
+      likedBy: members
+    });
+  } catch (err) {
+    console.error('Failed to toggle membership:', err);
+    throw err;
+  }
+}
+
+
 export function useDirectMessages(userId, recipientId) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);

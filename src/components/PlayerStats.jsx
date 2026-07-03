@@ -1,8 +1,13 @@
 import React from 'react';
 import { Flame, Trophy } from 'lucide-react';
+import { useGuilds } from '../hooks';
 
 export default function PlayerStats({ user }) {
+  const { guilds } = useGuilds();
+  
   if (!user) return null;
+  
+  const myGuild = guilds.find(g => g.members.includes(user.id));
 
   return (
     <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 24, border: '1px solid var(--border)', textAlign: 'center' }}>
@@ -19,13 +24,21 @@ export default function PlayerStats({ user }) {
         {user.displayName || 'Player'}
       </h1>
       
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: 'var(--amber)', padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>
-          Iron Titan
-        </span>
-        <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--emerald)', padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>
-          Guild: Iron Titans
-        </span>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+        {myGuild ? (
+          <>
+            <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: 'var(--amber)', padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>
+              Guild Leader
+            </span>
+            <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--emerald)', padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>
+              Guild: {myGuild.name}
+            </span>
+          </>
+        ) : (
+          <span style={{ background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', padding: '4px 10px', borderRadius: 12, fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }}>
+            Solo Player
+          </span>
+        )}
       </div>
 
       <p style={{ color: 'var(--text2)', fontSize: 14, marginTop: 4 }}>

@@ -262,7 +262,7 @@ export default function App() {
                   if (isAdmin) {
                     goTab('admin');
                   } else {
-                    const key = prompt('Enter Control Core Key:');
+                    const key = prompt('Enter God Mode Key:');
                     if (key && key.trim() === 'CAISTER_CORE_ADMIN') {
                       localStorage.setItem('caister_admin', 'CAISTER_CORE_ADMIN');
                       setIsAdmin(true);
@@ -272,7 +272,7 @@ export default function App() {
                     }
                   }
                 }}
-                title="Control Core"
+                title="God Mode"
                 style={{ color:'#f43f5e' }}
               >
                 <ShieldAlert size={18} />

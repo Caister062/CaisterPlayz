@@ -316,7 +316,7 @@ export default function AdminView({ posts, users, currentUserId }) {
     <div className="admin-view">
       <div className="admin-hero">
         <div className="admin-title">
-          <AlertTriangle size={24} /> Control Core
+          <AlertTriangle size={24} /> God Mode
         </div>
 
         <div className="admin-subtitle">

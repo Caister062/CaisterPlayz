@@ -305,8 +305,26 @@ export function useAllUsers() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await pb.collection('users').getList(1, 200);
-      setUsers(res.items);
+      const [resUsers, resStats] = await Promise.all([
+        pb.collection('users').getList(1, 200),
+        pb.collection('cplayz_posts').getFullList({ filter: 'type="player_stats"' }).catch(() => [])
+      ]);
+
+      const statsMap = {};
+      if (Array.isArray(resStats)) {
+        resStats.forEach(s => {
+          try {
+            statsMap[s.userId] = JSON.parse(s.text);
+          } catch(e){}
+        });
+      }
+
+      const merged = resUsers.items.map(u => ({
+        ...u,
+        ...(statsMap[u.id] || {})
+      }));
+      
+      setUsers(merged);
     } catch (err) {
       console.error('fetchOperators:', err);
     }
@@ -356,7 +374,15 @@ export function useUserProfile(userId) {
 
     try {
       const res = await pb.collection('users').getOne(userId);
-      setProfile(res);
+      let stats = {};
+      try {
+        const statsRes = await pb.collection('cplayz_posts').getList(1, 1, { filter: `userId="${userId}" && type="player_stats"` });
+        if (statsRes.items.length > 0) {
+          stats = JSON.parse(statsRes.items[0].text);
+        }
+      } catch(e){}
+
+      setProfile({ ...res, ...stats });
     } catch {
       if (localStorage.getItem('cplayz_user_id') === userId) {
         localStorage.removeItem('cplayz_user_id');
@@ -691,18 +717,42 @@ export async function logWorkout(userId, text, imageUrl, workoutDetails) {
     const currentLevel = user.level || 1;
     const currentStreak = user.streak || 0;
     
+    // Attempt original pocketbase update (might fail silently due to missing schema fields)
     const xpGained = workoutDetails?.xp || 100;
     const newXp = currentXp + xpGained;
     const newLevel = Math.floor(newXp / 500) + 1; // 500 xp per level
-    
-    // Simplistic streak increment (in reality we'd check lastWorkoutDate)
     const newStreak = currentStreak + 1;
 
-    await pb.collection('users').update(userId, {
-      xp: newXp,
-      level: newLevel,
-      streak: newStreak
-    });
+    pb.collection('users').update(userId, { xp: newXp, level: newLevel, streak: newStreak }).catch(() => {});
+
+    // Reliable player_stats update
+    const statsQuery = await pb.collection('cplayz_posts').getList(1, 1, { filter: `userId="${userId}" && type="player_stats"` });
+    let pXp = 0; let pStreak = 0; let unlockedGear = []; let equippedFrame = 'frame_basic'; let equippedAura = null; let statsId = null;
+
+    if (statsQuery.items.length > 0) {
+      const sp = statsQuery.items[0];
+      statsId = sp.id;
+      try {
+        const d = JSON.parse(sp.text);
+        pXp = d.xp || 0; pStreak = d.streak || 0; unlockedGear = d.unlockedGear || []; equippedFrame = d.equippedFrame || 'frame_basic'; equippedAura = d.equippedAura || null;
+      } catch(e) {}
+    }
+
+    const nextXp = pXp + xpGained;
+    const nextLevel = Math.floor(nextXp / 500) + 1;
+    const nextStreak = pStreak + 1;
+
+    const newStats = { xp: nextXp, level: nextLevel, streak: nextStreak, unlockedGear, equippedFrame, equippedAura };
+
+    if (statsId) {
+      await pb.collection('cplayz_posts').update(statsId, { text: JSON.stringify(newStats) });
+    } else {
+      await pb.collection('cplayz_posts').create({
+        userId, type: 'player_stats', text: JSON.stringify(newStats),
+        imageUrl: '', likedBy: [], viewedBy: [], repostedBy: [], favoritedBy: []
+      });
+    }
+
   } catch (err) {
     console.error('Failed to update user stats:', err);
   }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Shield, Zap, Lock } from 'lucide-react';
-import { pb } from '../pocketbase'; // Assuming pb is exported or imported if needed... wait, I can just use pb from global if it's there. Actually I'll use hooks.js
+import pb from '../pocketbase';
 import { getUnlockedGear, GEAR_DB } from '../rpgConfig';
 
 export default function GearInventoryModal({ user, onClose, onEquip }) {

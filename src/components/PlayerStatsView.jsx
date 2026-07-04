@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PlayerStats from './PlayerStats';
 import GearInventoryModal from './GearInventoryModal';
 import { ArrowLeft, Shield, Backpack } from 'lucide-react';
-import { pb } from '../pocketbase';
+import pb from '../pocketbase';
 
 export default function PlayerStatsView({ user, onBack, onUserUpdate }) {
   const [showGear, setShowGear] = useState(false);

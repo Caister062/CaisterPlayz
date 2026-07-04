@@ -322,6 +322,8 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
         <RaidCombatModal 
           boss={raid}
           currentUserId={user?.id}
+          config={config}
+          playerName={profile.displayName}
           onClose={() => setShowRaidModal(false)}
         />
       )}

@@ -78,6 +78,8 @@ export default function FeedView({
         <RaidCombatModal 
           boss={raid}
           currentUserId={currentUserId}
+          config={config}
+          playerName={users.find(u => u.id === currentUserId)?.displayName || 'Player'}
           onClose={() => setShowRaidModal(false)}
         />
       )}

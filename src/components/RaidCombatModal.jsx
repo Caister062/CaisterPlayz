@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Flame, ShieldAlert, Crosshair, Zap, Trophy, Target } from 'lucide-react';
-import { logWorkout } from '../hooks';
+import { logWorkout, attackLiveBoss } from '../hooks';
 
 const WORKOUT_TYPES = [
   { id: 'strength', label: '🏋️ Strength', baseCaloriesPerMin: 6 },
@@ -15,7 +15,7 @@ const DIFFICULTIES = [
   { id: 'Legendary', multiplier: 2.5, color: '#f43f5e' }
 ];
 
-export default function RaidCombatModal({ boss, currentUserId, onClose }) {
+export default function RaidCombatModal({ boss, currentUserId, config, playerName = 'Player', onClose }) {
   const [duration, setDuration] = useState('45');
   const [workoutType, setWorkoutType] = useState(WORKOUT_TYPES[0]);
   const [difficulty, setDifficulty] = useState(DIFFICULTIES[1]);
@@ -51,6 +51,11 @@ export default function RaidCombatModal({ boss, currentUserId, onClose }) {
           };
 
           await logWorkout(currentUserId, `Attacked the World Boss for ${expectedDamage} DMG!`, '', workoutDetails);
+          
+          if (config && config.id) {
+            await attackLiveBoss(config.id, config, expectedDamage, playerName);
+          }
+
           onClose();
         } catch (err) {
           console.error(err);

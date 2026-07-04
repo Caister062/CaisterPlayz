@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Play, Pause, Flame, Target, MessageSquare, Heart, ShieldAlert, Share2, Bookmark, Plus, X, MoreVertical, Loader, Zap } from 'lucide-react';
+import { Play, Pause, Flame, Target, MessageSquare, Heart, ShieldAlert, Share2, Bookmark, Plus, X, MoreVertical, Loader, Zap, Volume2, VolumeX } from 'lucide-react';
 import { createPost, toggleBoost, toggleRelay, toggleAnchor } from '../hooks';
 
 /* 
@@ -10,6 +10,7 @@ import { createPost, toggleBoost, toggleRelay, toggleAnchor } from '../hooks';
 function ClipPlayer({ clip, isActive, onBoost, onRally, onEcho, onVault, currentUserId }) {
   const [playing, setPlaying] = useState(isActive);
   const [videoError, setVideoError] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ function ClipPlayer({ clip, isActive, onBoost, onRally, onEcho, onVault, current
           src={clip.videoUrl}
           loop
           playsInline
-          muted // Default to muted for safety
+          muted={isMuted}
           onClick={togglePlay}
           onError={() => setVideoError(true)}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -104,9 +105,15 @@ function ClipPlayer({ clip, isActive, onBoost, onRally, onEcho, onVault, current
       </div>
 
       {/* Admin/Safety (Top Right) */}
-      <div style={{ position: 'absolute', top: 20, right: 16 }}>
+      <div style={{ position: 'absolute', top: 20, right: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <button style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
           <MoreVertical size={18} />
+        </button>
+        <button 
+          onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }} 
+          style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)', cursor: 'pointer' }}
+        >
+          {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
         </button>
       </div>
 

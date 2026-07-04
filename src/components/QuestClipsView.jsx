@@ -241,6 +241,12 @@ export default function QuestClipsView({ currentUserId, users, posts }) {
     setIsUploading(true);
 
     try {
+      if (uploadFile.size > 1.5 * 1024 * 1024) {
+        alert("Your HuggingFace server rejects files over 1.5MB (413 Payload Too Large). Please choose a smaller video clip or a GIF!");
+        setIsUploading(false);
+        return;
+      }
+
       const data = {
         xp: Math.floor(Math.random() * 500) + 100, // Simulated XP
         bossDamage: Math.floor(Math.random() * 2000) + 500, // Simulated DMG

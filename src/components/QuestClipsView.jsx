@@ -304,10 +304,14 @@ export default function QuestClipsView({ currentUserId, users, posts }) {
       }
 
       const author = users.find(u => u.id === clip.userId);
+      
+      // Strip out any old test 'blob:' URLs from the database so the browser doesn't throw ERR_FILE_NOT_FOUND
+      const isDeadBlob = clip.imageUrl?.startsWith('blob:');
+      
       return {
         ...clip,
         text: cleanText,
-        videoUrl: clip.imageUrl, // We stored the URL in the image field
+        videoUrl: isDeadBlob ? null : clip.imageUrl,
         metadata,
         authorName: author?.displayName || 'Unknown Player'
       };

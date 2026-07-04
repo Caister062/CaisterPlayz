@@ -34,8 +34,7 @@ export default function DailyQuestView({ user, config, users = [], onOpenCompose
   let isDefeated = false;
 
   if (raid) {
-    const totalCommunityDamage = (totalCommunityXp - raid.startCommunityXp) * 1.5;
-    currentHp = Math.max(0, raid.maxHp - totalCommunityDamage);
+    currentHp = raid.currentHp !== undefined ? raid.currentHp : raid.maxHp;
     raidHpPercent = (currentHp / raid.maxHp) * 100;
     isDefeated = currentHp <= 0;
   }

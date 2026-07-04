@@ -1171,10 +1171,28 @@ export function useActiveRaid() {
             const match = post.text.match(/<!--RAID_DATA:(.*?)-->/);
             if (match) {
               const data = JSON.parse(match[1]);
+              let damage = 0;
+              try {
+                // Calculate damage from all workouts logged since the raid spawned
+                const logs = await pb.collection('cplayz_posts').getFullList({
+                  filter: `type="workout_log" && created >= "${post.created.replace('Z', '')}"`
+                });
+                logs.forEach(log => {
+                  const m = log.text.match(/<!--WORKOUT_DATA:(.*?)-->/);
+                  if (m) {
+                    try {
+                      const d = JSON.parse(m[1]);
+                      if (d.bossDamage) damage += d.bossDamage;
+                    } catch(e) {}
+                  }
+                });
+              } catch(e) { console.error('Failed to calculate raid damage:', e); }
+
               setRaid({
                 id: post.id,
                 name: data.name,
                 maxHp: data.maxHp,
+                currentHp: Math.max(0, data.maxHp - damage),
                 image: data.image,
                 startCommunityXp: data.startCommunityXp || 0,
                 created: post.created
@@ -1195,7 +1213,7 @@ export function useActiveRaid() {
 
     let unsub;
     pb.collection('cplayz_posts').subscribe('*', (e) => {
-      if (e.record.type === 'raid') {
+      if (e.record.type === 'raid' || e.record.type === 'workout_log') {
         fetchRaid();
       }
     })

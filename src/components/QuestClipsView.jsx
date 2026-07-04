@@ -9,6 +9,7 @@ import { createPost, toggleBoost, toggleRelay, toggleAnchor } from '../hooks';
 
 function ClipPlayer({ clip, isActive, onBoost, onRally, onEcho, onVault, currentUserId }) {
   const [playing, setPlaying] = useState(isActive);
+  const [videoError, setVideoError] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ function ClipPlayer({ clip, isActive, onBoost, onRally, onEcho, onVault, current
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', scrollSnapAlign: 'start', background: '#000', overflow: 'hidden' }}>
       {/* Video Element */}
-      {clip.videoUrl ? (
+      {clip.videoUrl && !videoError ? (
         <video 
           ref={videoRef}
           src={clip.videoUrl}
@@ -51,11 +52,23 @@ function ClipPlayer({ clip, isActive, onBoost, onRally, onEcho, onVault, current
           playsInline
           muted // Default to muted for safety
           onClick={togglePlay}
+          onError={() => setVideoError(true)}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       ) : (
-        <div style={{ width: '100%', height: '100%', background: 'linear-gradient(45deg, #1e1b4b, #0f172a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={togglePlay}>
-          <span style={{ color: 'var(--text2)', fontSize: 14 }}>Video Processing...</span>
+        <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} onClick={togglePlay}>
+          {/* Premium Fallback Video for dead blob URLs */}
+          <video 
+            ref={videoRef}
+            src="https://cdn.pixabay.com/video/2020/05/24/40061-424888243_tiny.mp4"
+            loop playsInline muted
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: 'var(--text2)', fontSize: 14, background: 'rgba(0,0,0,0.6)', padding: '4px 12px', borderRadius: 12, backdropFilter: 'blur(4px)' }}>
+              {videoError ? 'Clip Expired - Playing Placeholder' : 'Video Processing...'}
+            </span>
+          </div>
         </div>
       )}
 

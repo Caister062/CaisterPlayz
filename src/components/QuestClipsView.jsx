@@ -14,14 +14,22 @@ function ClipPlayer({ clip, isActive, onBoost, onRally, onEcho, onVault, current
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (isActive) {
+    if (isActive && !videoError) {
       setPlaying(true);
-      videoRef.current?.play().catch(e => console.error("Autoplay prevented:", e));
+      const playPromise = videoRef.current?.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          console.error("Autoplay prevented:", e);
+          if (e.name === 'NotSupportedError') {
+            setVideoError(true);
+          }
+        });
+      }
     } else {
       setPlaying(false);
       videoRef.current?.pause();
     }
-  }, [isActive]);
+  }, [isActive, videoError]);
 
   const togglePlay = () => {
     if (playing) {

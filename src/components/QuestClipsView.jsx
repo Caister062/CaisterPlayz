@@ -291,7 +291,7 @@ export default function QuestClipsView({ currentUserId, users, posts }) {
       
       // If the post has a 'media' file, construct the PocketBase file URL
       const isDeadBlob = clip.imageUrl?.startsWith('blob:');
-      const mediaUrl = clip.media ? pb.files.getUrl(clip, clip.media) : null;
+      const mediaUrl = clip.media ? pb.files.getURL(clip, clip.media) : null;
       
       return {
         ...clip,

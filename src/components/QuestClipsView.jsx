@@ -19,10 +19,9 @@ function ClipPlayer({ clip, isActive, onBoost, onRally, onEcho, onVault, current
       const playPromise = videoRef.current?.play();
       if (playPromise !== undefined) {
         playPromise.catch(e => {
-          console.error("Autoplay prevented:", e);
-          if (e.name === 'NotSupportedError') {
-            setVideoError(true);
-          }
+          console.error("Autoplay prevented:", e.message || e);
+          // Catch ALL errors (NotSupported, NotAllowed, etc.) to guarantee fallback shows
+          setVideoError(true);
         });
       }
     } else {

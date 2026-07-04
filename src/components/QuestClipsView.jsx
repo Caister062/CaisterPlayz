@@ -57,18 +57,22 @@ function ClipPlayer({ clip, isActive, onBoost, onRally, onEcho, onVault, current
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       ) : (
-        <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} onClick={togglePlay}>
-          {/* Premium Fallback Video for dead blob URLs */}
-          <video 
-            ref={videoRef}
-            src="https://cdn.pixabay.com/video/2020/05/24/40061-424888243_tiny.mp4"
-            loop playsInline muted
-            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}
-          />
+        <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: 'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)', backgroundSize: '400% 400%', animation: 'gradient 15s ease infinite' }} onClick={togglePlay}>
+          {/* Animated CSS Fallback for dead blob URLs / hotlink issues */}
+          <style>{`
+            @keyframes gradient {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+          `}</style>
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: 'var(--text2)', fontSize: 14, background: 'rgba(0,0,0,0.6)', padding: '4px 12px', borderRadius: 12, backdropFilter: 'blur(4px)' }}>
-              {videoError ? 'Clip Expired - Playing Placeholder' : 'Video Processing...'}
-            </span>
+            <div style={{ textAlign: 'center' }}>
+              <Zap size={48} color="#fff" opacity={0.5} style={{ marginBottom: 16 }} />
+              <div style={{ color: '#fff', fontSize: 16, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
+                {videoError ? 'Video Unavailable' : 'Processing...'}
+              </div>
+            </div>
           </div>
         </div>
       )}

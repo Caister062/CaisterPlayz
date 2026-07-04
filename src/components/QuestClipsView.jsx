@@ -240,9 +240,18 @@ export default function QuestClipsView({ currentUserId, users, posts }) {
     setIsUploading(true);
 
     try {
-      // Create a local blob URL since PocketBase doesn't have an MP4 field set up yet
-      // This will simulate the upload for beta testing purposes
-      const videoBlobUrl = URL.createObjectURL(uploadFile);
+      if (uploadFile.size > 2.5 * 1024 * 1024) {
+        alert("Video is too large! Please upload a clip under 2.5MB to avoid crashing the save system.");
+        setIsUploading(false);
+        return;
+      }
+
+      // Convert video to Base64 string so we can save it as text without needing backend file storage setup
+      const reader = new FileReader();
+      reader.readAsDataURL(uploadFile);
+      
+      reader.onloadend = async () => {
+        const base64Video = reader.result;
 
       const data = {
         xp: Math.floor(Math.random() * 500) + 100, // Simulated XP
@@ -260,15 +269,21 @@ export default function QuestClipsView({ currentUserId, users, posts }) {
       // Wait, createPost signature: (userId, text, imageUrl, communityId)
       // I can't pass 'clip' as type if I just use createPost directly unless I modify createPost!
       // I will just use createPost(userId, embeddedText, videoBlobUrl, 'clip_zone') and then filter by communityId? No, I'll modify createPost.
-      await createPost(currentUserId, embeddedText, videoBlobUrl, 'quest_clip');
-      
-      setShowUpload(false);
-      setUploadFile(null);
-      setUploadCaption('');
+        await createPost(currentUserId, embeddedText, base64Video, 'quest_clip');
+        
+        setShowUpload(false);
+        setUploadFile(null);
+        setUploadCaption('');
+        setIsUploading(false);
+      };
+
+      reader.onerror = () => {
+        alert("Failed to read video file");
+        setIsUploading(false);
+      };
     } catch (e) {
       console.error(e);
       alert('Failed to upload clip');
-    } finally {
       setIsUploading(false);
     }
   };

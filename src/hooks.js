@@ -691,6 +691,27 @@ export async function createPost(userId, text, imageUrl, communityId) {
   return post;
 }
 
+export async function createMediaPost(userId, text, file, communityId) {
+  const formData = new FormData();
+  formData.append('userId', userId);
+  formData.append('text', text || '');
+  formData.append('type', 'post');
+  
+  if (communityId) {
+    formData.append('communityId', communityId);
+  }
+  
+  if (file) {
+    formData.append('media', file);
+  }
+
+  const post = await pb.collection('cplayz_posts').create(formData);
+  const senderName = pb.authStore.model?.displayName || 'Someone';
+  extractAndNotifyMentions(text, userId, post.id, senderName);
+
+  return post;
+}
+
 export async function logWorkout(userId, text, imageUrl, workoutDetails) {
   const data = {
     userId,

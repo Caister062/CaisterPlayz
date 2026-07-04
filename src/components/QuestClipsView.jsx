@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Play, Pause, Flame, Target, MessageSquare, Heart, ShieldAlert, Share2, Bookmark, Plus, X, MoreVertical, Loader, Zap, Volume2, VolumeX } from 'lucide-react';
-import { createPost, toggleBoost, toggleRelay, toggleAnchor } from '../hooks';
+import { createMediaPost, toggleBoost, toggleRelay, toggleAnchor } from '../hooks';
+import pb from '../pocketbase';
 
 /* 
   QuestClipsView
@@ -240,19 +241,6 @@ export default function QuestClipsView({ currentUserId, users, posts }) {
     setIsUploading(true);
 
     try {
-      if (uploadFile.size > 2.5 * 1024 * 1024) {
-        alert("Video is too large! Please upload a clip under 2.5MB to avoid crashing the save system.");
-        setIsUploading(false);
-        return;
-      }
-
-      // Convert video to Base64 string so we can save it as text without needing backend file storage setup
-      const reader = new FileReader();
-      reader.readAsDataURL(uploadFile);
-      
-      reader.onloadend = async () => {
-        const base64Video = reader.result;
-
       const data = {
         xp: Math.floor(Math.random() * 500) + 100, // Simulated XP
         bossDamage: Math.floor(Math.random() * 2000) + 500, // Simulated DMG
@@ -264,23 +252,13 @@ export default function QuestClipsView({ currentUserId, users, posts }) {
 
       const embeddedText = `<!--METADATA:${JSON.stringify(data)}-->\n${uploadCaption}`;
       
-      // We pass the blob URL to createPost as the 'imageUrl' parameter
-      // And we pass 'clip' as the 'communityId' parameter which we should probably fix.
-      // Wait, createPost signature: (userId, text, imageUrl, communityId)
-      // I can't pass 'clip' as type if I just use createPost directly unless I modify createPost!
-      // I will just use createPost(userId, embeddedText, videoBlobUrl, 'clip_zone') and then filter by communityId? No, I'll modify createPost.
-        await createPost(currentUserId, embeddedText, base64Video, 'quest_clip');
+      // We pass the actual File object to createMediaPost which handles FormData
+      await createMediaPost(currentUserId, embeddedText, uploadFile, 'quest_clip');
         
-        setShowUpload(false);
-        setUploadFile(null);
-        setUploadCaption('');
-        setIsUploading(false);
-      };
-
-      reader.onerror = () => {
-        alert("Failed to read video file");
-        setIsUploading(false);
-      };
+      setShowUpload(false);
+      setUploadFile(null);
+      setUploadCaption('');
+      setIsUploading(false);
     } catch (e) {
       console.error(e);
       alert('Failed to upload clip');
@@ -305,13 +283,14 @@ export default function QuestClipsView({ currentUserId, users, posts }) {
 
       const author = users.find(u => u.id === clip.userId);
       
-      // Strip out any old test 'blob:' URLs from the database so the browser doesn't throw ERR_FILE_NOT_FOUND
+      // If the post has a 'media' file, construct the PocketBase file URL
       const isDeadBlob = clip.imageUrl?.startsWith('blob:');
+      const mediaUrl = clip.media ? pb.files.getUrl(clip, clip.media) : null;
       
       return {
         ...clip,
         text: cleanText,
-        videoUrl: isDeadBlob ? null : clip.imageUrl,
+        videoUrl: mediaUrl || (isDeadBlob ? null : clip.imageUrl),
         metadata,
         authorName: author?.displayName || 'Unknown Player'
       };

@@ -1,4 +1,11 @@
 import React, { useEffect, useState } from 'react';
+
+// Polyfill React.use for React Navigation v7 compatibility in React 18
+if (typeof (React as any).use !== 'function') {
+  (React as any).use = (promiseOrContext: any) => {
+    return React.useContext(promiseOrContext);
+  };
+}
 import { ActivityIndicator, View, StatusBar } from 'react-native';
 import { Slot, Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

@@ -13,6 +13,9 @@
     },
     "android": {
       "package": "com.caisterplayz200.caimo"
+    },
+    "experiments": {
+      "baseUrl": "/CaisterPlayz"
     }
   }
 }

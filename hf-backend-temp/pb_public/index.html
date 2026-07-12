@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CaisterPlayz Backend API</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            padding: 3rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+        .logo { font-size: 3rem; margin-bottom: 1rem; }
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle { color: #999; font-size: 0.95rem; margin-bottom: 2rem; }
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.2rem;
+            background: rgba(72, 187, 120, 0.15);
+            border: 1px solid rgba(72, 187, 120, 0.3);
+            border-radius: 999px;
+            color: #48bb78;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .status .dot {
+            width: 8px; height: 8px;
+            background: #48bb78;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .links {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .links a:hover {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: #667eea;
+        }
+        .info {
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚀</div>
+        <h1>CaisterPlayz Backend</h1>
+        <p class="subtitle">PocketBase API Server</p>
+        <div class="status">
+            <span class="dot"></span>
+            Online
+        </div>
+        <div class="links">
+            <a href="/api/health">API Health</a>
+            <a href="/_/">Admin Panel</a>
+        </div>
+        <p class="info">This is the backend API for CaisterPlayz Social App.<br>Visit <a href="https://caister062.github.io/CaisterPlayz/" style="color:#667eea">caister062.github.io/CaisterPlayz</a> for the app.</p>
+    </div>
+</body>
+</html>

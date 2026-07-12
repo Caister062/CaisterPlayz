@@ -1,0 +1,160 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Build web app
+        run: npm run build
+        env:
+          VITE_PB_URL: ${{ secrets.POCKETBASE_URL }}
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      # =========================
+      # SIGNING SETUP (FIXED)
+      # =========================
+      - name: Install signing certificates & profile
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          BUILD_PRIVATE_KEY_BASE64: ${{ secrets.BUILD_PRIVATE_KEY_BASE64 }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: "temp_password"
+          P12_PASSWORD: "temp_password"
+        run: |
+          set -e
+
+          CERT_PATH=$RUNNER_TEMP/cert.cer
+          KEY_PATH=$RUNNER_TEMP/private.key
+          P12_PATH=$RUNNER_TEMP/cert.p12
+          PP_PATH=$RUNNER_TEMP/profile.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app.keychain-db
+
+          # Decode cert + key + profile
+          echo "$BUILD_CERTIFICATE_BASE64" | base64 --decode > $CERT_PATH
+          echo "$BUILD_PRIVATE_KEY_BASE64" | base64 --decode > $KEY_PATH
+          echo "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode > $PP_PATH
+
+          # Convert cert + key to p12
+          openssl x509 -inform der -in $CERT_PATH -out $RUNNER_TEMP/cert.pem
+          openssl pkcs12 -export \
+            -inkey $KEY_PATH \
+            -in $RUNNER_TEMP/cert.pem \
+            -out $P12_PATH \
+            -passout pass:$P12_PASSWORD
+
+          # Create keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychains -d user -s $KEYCHAIN_PATH
+
+          # Import WWDR cert
+          curl -s -o $RUNNER_TEMP/wwdr.cer https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+          security import $RUNNER_TEMP/wwdr.cer -A -k $KEYCHAIN_PATH
+
+          # Import p12
+          security import $P12_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+
+          # Install provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          UUID=$(security cms -D -i $PP_PATH | plutil -extract UUID raw -)
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+
+      - name: Debug signing identities
+        run: security find-identity -v -p codesigning
+
+      # =========================
+      # EXPORT OPTIONS
+      # =========================
+      - name: Create ExportOptions.plist
+        working-directory: ios/App
+        run: |
+          cat <<EOF > ExportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store-connect</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>destination</key>
+              <string>export</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.caisterplayz.social</key>
+                  <string>CaisterPlayz2</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
+      # =========================
+      # BUILD ARCHIVE
+      # =========================
+      - name: Resolve Swift Packages
+        working-directory: ios/App
+        run: xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App
+
+      - name: Build signed iOS archive
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/App.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM=35S59BJ792 \
+            clean archive
+
+      # =========================
+      # EXPORT IPA
+      # =========================
+      - name: Export IPA
+        working-directory: ios/App
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build
+
+      # =========================
+      # UPLOAD ARTIFACT
+      # =========================
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CaisterPlayz-iOS
+          path: ios/App/build/*.ipa
+          retention-days: 30

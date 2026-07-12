@@ -1,0 +1,435 @@
+import { useState, useEffect } from 'react';
+import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert, MessageSquare, Trophy } from 'lucide-react';
+import pb from './pocketbase';
+import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig, useSquads } from './hooks';
+import { applyTheme } from './utils';
+import FeedView from './components/FeedView';
+import ExploreView from './components/ExploreView';
+import NotificationsView from './components/NotificationsView';
+import LeaderboardView from './components/LeaderboardView';
+import ProfileView from './components/ProfileView';
+import VaultView from './components/VaultView';
+import AdminView from './components/AdminView';
+import Composer from './components/Composer';
+import DirectMessages from './components/DirectMessages';
+function CpMark({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="256" y="390" textAnchor="middle" fontFamily="'Arial Black','Impact',sans-serif" fontWeight="900" fontSize="340" fill="white" letterSpacing="-20">CP</text>
+    </svg>
+  );
+}
+
+import AuthView from './components/AuthView';
+
+export default function App() {
+  const [tab, setTab] = useState('home');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [dmRecipientId, setDmRecipientId] = useState(null);
+  const [showCompose, setShowCompose] = useState(false);
+  const [userId, setUserId] = useState(pb.authStore.model?.id || null);
+  const [booting, setBooting] = useState(true);
+  const [viewProfile, setViewProfile] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [exploreQuery, setExploreQuery] = useState('');
+  const [dismissedAnnounce, setDismissedAnnounce] = useState(localStorage.getItem('cp_dismissed_announce'));
+
+  useEffect(() => {
+    const handleOAuthRedirect = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const state = urlParams.get('state');
+      const code = urlParams.get('code');
+
+      if (state && code) {
+        try {
+          const providerStr = localStorage.getItem('oauth_provider');
+          if (providerStr) {
+            localStorage.removeItem('oauth_provider');
+            const provider = JSON.parse(providerStr);
+            if (provider.state !== state) {
+              throw new Error('State mismatch');
+            }
+            const redirectUrl = provider.redirectUrl || (window.location.origin + window.location.pathname);
+            const authData = await pb.collection('users').authWithOAuth2Code(
+              provider.name,
+              code,
+              provider.codeVerifier,
+              redirectUrl,
+              {
+                displayName: 'Operator'
+              }
+            );
+            
+            if (authData.record.displayName === 'Operator' && authData.meta?.name) {
+              await pb.collection('users').update(authData.record.id, { displayName: authData.meta.name });
+            }
+            
+            localStorage.setItem('cplayz_user_id', authData.record.id);
+            setUserId(authData.record.id);
+          }
+        } catch (e) {
+          console.error('OAuth callback failed', e);
+          alert('Authentication failed: ' + e.message);
+        } finally {
+          localStorage.removeItem('oauth_provider');
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      }
+    };
+    handleOAuthRedirect();
+
+    const adminKey = localStorage.getItem('caister_admin');
+
+    if (adminKey === 'CAISTER_CORE_ADMIN') {
+      setIsAdmin(true);
+    }
+
+    const savedTheme = localStorage.getItem('cplayz_theme');
+    if (savedTheme) {
+      applyTheme(savedTheme);
+    }
+
+    const unsub = pb.authStore.onChange((token, model) => {
+      setUserId(model?.id || null);
+    }, true);
+
+    // Online Presence Heartbeat
+    let presenceInterval;
+    if (pb.authStore.isValid) {
+      const pingPresence = () => {
+        try {
+          pb.collection('users').update(pb.authStore.model.id, {
+            isOnline: true,
+            lastActive: new Date().toISOString()
+          });
+        } catch {}
+      };
+      pingPresence();
+      presenceInterval = setInterval(pingPresence, 60000); // Every minute
+    }
+
+    setTimeout(() => setBooting(false), 500); // Boot animation delay
+    
+    return () => {
+      unsub();
+      if (presenceInterval) clearInterval(presenceInterval);
+    };
+  }, []);
+
+  const { posts, newPostsQueue, flushNewPosts, latestPostId, loading, loadMore, hasMore, loadingMore, refresh: refPosts } = useRealtimePosts();
+  const users = useAllUsers();
+  const { squads } = useSquads();
+  const { notifications, unreadCount, refresh: refNotif } = useNotifications(userId);
+  const followData = useFollows(userId);
+  const { profile: me, refresh: refMe } = useUserProfile(userId);
+
+  const pUser = viewProfile ? users.find(u => u.id === viewProfile) : null;
+  const { config } = useSystemConfig();
+
+  if (config) window.cplayz_config = config;
+
+  const goProfile = uid => {
+    setViewProfile(uid);
+    setTab('profile');
+  };
+
+  const goHashtag = tag => {
+    setExploreQuery(tag);
+    setTab('explore');
+  };
+
+  const goMention = mentionStr => {
+    const username = mentionStr.slice(1).toLowerCase();
+    const targetUser = users.find(u => u.displayName.toLowerCase() === username);
+    if (targetUser) {
+      goProfile(targetUser.id);
+    }
+  };
+
+  const goTab = t => {
+    if (tab === t) {
+      if (t === 'profile' && viewProfile) {
+        setViewProfile(null);
+      }
+      return;
+    }
+    
+    // Haptic feedback on nav switch
+    if (navigator.vibrate) navigator.vibrate(8);
+    
+    // Switch immediately to prevent getting stuck
+    if (t === 'profile') setViewProfile(null);
+    setTab(t);
+    
+    setIsTransitioning(true);
+    setTimeout(() => setIsTransitioning(false), 300);
+  };
+
+  if (booting) {
+    return (
+      <div style={{ minHeight:'100dvh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24,background:'var(--bg)' }}>
+        <div className="boot-shield-container">
+          <div className="boot-shield-outline">
+            <div className="boot-shield-fill" />
+          </div>
+          <ShieldAlert size={40} color="#fff" style={{ position: 'absolute', zIndex: 10 }} />
+        </div>
+
+        <div style={{ fontSize:16,fontWeight:900,letterSpacing:'0.12em',color:'var(--cyan)',fontFamily:'"Anton", sans-serif',textTransform:'uppercase' }}>
+          Loading…
+        </div>
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return <AuthView onAuthSuccess={(id) => setUserId(id)} />;
+  }
+
+  const NAV = [
+    { id: 'home', icon: Radio, label: 'Feed' },
+    { id: 'explore', icon: Search, label: 'Explore' },
+    { id: 'leaderboard', icon: Trophy, label: 'Rankings' },
+    { id: 'vault', icon: Lock, label: 'Vault' },
+    { id: 'profile', icon: User, label: 'Stats' },
+  ];
+
+  return (
+    <div className="console">
+      {config?.lockdown && !isAdmin ? (
+        <div style={{ display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',padding:20,textAlign:'center' }}>
+          <ShieldAlert size={64} color="#f43f5e" style={{ marginBottom:20 }} />
+
+          <h1 style={{ fontSize:24,fontWeight:900,color:'#f43f5e',textTransform:'uppercase',letterSpacing:'0.1em' }}>
+            Drop Zone Locked
+          </h1>
+
+          <p style={{ marginTop:10,color:'var(--text2)',fontSize:14 }}>
+            CaisterPlayz is under maintenance. Drop back in later.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="rift-flash-overlay" />
+          <header className="hud">
+            <div className="hud-logo">
+              <div className="cp-mark">
+                <CpMark size={18} />
+              </div>
+              <span className="hud-name" style={{ display:'none' }}>
+                CaisterPlayz
+              </span>
+            </div>
+
+            <div className="hud-actions">
+              {NAV.map(n => (
+                <button
+                  key={n.id}
+                  className={`hud-btn${tab === n.id ? ' lit' : ''}`}
+                  onClick={() => goTab(n.id)}
+                  title={n.label}
+                >
+                  <n.icon size={18} fill={tab === n.id ? 'currentColor' : 'none'} />
+                </button>
+              ))}
+
+              <button
+                className={`hud-btn${tab === 'admin' ? ' lit' : ''}`}
+                onClick={() => {
+                  if (isAdmin) {
+                    goTab('admin');
+                  } else {
+                    const key = prompt('Enter Control Core Key:');
+                    if (key && key.trim() === 'CAISTER_CORE_ADMIN') {
+                      localStorage.setItem('caister_admin', 'CAISTER_CORE_ADMIN');
+                      setIsAdmin(true);
+                      goTab('admin');
+                    } else if (key) {
+                      alert('Access denied.');
+                    }
+                  }
+                }}
+                title="Control Core"
+                style={{ color:'#f43f5e' }}
+              >
+                <ShieldAlert size={18} />
+              </button>
+
+              <button
+                className="hud-btn"
+                onClick={() => setShowCompose(true)}
+                title="Drop a Post"
+              >
+                <Plus size={18} strokeWidth={2.5} />
+              </button>
+
+              <button
+                className={`hud-btn${tab === 'notifications' ? ' lit' : ''}`}
+                onClick={() => goTab('notifications')}
+                title="Echo Alerts"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && <span className="hud-pip" />}
+              </button>
+
+              <button
+                className={`hud-btn${tab === 'messages' ? ' lit' : ''}`}
+                onClick={() => goTab('messages')}
+                title="Direct Messages"
+              >
+                <MessageSquare size={18} />
+              </button>
+            </div>
+          </header>
+
+          <main className="main tab-container">
+            <div className={`tab-content ${isTransitioning ? 'tab-slide-enter' : ''}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1 }}>
+                {tab === 'home' && (
+                  <FeedView
+                    posts={posts}
+                    newPostsQueue={newPostsQueue}
+                    flushNewPosts={flushNewPosts}
+                    latestPostId={latestPostId}
+                    loading={loading}
+                    users={users}
+                    currentUserId={userId}
+                    notifications={notifications}
+                    loadMore={loadMore}
+                    hasMore={hasMore}
+                    loadingMore={loadingMore}
+                    onProfileClick={goProfile}
+                    onHashtagClick={goHashtag}
+                    onMentionClick={goMention}
+                    config={config}
+                  />
+                )}
+
+                {tab === 'explore' && (
+                  <ExploreView
+                    posts={posts}
+                    users={users}
+                    squads={squads}
+                    currentUserId={userId}
+                    onProfileClick={goProfile}
+                    onHashtagClick={goHashtag}
+                    onMentionClick={goMention}
+                    config={config}
+                    loadMore={loadMore}
+                    hasMore={hasMore}
+                    loadingMore={loadingMore}
+                    initialQuery={exploreQuery}
+                  />
+                )}
+
+                {tab === 'leaderboard' && (
+                  <LeaderboardView
+                    users={users}
+                    onProfileClick={goProfile}
+                  />
+                )}
+
+                {tab === 'vault' && (
+                  <VaultView
+                    posts={posts}
+                    currentUserId={userId}
+                    users={users}
+                    onProfileClick={goProfile}
+                    onHashtagClick={goHashtag}
+                    onMentionClick={goMention}
+                    config={config}
+                  />
+                )}
+
+                {tab === 'notifications' && (
+                  <NotificationsView
+                    notifications={notifications}
+                    users={users}
+                    currentUserId={userId}
+                    onRefresh={refNotif}
+                    onProfileClick={goProfile}
+                  />
+                )}
+
+                {tab === 'profile' && (
+                  <ProfileView
+                    profile={pUser || me}
+                    currentUserId={userId}
+                    posts={posts}
+                    users={users}
+                    followData={viewProfile ? {} : followData}
+                    onProfileClick={goProfile}
+                    onHashtagClick={goHashtag}
+                    onMessageClick={(uid) => {
+                      setDmRecipientId(uid);
+                      goTab('messages');
+                    }}
+                    onRefresh={refMe}
+                    config={config}
+                  />
+                )}
+
+                {tab === 'admin' && isAdmin && (
+                  <AdminView
+                    posts={posts}
+                    users={users}
+                    currentUserId={userId}
+                  />
+                )}
+              </div>
+
+              <div className="brand-footer">
+                Powered by CaisterPlayz — Gaming & Fitness
+              </div>
+            </div>
+          </main>
+
+          {tab === 'messages' && (
+            <DirectMessages
+              isOpen={true}
+              onClose={() => goTab('home')}
+              currentUserId={userId}
+              users={users}
+              initialRecipientId={dmRecipientId}
+            />
+          )}
+
+          {/* ─ Composer ─ */}
+          {showCompose && userId && (
+            <Composer
+              currentUserId={userId}
+              currentUser={me}
+              onClose={() => setShowCompose(false)}
+            />
+          )}
+
+          {/* ─ Global Announcement Modal ─ */}
+          {config?.globalAnnouncement && !isAdmin && String(config.globalAnnouncement.timestamp) !== dismissedAnnounce && (
+            <div className="modal-backdrop">
+              <div className="modal" style={{ border: '2px solid var(--cyan)', boxShadow: '0 0 30px var(--cyan-glow)' }}>
+                <div className="modal-head" style={{ color: 'var(--cyan)' }}>
+                  <ShieldAlert size={20} />
+                  COMMUNITY BROADCAST
+                </div>
+                <div className="modal-body" style={{ textAlign: 'center', padding: '20px 10px', fontSize: 16 }}>
+                  {config.globalAnnouncement.text}
+                </div>
+                <div className="modal-actions" style={{ justifyContent: 'center' }}>
+                  <button 
+                    className="btn primary" 
+                    onClick={() => {
+                      localStorage.setItem('cp_dismissed_announce', String(config.globalAnnouncement.timestamp));
+                      setDismissedAnnounce(String(config.globalAnnouncement.timestamp));
+                    }}
+                  >
+                    Acknowledge
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

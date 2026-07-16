@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert, MessageSquare, Trophy, Star, Play } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import pb from './pocketbase';
 import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig, useSquads } from './hooks';
 import { applyTheme } from './utils';
@@ -138,10 +140,58 @@ export default function App() {
     } else {
       setTimeout(() => setBooting(false), 3000); // Match the new 2.5s premium loading animation + small buffer
     }
+
+    let appUrlListener = null;
+    if (Capacitor.isNativePlatform()) {
+      CapApp.addListener('appUrlOpen', async (data) => {
+        if (data.url.toLowerCase().includes('caisterplayz://oauth')) {
+          try {
+            const urlObj = new URL(data.url);
+            const state = urlObj.searchParams.get('state');
+            const code = urlObj.searchParams.get('code');
+            if (state && code) {
+              let providerStr = localStorage.getItem('oauth_provider');
+              if (providerStr) {
+                const provider = JSON.parse(providerStr);
+                try {
+                  const { Browser } = await import('@capacitor/browser');
+                  await Browser.close();
+                } catch (e) {}
+
+                const redirectUrl = provider.redirectUrl || 'caisterplayz://oauth';
+                const authData = await pb.collection('users').authWithOAuth2Code(
+                  provider.name,
+                  code,
+                  provider.codeVerifier,
+                  redirectUrl,
+                  { displayName: 'Operator' }
+                );
+                
+                if (authData.record.displayName === 'Operator' && authData.meta?.name) {
+                  pb.collection('users').update(authData.record.id, { displayName: authData.meta.name }).catch(console.error);
+                }
+                
+                localStorage.setItem('cplayz_user_id', authData.record.id);
+                setUserId(authData.record.id);
+              }
+            }
+          } catch (e) {
+            console.error('Deep link OAuth failed:', e);
+            alert('Authentication failed: ' + e.message);
+          } finally {
+            localStorage.removeItem('oauth_provider');
+            setBooting(false);
+          }
+        }
+      }).then(listener => {
+        appUrlListener = listener;
+      });
+    }
     
     return () => {
       unsub();
       if (presenceInterval) clearInterval(presenceInterval);
+      if (appUrlListener) appUrlListener.remove();
     };
   }, []);
 

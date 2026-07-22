@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Authenticating...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { background: #070b14; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .loader { border: 4px solid rgba(0, 229, 255, 0.2); border-top: 4px solid #00e5ff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div style="text-align: center;">
+    <div class="loader" style="margin: 0 auto 20px;"></div>
+    <h2>Authenticating...</h2>
+    <p>Please wait while we log you in.</p>
+  </div>
+  <script>
+    // Redirect the browser overlay back to the native Capacitor app using the custom scheme
+    const customSchemeUrl = "caisterplayz://oauth" + window.location.search;
+    window.location.href = customSchemeUrl;
+    
+    // In case the deep link fails to close the window, try to close it directly
+    setTimeout(function() {
+      window.close();
+    }, 3000);
+  </script>
+</body>
+</html>

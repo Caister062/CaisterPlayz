@@ -1,55 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { THEME } from '../../lib/theme';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Game, JourneyEntryType, JourneyVisibility } from '../../lib/types';
 
-export default function CreateJourneyEntryScreen() {
+export default function CreateLoadoutScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [games, setGames] = useState<Game[]>([]);
 
-  // Fields
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedGameId, setSelectedGameId] = useState('');
-  const [entryType, setEntryType] = useState<JourneyEntryType>('achievement');
-  const [platform, setPlatform] = useState('PC');
-  const [visibility, setVisibility] = useState<JourneyVisibility>('public');
-
-  const typesList: { key: JourneyEntryType; label: string }[] = [
-    { key: 'achievement', label: 'Achievement' },
-    { key: 'personal_record', label: 'Personal Record' },
-    { key: 'rank_milestone', label: 'Rank Milestone' },
-    { key: 'first_time', label: 'First-time Experience' },
-    { key: 'completed_game', label: 'Completed Game' },
-    { key: 'screenshot_memory', label: 'Screenshot Memory' },
-    { key: 'tournament_result', label: 'Tournament Result' },
-    { key: 'team_accomplishment', label: 'Team Accomplishment' },
-    { key: 'custom', label: 'Custom Gaming Memory' },
-  ];
-
-  const platformsList = ['PC', 'PS5', 'Xbox Series X', 'PS4', 'Xbox One', 'Switch', 'iOS', 'Android'];
-  const visibilities: { key: JourneyVisibility; label: string }[] = [
-    { key: 'public', label: 'Public' },
-    { key: 'followers_only', label: 'Followers-only' },
-    { key: 'private', label: 'Private' },
-  ];
-
-  useEffect(() => {
-    const fetchGames = async () => {
-      const { data } = await supabase.from('games').select('*');
-      if (data) setGames(data);
-    };
-    fetchGames();
-  }, []);
+  // Loadout Fields
+  const [skin, setSkin] = useState('');
+  const [backBling, setBackBling] = useState('');
+  const [pickaxe, setPickaxe] = useState('');
+  const [glider, setGlider] = useState('');
+  const [caption, setCaption] = useState('');
+  const [visibility, setVisibility] = useState<'public'|'private'>('public');
 
   const handleCreate = async () => {
-    if (!title) {
-      Alert.alert('Required', 'Please enter a title.');
+    if (!skin || !pickaxe) {
+      Alert.alert('Required', 'Please enter at least a Skin and a Pickaxe.');
       return;
     }
 
@@ -58,29 +29,28 @@ export default function CreateJourneyEntryScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Store loadout data as JSON in the description field for now to avoid db migrations
+      const loadoutData = {
+        skin,
+        backBling,
+        pickaxe,
+        glider,
+        caption
+      };
+
       const { data, error } = await supabase.from('journey_entries').insert({
         user_id: user.id,
-        title,
-        description,
-        game_id: selectedGameId || null,
-        entry_type: entryType,
-        platform,
+        title: `${skin} Loadout`, // Use Skin as the post title
+        description: JSON.stringify(loadoutData),
+        entry_type: 'custom',
+        platform: 'PC', // Defaulting for simplicity
         visibility,
-        moderation_status: 'approved', // Automatic approved mock for development, moderate-text checks flag terms
+        moderation_status: 'approved',
       }).select().single();
 
       if (error) throw error;
 
-      // Ledger Reward Trigger for creating posts
-      await supabase.from('xp_ledger').insert({
-        user_id: user.id,
-        amount: 25, // 25 XP for posting a journey milestone
-        source: 'journey_post',
-        source_id: data.id,
-        idempotency_key: `post_${data.id}`,
-      });
-
-      Alert.alert('Success', 'Journey accomplishment posted successfully!', [
+      Alert.alert('Success', 'Loadout posted to the Locker Room successfully!', [
         { text: 'OK', onPress: () => router.replace('/(tabs)/profile') }
       ]);
 
@@ -93,96 +63,72 @@ export default function CreateJourneyEntryScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <View style={styles.header}>
+        <Text style={styles.title}>Post a Loadout</Text>
+        <Text style={styles.subtitle}>Show off your drip to the Locker Room</Text>
+      </View>
+
       <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Cosmetics</Text>
+        
         <Input
-          label="Title"
-          placeholder="e.g. Cleared Elden Beast Solo!"
-          value={title}
-          onChangeText={setTitle}
+          label="Skin (Outfit)"
+          placeholder="e.g. Aura, Peely..."
+          value={skin}
+          onChangeText={setSkin}
         />
 
         <Input
-          label="Description"
-          placeholder="Details on build, play tactics, or personal memory..."
-          value={description}
-          onChangeText={setDescription}
+          label="Back Bling"
+          placeholder="e.g. Sun Sprout..."
+          value={backBling}
+          onChangeText={setBackBling}
+        />
+
+        <Input
+          label="Pickaxe"
+          placeholder="e.g. Star Wand..."
+          value={pickaxe}
+          onChangeText={setPickaxe}
+        />
+
+        <Input
+          label="Glider (Optional)"
+          placeholder="e.g. Coral Cruiser..."
+          value={glider}
+          onChangeText={setGlider}
+        />
+
+        <Text style={styles.sectionTitle}>Details</Text>
+        <Input
+          label="Caption (Optional)"
+          placeholder="Why is this loadout fire?"
+          value={caption}
+          onChangeText={setCaption}
           multiline
-          numberOfLines={4}
-          style={{ height: 100, textAlignVertical: 'top' }}
+          numberOfLines={3}
+          style={{ height: 80, textAlignVertical: 'top' }}
         />
-
-        {/* Entry Type */}
-        <Text style={styles.label}>Entry Category</Text>
-        <View style={styles.badgeGrid}>
-          {typesList.map((type) => (
-            <TouchableOpacity
-              key={type.key}
-              style={[styles.badge, entryType === type.key && styles.badgeActive]}
-              onPress={() => setEntryType(type.key)}
-            >
-              <Text style={[styles.badgeText, entryType === type.key && styles.badgeTextActive]}>
-                {type.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Games list dropdown replacement */}
-        <Text style={styles.label}>Game (Optional)</Text>
-        <View style={styles.badgeGrid}>
-          <TouchableOpacity
-            style={[styles.badge, !selectedGameId && styles.badgeActive]}
-            onPress={() => setSelectedGameId('')}
-          >
-            <Text style={[styles.badgeText, !selectedGameId && styles.badgeTextActive]}>None</Text>
-          </TouchableOpacity>
-          {games.map((g) => (
-            <TouchableOpacity
-              key={g.id}
-              style={[styles.badge, selectedGameId === g.id && styles.badgeActive]}
-              onPress={() => setSelectedGameId(g.id)}
-            >
-              <Text style={[styles.badgeText, selectedGameId === g.id && styles.badgeTextActive]}>
-                {g.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Platform */}
-        <Text style={styles.label}>Platform</Text>
-        <View style={styles.badgeGrid}>
-          {platformsList.map((p) => (
-            <TouchableOpacity
-              key={p}
-              style={[styles.badge, platform === p && styles.badgeActive]}
-              onPress={() => setPlatform(p)}
-            >
-              <Text style={[styles.badgeText, platform === p && styles.badgeTextActive]}>
-                {p}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         {/* Visibility */}
-        <Text style={styles.label}>Accomplishment Visibility</Text>
+        <Text style={styles.label}>Visibility</Text>
         <View style={styles.badgeGrid}>
-          {visibilities.map((v) => (
-            <TouchableOpacity
-              key={v.key}
-              style={[styles.badge, visibility === v.key && styles.badgeActive]}
-              onPress={() => setVisibility(v.key)}
-            >
-              <Text style={[styles.badgeText, visibility === v.key && styles.badgeTextActive]}>
-                {v.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <TouchableOpacity
+            style={[styles.badge, visibility === 'public' && styles.badgeActive]}
+            onPress={() => setVisibility('public')}
+          >
+            <Text style={[styles.badgeText, visibility === 'public' && styles.badgeTextActive]}>Public</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.badge, visibility === 'private' && styles.badgeActive]}
+            onPress={() => setVisibility('private')}
+          >
+            <Text style={[styles.badgeText, visibility === 'private' && styles.badgeTextActive]}>Private</Text>
+          </TouchableOpacity>
         </View>
 
         <Button
-          title="Publish to Timeline (+25 XP)"
+          title="Publish Loadout"
           onPress={handleCreate}
           loading={loading}
           style={styles.publishBtn}
@@ -198,12 +144,35 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.background,
     padding: THEME.spacing.md,
   },
+  header: {
+    marginBottom: THEME.spacing.md,
+  },
+  title: {
+    color: THEME.colors.text,
+    fontSize: 24,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    textTransform: 'uppercase',
+  },
+  subtitle: {
+    color: THEME.colors.primary,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   card: {
     backgroundColor: THEME.colors.surface,
     borderColor: THEME.colors.border,
     borderWidth: 1,
     borderRadius: THEME.roundness.lg,
     padding: THEME.spacing.lg,
+  },
+  sectionTitle: {
+    color: THEME.colors.secondary,
+    fontSize: 18,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: THEME.spacing.sm,
+    marginTop: THEME.spacing.md,
   },
   label: {
     color: THEME.colors.text,
@@ -232,13 +201,14 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: THEME.colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   badgeTextActive: {
-    color: '#050814',
+    color: '#121212',
   },
   publishBtn: {
     marginTop: THEME.spacing.md,
+    backgroundColor: THEME.colors.primary,
   },
 });

@@ -27,12 +27,15 @@ export default function AuthView({ onAuthSuccess }) {
       
       const redirectUrl = Capacitor.isNativePlatform()
         ? 'https://caister062.github.io/CaisterPlayz/oauth-redirect.html'
-        : window.location.origin + window.location.pathname;
+        : window.location.origin + '/';
         
       localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
       document.cookie = `oauth_provider=${encodeURIComponent(JSON.stringify({ ...provider, redirectUrl }))}; path=/; max-age=3600`;
       
-      const authUrl = provider.authUrl + redirectUrl;
+      let authUrl = provider.authUrl;
+      if (!authUrl.includes('redirect_uri=')) {
+        authUrl += (authUrl.includes('?') ? '&' : '?') + 'redirect_uri=' + encodeURIComponent(redirectUrl);
+      }
       
       if (Capacitor.isNativePlatform()) {
         await Browser.open({ url: authUrl });
@@ -246,7 +249,7 @@ export default function AuthView({ onAuthSuccess }) {
       </h1>
       
       <p style={{ color: 'var(--cyan)', textTransform: 'uppercase', fontSize: 14, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 30 }}>
-        Level Up Your Fitness
+        The Ultimate Fortnite Gaming Community
       </p>
 
       {error && (

@@ -19,6 +19,8 @@ import PlayerStatsView from './components/PlayerStatsView';
 import QuestClipsView from './components/QuestClipsView';
 import NotificationsView from './components/NotificationsView';
 import LoadingScreen from './components/LoadingScreen';
+import FortniteLfgView from './components/FortniteLfgView';
+import ItemShopView from './components/ItemShopView';
 
 function CpMark({ size = 18 }) {
   return (
@@ -284,110 +286,43 @@ export default function App() {
       ) : (
         <>
           <div className="rift-flash-overlay" />
-          <header className="hud">
-            <div className="hud-logo">
-              <div className="cp-mark">
-                <CpMark size={18} />
-              </div>
-              <span className="hud-name" style={{ display:'none' }}>
-                CaisterPlayz
-              </span>
-            </div>
-
-            <div className="hud-actions">
-              {NAV.map(n => (
-                <button
-                  key={n.id}
-                  className={`hud-btn${tab === n.id ? ' lit' : ''}`}
-                  onClick={() => goTab(n.id)}
-                  title={n.label}
-                >
-                  <n.icon size={18} fill={tab === n.id ? 'currentColor' : 'none'} />
+          <header className="lobby-top-nav">
+              <div className="lobby-nav-tabs">
+                <button className={`lobby-tab ${tab === 'daily_quest' ? 'active' : ''}`} onClick={() => goTab('daily_quest')}>PLAY</button>
+                <button className={`lobby-tab ${tab === 'fortnite_lfg' ? 'active' : ''}`} onClick={() => goTab('fortnite_lfg')}>SQUAD LFG</button>
+                <button className={`lobby-tab ${tab === 'clips' ? 'active' : ''}`} onClick={() => goTab('clips')}>CLIPS</button>
+             </div>
+             <div className="lobby-nav-actions">
+                <button className="lobby-action-btn" onClick={() => goTab('notifications')}>
+                  <Bell size={22} />
+                  {unreadCount > 0 && <span className="hud-pip" />}
                 </button>
-              ))}
-
-              <button
-                className={`hud-btn${tab === 'admin' ? ' lit' : ''}`}
-                onClick={() => {
-                  if (isAdmin) {
-                    goTab('admin');
-                  } else {
+                {isAdmin ? (
+                  <button className="lobby-action-btn admin-btn" onClick={() => goTab('admin')}>
+                    <ShieldAlert size={22} />
+                  </button>
+                ) : (
+                  <button className="lobby-action-btn admin-btn" onClick={() => {
                     const key = prompt('Enter God Mode Key:');
                     if (key && key.trim() === 'CAISTER_CORE_ADMIN') {
                       localStorage.setItem('caister_admin', 'CAISTER_CORE_ADMIN');
                       setIsAdmin(true);
                       goTab('admin');
-                    } else if (key) {
-                      alert('Access denied.');
                     }
-                  }
-                }}
-                title="God Mode"
-                style={{ color:'#f43f5e' }}
-              >
-                <ShieldAlert size={18} />
-              </button>
-
-
-
-              <button
-                className={`hud-btn${tab === 'notifications' ? ' lit' : ''}`}
-                onClick={() => goTab('notifications')}
-                title="Echo Alerts"
-              >
-                <Bell size={18} />
-                {unreadCount > 0 && <span className="hud-pip" />}
-              </button>
-
-            </div>
+                  }}>
+                    <ShieldAlert size={22} />
+                  </button>
+                )}
+             </div>
           </header>
 
-          <main className="main tab-container">
-            <div className={`tab-content ${isTransitioning ? 'tab-slide-enter' : ''}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ flex: 1 }}>
-                {tab === 'daily_quest' && <DailyQuestView user={me} config={config} users={users} onOpenComposer={() => setShowCompose(true)} />}
-                {tab === 'workouts' && <WorkoutsView onOpenComposer={() => setShowCompose(true)} posts={posts.filter(p => p.type === 'workout_log' && p.userId === userId)} users={users} currentUserId={userId} />}
-                {tab === 'leaderboards' && <ChallengesView posts={posts} users={users} currentUserId={userId} />}
-                {tab === 'guilds' && <GuildsView currentUserId={userId} users={users} />}
-                {tab === 'seasons' && <SeasonsView config={config} profile={me} />}
-                {tab === 'progress' && <ProgressView user={me} onRefresh={refMe} />}
-                {tab === 'player_stats' && <PlayerStatsView user={pUser} onBack={() => setTab('home')} />}
-                {tab === 'notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} />}
-                {tab === 'clips' && <QuestClipsView currentUserId={userId} users={users} posts={posts} />}
-                {tab === 'home' && (
-                  <FeedView
-                    posts={posts.filter(p => p.type === 'workout_log')}
-                    newPostsQueue={newPostsQueue}
-                    flushNewPosts={flushNewPosts}
-                    latestPostId={latestPostId}
-                    loading={loading}
-                    users={users}
-                    currentUserId={userId}
-                    notifications={notifications}
-                    loadMore={loadMore}
-                    hasMore={hasMore}
-                    loadingMore={loadingMore}
-                    onProfileClick={goProfile}
-                    onHashtagClick={goHashtag}
-                    onMentionClick={goMention}
-                    config={config}
-                  />
-                )}
-
-
-
-                {tab === 'admin' && isAdmin && (
-                  <AdminView
-                    posts={posts}
-                    users={users}
-                    currentUserId={userId}
-                  />
-                )}
-              </div>
-
-              <div className="brand-footer">
-                Powered by CaisterPlayz — Level Up Your Fitness
-              </div>
+          <main className="lobby-main">
+            <div className={`tab-content ${isTransitioning ? 'tab-slide-enter' : ''}`} style={{ height: '100%', overflowY: 'auto' }}>
+              {tab === 'daily_quest' && <DailyQuestView user={me} config={config} users={users} onOpenComposer={() => setShowCompose(true)} />}
+              {tab === 'fortnite_lfg' && <FortniteLfgView posts={posts} users={users} currentUserId={userId} onComposeLfg={() => setShowCompose(true)} />}
+              {tab === 'clips' && <QuestClipsView currentUserId={userId} users={users} posts={posts} />}
+              {tab === 'player_stats' && <PlayerStatsView user={pUser} onBack={() => setTab('daily_quest')} />}
+              {tab === 'notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} />}
             </div>
           </main>
 

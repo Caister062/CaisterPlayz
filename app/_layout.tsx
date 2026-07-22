@@ -89,25 +89,11 @@ function AppNavigationState() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
 
-    if (!session) {
-      // Redirect to login if not authenticated and not already in auth screens
-      if (!inAuthGroup) {
-        router.replace('/(auth)/login');
-      }
-    } else {
-      if (!hasOnboarded) {
-        // Force onboarding if logged in but username not completed
-        if (segments[segments.length - 1] !== 'onboarding') {
-          router.replace('/(auth)/onboarding');
-        }
-      } else {
-        // Onboarded and logged in
-        if (inAuthGroup) {
-          router.replace('/(tabs)/discover');
-        }
-      }
+    // MOCK AUTHENTICATION BYPASS FOR DEVELOPMENT
+    // Since we don't have a real Supabase backend connected yet, we bypass auth.
+    if (inAuthGroup) {
+      router.replace('/(tabs)/discover');
     }
   }, [session, loading, hasOnboarded, segments]);
 

@@ -49,9 +49,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="challenges"
+        name="shop"
         options={{
-          title: 'Challenges',
+          title: 'Item Shop',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Trophy color={color} size={size} />,
         }}
       />

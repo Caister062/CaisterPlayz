@@ -1,30 +1,8 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Image as ImageIcon, Loader, Zap, ChevronDown, Plus, Trophy, Brain, Lock } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { X, Image as ImageIcon, Loader, ChevronDown, Plus, Trophy, Lock } from 'lucide-react';
 import { logWorkout } from '../hooks';
-import GifPicker from './GifPicker';
 
 const MAX_CAPTION = 280;
-
-const WORKOUT_TYPES = [
-  { id: 'strength', label: '🏋️ Strength', baseCaloriesPerMin: 6 },
-  { id: 'cardio', label: '🏃 Cardio', baseCaloriesPerMin: 10 },
-  { id: 'running', label: '👟 Running', baseCaloriesPerMin: 12 },
-  { id: 'walking', label: '🚶 Walking', baseCaloriesPerMin: 4 },
-  { id: 'cycling', label: '🚴 Cycling', baseCaloriesPerMin: 9 },
-  { id: 'swimming', label: '🏊 Swimming', baseCaloriesPerMin: 11 },
-  { id: 'hiit', label: '🔥 HIIT', baseCaloriesPerMin: 14 },
-  { id: 'yoga', label: '🧘 Yoga', baseCaloriesPerMin: 3 },
-  { id: 'custom', label: '⚙️ Custom', baseCaloriesPerMin: 5 }
-];
-
-const DIFFICULTIES = [
-  { id: 'Easy', multiplier: 0.8, color: '#34d399' },
-  { id: 'Normal', multiplier: 1.0, color: '#3b82f6' },
-  { id: 'Hard', multiplier: 1.5, color: '#f59e0b' },
-  { id: 'Legendary', multiplier: 2.5, color: '#f43f5e' }
-];
-
-const PRIVACY_OPTS = ['Public', 'Friends', 'Guild Only', 'Private'];
 
 function compress(file) {
   return new Promise((res, rej) => {
@@ -49,102 +27,46 @@ function compress(file) {
   });
 }
 
-function generateCoachSummary(type, duration, diff) {
-  let summary = `Great work. You trained ${type} for ${duration} minutes. `;
-  if (diff === 'Hard' || diff === 'Legendary') {
-    summary += `Estimated intensity was high. `;
-  } else {
-    summary += `Estimated intensity was moderate. `;
-  }
-  summary += `\nRecovery recommendation:\n• Sleep 8 hours.\n• Drink 3L water.\n• Train ${type.toLowerCase().includes('strength') ? 'cardio or active recovery' : 'strength'} tomorrow.`;
-  return summary;
-}
-
 export default function Composer({ currentUserId, currentUser, onClose }) {
-  const [step, setStep] = useState('form'); // 'form' or 'celebration'
-  
-  // Section 1: Details
-  const [workoutType, setWorkoutType] = useState(WORKOUT_TYPES[0]);
-  const [duration, setDuration] = useState('60');
-  const [difficulty, setDifficulty] = useState(DIFFICULTIES[1]);
-  
-  // Section 2: Tracker
-  const [exercises, setExercises] = useState([]);
-  
-  // Section 4: Media
+  const [category, setCategory] = useState('victory');
+  const [mode, setMode] = useState('zerobuild');
+  const [platform, setPlatform] = useState('PC');
+  const [caption, setCaption] = useState('');
+  const [privacy, setPrivacy] = useState('Public');
+
   const [imgPrev, setImgPrev] = useState('');
   const [imgData, setImgData] = useState('');
   const [compressing, setCompressing] = useState(false);
-  
-  // Section 5: Caption
-  const [caption, setCaption] = useState('');
-  
-  // Section 6: Privacy
-  const [privacy, setPrivacy] = useState('Public');
-  
-  // Submit state
   const [posting, setPosting] = useState(false);
   const fRef = useRef(null);
-
-  // Derived Stats
-  const durationNum = parseInt(duration) || 0;
-  const estimatedCalories = Math.floor(durationNum * workoutType.baseCaloriesPerMin * difficulty.multiplier);
-  const baseXP = durationNum * 5;
-  const exerciseBonus = exercises.length * 20;
-  const diffBonus = Math.floor(baseXP * (difficulty.multiplier - 1));
-  const totalXP = baseXP + exerciseBonus + diffBonus;
-  const bossDamage = totalXP * 5;
 
   const handleImg = useCallback(async e => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.size > 10 * 1024 * 1024) return alert('Max 10MB');
     setCompressing(true);
     try {
-      const d = await compress(f);
-      setImgPrev(d);
-      setImgData(d);
-    } catch {
-      alert('Image failed to load.');
+      const dataUrl = await compress(f);
+      setImgPrev(dataUrl);
+      setImgData(dataUrl);
+    } catch (err) {
+      console.error('Image processing error:', err);
     } finally {
       setCompressing(false);
-      if (fRef.current) fRef.current.value = '';
     }
   }, []);
 
-  const addExercise = () => {
-    setExercises([...exercises, { id: Date.now(), name: '', sets: '', reps: '', weight: '' }]);
-  };
-
-  const updateExercise = (id, field, value) => {
-    setExercises(exercises.map(ex => ex.id === id ? { ...ex, [field]: value } : ex));
-  };
-
-  const removeExercise = (id) => {
-    setExercises(exercises.filter(ex => ex.id !== id));
-  };
-
-  const submitWorkout = async () => {
-    if (!durationNum) return alert('Please enter a duration.');
+  const submitPost = async () => {
     setPosting(true);
-
-    const coachSummary = generateCoachSummary(workoutType.label, durationNum, difficulty.id);
-
-    const workoutDetails = {
-      type: workoutType.label,
-      duration: durationNum,
-      difficulty: difficulty.id,
-      calories: estimatedCalories,
-      xp: totalXP,
-      bossDamage,
-      privacy,
-      exercises,
-      coachSummary
+    const postDetails = {
+      category,
+      mode,
+      platform,
+      privacy
     };
 
     try {
-      await logWorkout(currentUserId, caption.trim(), imgData, workoutDetails);
-      setStep('celebration');
+      await logWorkout(currentUserId, caption.trim(), imgData, postDetails);
+      onClose();
     } catch (err) {
       console.error(err);
       alert('Post failed.');
@@ -152,250 +74,266 @@ export default function Composer({ currentUserId, currentUser, onClose }) {
     }
   };
 
-  if (step === 'celebration') {
-    return (
-      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-brand-dark/95 backdrop-blur-xl">
-        {/* Celebration Particles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[20%] left-[20%] w-32 h-32 bg-cyan-500/20 rounded-full blur-[60px] animate-pulse" />
-          <div className="absolute bottom-[20%] right-[20%] w-40 h-40 bg-emerald-500/20 rounded-full blur-[60px] animate-pulse" style={{ animationDelay: '1s'}} />
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center animate-in fade-in zoom-in duration-700">
-          <Trophy size={80} className="text-emerald-400 mb-6 drop-shadow-[0_0_30px_rgba(52,211,153,0.5)]" />
-          
-          <h1 className="text-5xl font-black text-white uppercase tracking-widest mb-2 font-display">
-            Mission Complete
-          </h1>
-          
-          <p className="text-lg text-emerald-400 font-bold tracking-widest mb-12">
-            STREAK INCREASED +1
-          </p>
-
-          <div className="flex gap-8 mb-12">
-            <div className="flex flex-col items-center bg-white/5 rounded-2xl p-6 border border-white/10 w-40">
-              <span className="text-cyan-400 font-black text-3xl mb-1">+{totalXP}</span>
-              <span className="text-xs text-dark-muted font-bold tracking-widest uppercase">XP Earned</span>
-            </div>
-            <div className="flex flex-col items-center bg-white/5 rounded-2xl p-6 border border-white/10 w-40">
-              <span className="text-rose-400 font-black text-3xl mb-1">+{bossDamage.toLocaleString()}</span>
-              <span className="text-xs text-dark-muted font-bold tracking-widest uppercase">Boss DMG</span>
-            </div>
-          </div>
-
-          <button 
-            onClick={onClose}
-            className="px-12 py-4 bg-brand-primary text-black font-black uppercase tracking-widest text-lg rounded-full hover:scale-105 transition-transform"
-          >
-            Return to HQ
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 99999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'rgba(2, 6, 23, 0.85)',
+      backdropFilter: 'blur(10px)',
+      padding: '16px',
+      boxSizing: 'border-box'
+    }} onClick={onClose}>
       <div 
-        className="bg-brand-dark w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[2rem] border border-white/10 flex flex-col shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-300"
+        style={{
+          background: '#0f172a',
+          border: '1px solid #334155',
+          borderRadius: '24px',
+          width: '100%',
+          maxWidth: '480px',
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.8), 0 0 30px rgba(0,240,255,0.15)',
+          overflow: 'hidden',
+          animation: 'fadeInScale 0.25s ease-out'
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/5 bg-brand-dark/50 backdrop-blur-md z-10 sticky top-0">
-          <button onClick={onClose} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition">
-            <X size={20} className="text-white" />
-          </button>
-          <span className="font-black text-lg uppercase tracking-widest text-white">Log Workout</span>
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid #1e293b',
+          display: 'flex',
+          alignItems: 'center',
+          justify: 'space-between',
+          background: '#020617'
+        }}>
           <button 
-            onClick={submitWorkout}
-            disabled={posting || compressing || !durationNum}
-            className="px-6 py-2 bg-brand-primary text-black font-black uppercase text-sm rounded-full disabled:opacity-50 hover:bg-cyan-400 transition"
+            type="button" 
+            onClick={onClose} 
+            style={{
+              background: '#1e293b',
+              border: 'none',
+              color: '#fff',
+              borderRadius: '50%',
+              width: 36,
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+              justify: 'center',
+              cursor: 'pointer'
+            }}
           >
-            {posting ? <Loader size={16} className="animate-spin" /> : 'Finish'}
+            <X size={18} />
+          </button>
+          <span style={{ fontSize: 16, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            POST FORTNITE HIGHLIGHT
+          </span>
+          <button 
+            type="button"
+            onClick={submitPost}
+            disabled={posting || compressing}
+            style={{
+              background: 'linear-gradient(135deg, #00f0ff 0%, #7c3aed 100%)',
+              color: '#000',
+              fontWeight: 900,
+              fontSize: 13,
+              border: 'none',
+              padding: '8px 20px',
+              borderRadius: 20,
+              cursor: 'pointer',
+              opacity: (posting || compressing) ? 0.5 : 1
+            }}
+          >
+            {posting ? <Loader size={16} className="spin" /> : 'POST'}
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 no-scrollbar">
+        <div style={{ padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
           
-          {/* Top Level Preview Card */}
-          <div className="bg-gradient-to-br from-brand-secondary to-brand-dark p-6 rounded-3xl border border-white/10 shadow-lg relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
-            <div className="relative z-10 grid grid-cols-2 gap-6">
-              
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-dark-muted font-bold">Type</label>
-                <div className="relative">
-                  <select 
-                    className="w-full appearance-none bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white font-bold outline-none focus:border-brand-primary transition"
-                    value={workoutType.id}
-                    onChange={e => setWorkoutType(WORKOUT_TYPES.find(t => t.id === e.target.value))}
-                  >
-                    {WORKOUT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-                  </select>
-                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-muted pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-widest text-dark-muted font-bold">Duration (Min)</label>
-                <input 
-                  type="number"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white font-bold outline-none focus:border-brand-primary transition"
-                  placeholder="60"
-                  value={duration}
-                  onChange={e => setDuration(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1 col-span-2 sm:col-span-1">
-                <label className="text-[10px] uppercase tracking-widest text-dark-muted font-bold">Difficulty</label>
-                <div className="flex gap-2">
-                  {DIFFICULTIES.map(d => (
-                    <button
-                      key={d.id}
-                      onClick={() => setDifficulty(d)}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold border transition ${
-                        difficulty.id === d.id 
-                          ? 'bg-white/10 border-white text-white' 
-                          : 'bg-black/20 border-white/5 text-dark-muted hover:bg-white/5'
-                      }`}
-                      style={{ borderColor: difficulty.id === d.id ? d.color : undefined, color: difficulty.id === d.id ? d.color : undefined }}
-                    >
-                      {d.id}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-center items-end text-right col-span-2 sm:col-span-1">
-                <div className="text-3xl font-black text-brand-primary tracking-tight">+{totalXP} <span className="text-sm text-brand-primary/70">XP</span></div>
-                <div className="text-sm font-bold text-rose-400">🔥 {estimatedCalories} Cal</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Exercise Tracker */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-white uppercase tracking-widest">Exercise Tracker</h3>
-              <button 
-                onClick={addExercise}
-                className="flex items-center gap-2 text-xs font-bold text-brand-primary bg-brand-primary/10 px-3 py-1.5 rounded-full hover:bg-brand-primary/20 transition"
+          {/* Post Category & Mode Selectors */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>
+                Category
+              </label>
+              <select 
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#1e293b',
+                  border: '1px solid #334155',
+                  borderRadius: 12,
+                  padding: '10px 12px',
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
               >
-                <Plus size={14} /> Add Lift
-              </button>
+                <option value="victory">🏆 Victory Royale</option>
+                <option value="lfg">👥 Squad LFG</option>
+                <option value="clip">🎥 Clutch Clip</option>
+                <option value="loadout">🔫 Weapon Loadout</option>
+                <option value="creative">🧩 Creative Code</option>
+              </select>
             </div>
 
-            {exercises.length === 0 ? (
-              <div className="bg-black/20 border border-dashed border-white/10 rounded-2xl p-8 text-center text-dark-muted text-sm font-bold">
-                No exercises logged yet.<br/>Focus on your form.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {exercises.map((ex, i) => (
-                  <div key={ex.id} className="flex flex-wrap sm:flex-nowrap gap-3 bg-white/5 border border-white/10 p-3 rounded-2xl items-center animate-in slide-in-from-top-2">
-                    <span className="text-dark-muted font-black w-6 text-center">{i + 1}</span>
-                    <input 
-                      className="flex-1 min-w-[120px] bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-sm text-white font-bold outline-none focus:border-brand-primary"
-                      placeholder="e.g. Bench Press"
-                      value={ex.name}
-                      onChange={e => updateExercise(ex.id, 'name', e.target.value)}
-                    />
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <input 
-                        className="w-16 bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-sm text-center text-white font-bold outline-none focus:border-brand-primary"
-                        placeholder="Sets"
-                        type="number"
-                        value={ex.sets}
-                        onChange={e => updateExercise(ex.id, 'sets', e.target.value)}
-                      />
-                      <span className="text-dark-muted self-center text-xs font-bold">×</span>
-                      <input 
-                        className="w-16 bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-sm text-center text-white font-bold outline-none focus:border-brand-primary"
-                        placeholder="Reps"
-                        type="number"
-                        value={ex.reps}
-                        onChange={e => updateExercise(ex.id, 'reps', e.target.value)}
-                      />
-                      <input 
-                        className="w-20 bg-black/40 border border-white/5 rounded-xl px-3 py-2 text-sm text-center text-emerald-400 font-bold outline-none focus:border-emerald-500 ml-2"
-                        placeholder="Lbs/Kg"
-                        type="number"
-                        value={ex.weight}
-                        onChange={e => updateExercise(ex.id, 'weight', e.target.value)}
-                      />
-                      <button onClick={() => removeExercise(ex.id)} className="p-2 text-dark-muted hover:text-rose-400 ml-1">
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Quest Progress Preview */}
-          <div className="bg-black/30 border border-white/5 rounded-2xl p-5 space-y-4">
-            <h3 className="text-xs font-black text-dark-muted uppercase tracking-widest flex items-center gap-2">
-              <Zap size={14} className="text-emerald-400" /> Daily Quest Progress
-            </h3>
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs font-bold">
-                <span className="text-white">Complete a Workout</span>
-                <span className="text-emerald-400">100%</span>
-              </div>
-              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-400 rounded-full w-full shadow-[0_0_10px_rgba(52,211,153,0.5)]" />
-              </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>
+                Mode
+              </label>
+              <select 
+                value={mode}
+                onChange={e => setMode(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#1e293b',
+                  border: '1px solid #334155',
+                  borderRadius: 12,
+                  padding: '10px 12px',
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="zerobuild">Zero Build</option>
+                <option value="battleroyale">Battle Royale</option>
+                <option value="reload">Reload</option>
+                <option value="ranked">Ranked</option>
+                <option value="creative">Creative / UEFN</option>
+              </select>
             </div>
           </div>
 
-          {/* Media & Caption */}
-          <div className="space-y-4">
+          {/* Platform Pills */}
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>
+              Platform
+            </label>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+              {['PlayStation', 'PC', 'Xbox', 'Switch', 'Mobile'].map(plat => (
+                <button
+                  key={plat}
+                  type="button"
+                  onClick={() => setPlatform(plat)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    border: platform === plat ? '1px solid #00f0ff' : '1px solid #334155',
+                    background: platform === plat ? 'rgba(0, 240, 255, 0.15)' : '#020617',
+                    color: platform === plat ? '#00f0ff' : '#94a3b8',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {plat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Text Caption Input */}
+          <div>
             <textarea
-              className="w-full bg-black/20 border border-white/10 rounded-2xl p-4 text-white placeholder-dark-muted resize-none outline-none focus:border-brand-primary focus:bg-black/40 transition"
-              placeholder="What did you conquer today? (Optional caption...)"
+              placeholder="Share your Victory Royale, clutch play, or squad drop details..."
               value={caption}
               onChange={e => setCaption(e.target.value.slice(0, MAX_CAPTION))}
-              rows={3}
+              rows={4}
+              style={{
+                width: '100%',
+                background: '#020617',
+                border: '1px solid #334155',
+                borderRadius: 14,
+                padding: 14,
+                color: '#fff',
+                fontSize: 14,
+                outline: 'none',
+                resize: 'none',
+                boxSizing: 'border-box'
+              }}
             />
-            
-            {imgPrev && (
-              <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black">
-                <img src={imgPrev} alt="" className="w-full max-h-64 object-cover opacity-80" />
-                <button
-                  className="absolute top-3 right-3 p-2 bg-black/60 rounded-full text-white hover:bg-rose-500 transition backdrop-blur-md"
-                  onClick={() => { setImgPrev(''); setImgData(''); }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
+          </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <div className="flex gap-2">
-                <input ref={fRef} type="file" accept="image/*,video/*" hidden onChange={handleImg} />
-                <button
-                  onClick={() => fRef.current?.click()}
-                  disabled={compressing}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-sm font-bold text-white transition"
-                >
-                  {compressing ? <Loader size={16} className="animate-spin text-brand-primary" /> : <ImageIcon size={16} className="text-brand-primary" />}
-                  Add Media
-                </button>
-              </div>
+          {/* Media Preview */}
+          {imgPrev && (
+            <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: '1px solid #00f0ff55', background: '#000' }}>
+              <img src={imgPrev} alt="" style={{ width: '100%', maxHeight: 220, objectFit: 'cover' }} />
+              <button
+                type="button"
+                onClick={() => { setImgPrev(''); setImgData(''); }}
+                style={{
+                  position: 'absolute',
+                  top: 10,
+                  right: 10,
+                  background: 'rgba(0,0,0,0.7)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: 32,
+                  height: 32,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'center'
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
 
-              <div className="flex items-center gap-2 bg-white/5 border border-white/5 rounded-xl px-3 py-1">
-                <Lock size={14} className="text-dark-muted" />
-                <select 
-                  value={privacy} 
-                  onChange={e => setPrivacy(e.target.value)}
-                  className="appearance-none bg-transparent text-xs font-bold text-dark-muted outline-none py-1 pr-2 cursor-pointer"
-                >
-                  {PRIVACY_OPTS.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
+          {/* Media Attach & Privacy Row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
+            <input ref={fRef} type="file" accept="image/*,video/*" hidden onChange={handleImg} />
+            <button
+              type="button"
+              onClick={() => fRef.current?.click()}
+              disabled={compressing}
+              style={{
+                background: 'rgba(0, 240, 255, 0.1)',
+                border: '1px solid rgba(0, 240, 255, 0.3)',
+                color: '#00f0ff',
+                padding: '10px 16px',
+                borderRadius: 12,
+                fontSize: 13,
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}
+            >
+              {compressing ? <Loader size={16} className="spin" /> : <ImageIcon size={16} />}
+              Attach Screenshot / Clip
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#020617', border: '1px solid #334155', borderRadius: 10, padding: '6px 10px' }}>
+              <Lock size={12} color="#94a3b8" />
+              <select 
+                value={privacy} 
+                onChange={e => setPrivacy(e.target.value)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, fontWeight: 800, outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="Public" style={{ background: '#0f172a', color: '#fff' }}>Public</option>
+                <option value="Friends" style={{ background: '#0f172a', color: '#fff' }}>Friends</option>
+                <option value="Private" style={{ background: '#0f172a', color: '#fff' }}>Private</option>
+              </select>
             </div>
           </div>
 

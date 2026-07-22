@@ -1,0 +1,23 @@
+{
+  "name": "stormcore-earth",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-quality weather platform with CesiumJS 3D globe, official meteorological data, and AI-assisted analysis",
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "start": "turbo run start --filter=server",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:migrate": "pnpm db:migrate --workspace=@stormcore/database",
+    "db:seed": "pnpm db:seed --workspace=@stormcore/database",
+    "db:studio": "pnpm db:studio --workspace=@stormcore/database",
+    "clean": "turbo run clean && rm -rf node_modules pnpm-lock.yaml"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

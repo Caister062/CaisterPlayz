@@ -1,24 +1,24 @@
 import { useEffect } from 'react';
 import { markAllNotificationsRead } from '../hooks';
 import { timeAgo } from './PostCard';
-import { Trophy, Target, Flame, Zap, CheckCircle, Bell } from 'lucide-react';
+import { Trophy, Target, Flame, Zap, Bell, MessageSquare, BellOff } from 'lucide-react';
 
 const ICONS = {
-  like: <Flame size={16} color="var(--hot)" />,
-  comment: <Zap size={16} color="var(--cyan)" />,
-  repost: <Trophy size={16} color="#f59e0b" />,
+  like: <Flame size={16} color="#00f0ff" />,
+  comment: <MessageSquare size={16} color="#7c3aed" />,
+  repost: <Trophy size={16} color="#ffd700" />,
   announcement: <Bell size={16} color="#10b981" />
 };
 
 const MSGS = {
-  like: 'boosted your workout!',
-  comment: 'rallied to your workout log!',
-  repost: 'echoed your fitness milestone!',
+  like: 'liked your Victory Royale clip!',
+  comment: 'commented on your post!',
+  repost: 'shared your Fortnite highlight!',
 };
 
 export default function NotificationsView({
-  notifications,
-  users,
+  notifications = [],
+  users = [],
   currentUserId,
   onRefresh,
   onProfileClick
@@ -31,76 +31,81 @@ export default function NotificationsView({
     }
   }, []);
 
-  // Filter out social-only notifications like "follow"
-  const fitnessNotifs = notifications.filter(n => n.type !== 'follow');
-
-  if (fitnessNotifs.length === 0) {
-    return (
-      <div className="page-container" style={{ padding: '24px 16px' }}>
-        <div style={{ padding: 40, background: 'var(--surface)', borderRadius: 16, textAlign: 'center', border: '1px solid var(--border)' }}>
-          <Target size={32} color="var(--text2)" style={{ margin: '0 auto 16px' }} />
-          <h3 style={{ color: 'var(--text1)', marginBottom: 8, fontSize: 18, fontWeight: 800 }}>No Alerts Yet</h3>
-          <p style={{ color: 'var(--text2)', fontSize: 14 }}>XP gains, level ups, and workout cheers will appear here.</p>
-        </div>
-      </div>
-    );
-  }
+  // Show only real user notifications received from the PocketBase database
+  const realNotifications = notifications.filter(n => n.type !== 'follow');
 
   return (
-    <div className="page-container" style={{ padding: '24px 16px', paddingBottom: 100 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 24 }}>
-        Fitness Alerts
-      </h1>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Synthetic "Daily Quest" notification for flavor */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--cyan)', borderRadius: 12, padding: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-          <div style={{ background: 'rgba(0, 229, 255, 0.1)', padding: 10, borderRadius: '50%' }}>
-            <Target size={18} color="var(--cyan)" />
-          </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Daily Quest Available!</div>
-            <div style={{ fontSize: 12, color: 'var(--text2)' }}>Log today's workout to maintain your streak and earn +100 XP.</div>
-          </div>
+    <div className="page-container" style={{ padding: '24px 16px', paddingBottom: 120 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+            FORTNITE ALERTS & NOTIFICATIONS
+          </h1>
+          <p style={{ color: '#94a3b8', fontSize: 13, margin: '4px 0 0 0' }}>
+            Real-time player notifications and interactions.
+          </p>
         </div>
-
-        {fitnessNotifs.map(n => {
-          const s = users.find(u => u.id === n.senderId);
-          const icon = ICONS[n.type] || <Bell size={16} color="var(--text2)" />;
-
-          return (
-            <div
-              key={n.id}
-              style={{
-                background: n.read ? 'var(--bg)' : 'var(--surface)',
-                border: `1px solid ${n.read ? 'var(--bg2)' : 'var(--border)'}`,
-                borderRadius: 12,
-                padding: 16,
-                display: 'flex',
-                gap: 12,
-                alignItems: 'center',
-                position: 'relative'
-              }}
-            >
-              <div style={{ background: 'var(--bg2)', padding: 10, borderRadius: '50%' }}>
-                {icon}
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, color: 'var(--text1)' }}>
-                  <strong style={{ color: '#fff', fontWeight: 800 }}>{n.type === 'announcement' ? 'HQ' : (s?.displayName || 'A player')}</strong>{' '}
-                  {n.type === 'announcement' ? <span style={{ color: 'var(--cyan)' }}>broadcasted an event</span> : (MSGS[n.type] || 'interacted with your log')}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4, fontWeight: 600 }}>
-                  {timeAgo(n.created)}
-                </div>
-              </div>
-
-              {!n.read && <div style={{ width: 8, height: 8, background: 'var(--hot)', borderRadius: '50%' }} />}
-            </div>
-          );
-        })}
       </div>
+
+      {realNotifications.length === 0 ? (
+        <div style={{
+          background: '#0f172a',
+          border: '1px border #1e293b',
+          borderRadius: 16,
+          padding: 40,
+          textAlign: 'center',
+          color: '#94a3b8'
+        }}>
+          <BellOff size={40} color="#64748b" style={{ margin: '0 auto 12px' }} />
+          <h3 style={{ fontSize: 18, fontWeight: 900, color: '#fff', margin: '0 0 6px 0', textTransform: 'uppercase' }}>
+            No Notifications Yet
+          </h3>
+          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>
+            Interactions from actual players will appear here when they like or comment on your clips.
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {realNotifications.map(n => {
+            const sender = users.find(u => u.id === n.senderId);
+            const senderName = sender?.displayName || 'Fortnite Gamer';
+            const icon = ICONS[n.type] || <Bell size={16} color="#00f0ff" />;
+            const msgText = MSGS[n.type] || 'interacted with your post.';
+
+            return (
+              <div
+                key={n.id}
+                style={{
+                  background: n.read ? '#0f172a' : '#1e1b4b',
+                  border: `1px solid ${n.read ? '#1e293b' : '#7c3aed66'}`,
+                  borderRadius: 14,
+                  padding: 16,
+                  display: 'flex',
+                  gap: 14,
+                  alignItems: 'center',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                }}
+              >
+                <div style={{ background: '#020617', padding: 10, borderRadius: 12, border: '1px solid #334155' }}>
+                  {icon}
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, color: '#e2e8f0' }}>
+                    <strong style={{ color: '#fff', fontWeight: 900 }}>@{senderName}</strong>{' '}
+                    {msgText}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, fontWeight: 600 }}>
+                    {timeAgo(n.created)}
+                  </div>
+                </div>
+
+                {!n.read && <div style={{ width: 8, height: 8, background: '#00f0ff', borderRadius: '50%', boxShadow: '0 0 8px #00f0ff' }} />}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

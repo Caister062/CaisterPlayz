@@ -153,6 +153,18 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Epic Games Disclaimer */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <AlertTriangle size={18} color={THEME.colors.warning} />
+          <Text style={styles.sectionTitle}>Disclaimer</Text>
+        </View>
+        <Text style={styles.settingDesc}>
+          This app is not affiliated with, maintained, sponsored, or endorsed by Epic Games, Inc. 
+          "Fortnite" and related trademarks are the property of Epic Games.
+        </Text>
+      </View>
+
       {/* Account actions */}
       <View style={styles.section}>
         <Button

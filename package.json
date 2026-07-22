@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
+  "homepage": "https://Caister062.github.io/CaisterPlayz",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "build": "npx vite build && npx cap sync ios"
+    "build": "npx vite build && npx cap sync ios",
+    "predeploy": "npx vite build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",
@@ -19,7 +22,7 @@
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/react-query": "^5.101.2",
     "@vitejs/plugin-react": "^6.0.3",
-    "expo": "^56.0.12",
+    "expo": "~56.0.16",
     "expo-constants": "^57.0.3",
     "expo-haptics": "~13.0.0",
     "expo-image": "^57.0.0",
@@ -32,11 +35,11 @@
     "expo-status-bar": "~56.0.4",
     "lucide-react": "^0.473.0",
     "lucide-react-native": "^0.473.0",
-    "pocketbase": "^0.26.8",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "pocketbase": "^0.21.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-hook-form": "^7.81.0",
-    "react-native": "0.74.5",
+    "react-native": "0.85.3",
     "react-native-safe-area-context": "^5.8.0",
     "react-native-screens": "^4.26.0",
     "react-native-svg": "^15.15.5",
@@ -56,6 +59,7 @@
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
+    "gh-pages": "^6.3.0",
     "globals": "^17.7.0",
     "typescript": "^6.0.3"
   },

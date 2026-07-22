@@ -1,0 +1,28 @@
+{
+  "pipeline": {
+    "dev": { "cache": false, "persistent": true },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", ".output/**"]
+    },
+    "lint": {},
+    "test": { "dependsOn": ["build"] },
+    "typecheck": {},
+    "start": { "cache": false, "persistent": true },
+    "clean": { "cache": false }
+  },
+  "globalEnv": [
+    "NODE_ENV",
+    "DATABASE_URL",
+    "FIREBASE_CONFIG",
+    "OPENAI_API_KEY",
+    "NOAA_API_KEY"
+  ],
+  "globalPassThroughEnvironment": [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "NO_PROXY",
+    "AWS_REGION"
+  ]
+}

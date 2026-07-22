@@ -41,37 +41,6 @@ export default function FeedView({
 
   return (
     <div style={{ paddingBottom: 100 }}>
-      {/* LIVE RAID - FEED WIDGET */}
-      {raid && !isDefeated && (
-        <div style={{ background: 'var(--surface)', margin: 16, padding: 16, borderRadius: 16, border: '1px solid var(--rose)', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--rose)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 0 15px rgba(244, 63, 94, 0.3)' }}>
-            <Flame size={24} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <span style={{ color: 'var(--rose)', fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>LIVE RAID</span>
-              <span style={{ color: '#fff', fontSize: 14, fontWeight: 900, textTransform: 'uppercase' }}>{raid.name}</span>
-            </div>
-            
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text1)', fontWeight: 800, marginBottom: 4 }}>
-                <span>HP</span>
-                <span>{currentHp.toLocaleString()} / {raid.maxHp.toLocaleString()}</span>
-              </div>
-              <div style={{ height: 8, background: 'var(--bg2)', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--border)' }}>
-                <div style={{ height: '100%', width: `${raidHpPercent}%`, background: 'var(--hot)', borderRadius: 4, transition: 'width 1s ease' }} />
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => setShowRaidModal(true)}
-              style={{ width: '100%', padding: '8px', background: 'var(--rose)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 900, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 4px 10px rgba(244, 63, 94, 0.4)' }}
-            >
-              <Crosshair size={14} /> ATTACK BOSS
-            </button>
-          </div>
-        </div>
-      )}
 
       {showRaidModal && raid && !isDefeated && (
         <RaidCombatModal 

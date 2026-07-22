@@ -108,44 +108,44 @@ export default function LoadingScreen() {
             <circle cx="50" cy="50" r="48" fill="none" stroke="var(--cyan)" strokeWidth="1" strokeDasharray="20 260" strokeLinecap="round" style={{ transformOrigin: '50% 50%', transform: 'rotate(180deg)' }} />
           </svg>
 
-          {/* Emblem Icon (Dumbbell/Shield fusion) */}
+          {/* Emblem Icon (Gamepad / Crosshair fusion) */}
           <div style={{ position: 'relative', animation: 'float 3s infinite ease-in-out' }}>
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 12px rgba(0,240,255,0.6))' }}>
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-              <path d="M8 11h8" />
-              <path d="M8 15h8" />
-              <path d="M6 9v8" />
-              <path d="M18 9v8" />
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 15px rgba(0, 240, 255, 0.8))' }}>
+              <line x1="6" y1="12" x2="10" y2="12" />
+              <line x1="8" y1="10" x2="8" y2="14" />
+              <line x1="15" y1="11" x2="15.01" y2="11" strokeWidth="3" />
+              <line x1="17" y1="13" x2="17.01" y2="13" strokeWidth="3" />
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
             </svg>
           </div>
         </div>
 
         {/* Title */}
         <h1 style={{
-          fontSize: 24,
+          fontSize: 26,
           fontWeight: 900,
           color: '#fff',
           textTransform: 'uppercase',
           letterSpacing: '0.15em',
           margin: '0 0 8px 0',
           textAlign: 'center',
-          textShadow: '0 0 20px rgba(0, 240, 255, 0.4)'
+          textShadow: '0 0 25px rgba(0, 240, 255, 0.6), 0 0 10px rgba(124, 58, 237, 0.5)'
         }}>
-          Preparing Training HQ
+          DROPPING INTO THE ISLAND
         </h1>
 
         {/* Subtitle */}
         <p style={{
-          color: 'var(--text2)',
+          color: '#94a3b8',
           fontSize: 13,
-          fontWeight: 600,
-          letterSpacing: '0.02em',
+          fontWeight: 700,
+          letterSpacing: '0.04em',
           margin: '0 0 40px 0',
-          opacity: 0.8,
           textAlign: 'center',
-          maxWidth: 280
+          maxWidth: 320,
+          textTransform: 'uppercase'
         }}>
-          Syncing workouts, XP, streaks, and daily missions...
+          Connecting to Battle Bus • Loading Squad Beacons & Item Shop...
         </p>
 
         {/* Loading Progress Bar Container */}

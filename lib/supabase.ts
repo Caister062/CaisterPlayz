@@ -2,9 +2,14 @@ import 'react-native-url-polyfill/auto';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
 
+import { Platform } from 'react-native';
+
 const ExpoSecureStoreAdapter = {
   getItem: (key: string) => {
     try {
+      if (Platform.OS === 'web') {
+        return typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+      }
       return SecureStore.getItem(key);
     } catch {
       return null;
@@ -12,14 +17,22 @@ const ExpoSecureStoreAdapter = {
   },
   setItem: (key: string, value: string) => {
     try {
-      SecureStore.setItem(key, value);
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') window.localStorage.setItem(key, value);
+      } else {
+        SecureStore.setItem(key, value);
+      }
     } catch {
       // Fail silently in development/mock modes
     }
   },
   removeItem: (key: string) => {
     try {
-      SecureStore.deleteItemAsync(key);
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') window.localStorage.removeItem(key);
+      } else {
+        SecureStore.deleteItemAsync(key);
+      }
     } catch {
       // Fail silently
     }

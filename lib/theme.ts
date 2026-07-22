@@ -1,17 +1,17 @@
 export const THEME = {
   colors: {
-    background: '#050814',
-    surface: '#0b132b',
-    surfaceLighter: '#1c2541',
-    primary: '#00f0ff', // Electric Cyan
-    secondary: '#7b2cbf', // Soft Violet
+    background: '#121212', // Clean dark theme for item shop vibe
+    surface: '#1c1c1e',
+    surfaceLighter: '#2c2c2e',
+    primary: '#00ffea', // Slurp Cyan
+    secondary: '#b15be2', // Epic Rarity Purple
     text: '#ffffff',
-    textMuted: '#8d99ae',
-    border: '#1c2541',
-    success: '#06d6a0',
-    warning: '#ffd166',
+    textMuted: '#999999',
+    border: '#333333',
+    success: '#65d564', // Uncommon Green
+    warning: '#f18805', // Legendary Orange
     danger: '#ef476f',
-    gold: '#ffb703',
+    gold: '#FFD700', // Mythic Gold
   },
   roundness: {
     sm: 6,

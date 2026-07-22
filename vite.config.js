@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  base: process.env.VITE_BASE || '/',
+  base: process.env.VITE_BASE || '/CaisterPlayz/',
 
   plugins: [
     react(),
@@ -96,6 +96,13 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'terser'
+    minify: 'terser',
+    target: 'esnext'
+  },
+
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'esnext'
+    }
   }
 })

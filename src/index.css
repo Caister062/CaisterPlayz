@@ -1332,3 +1332,153 @@ input, textarea { font: inherit; }
 }
 .dm-send-btn:hover { transform: scale(1.08); }
 .dm-send-btn:disabled { opacity: 0.4; transform: none; }
+
+/* ============================================================
+   FORTNITE LOBBY STYLES
+============================================================ */
+
+.lobby-top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(10,15,29,0.95) 0%, rgba(10,15,29,0) 100%);
+  pointer-events: none;
+}
+
+.lobby-nav-tabs {
+  display: flex;
+  gap: 15px;
+  pointer-events: auto;
+}
+
+.lobby-tab {
+  font-family: 'Arial Black', 'Impact', sans-serif;
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transform: skew(-10deg);
+  transition: all 0.2s ease;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  cursor: pointer;
+  padding: 5px 15px;
+  background: rgba(0,0,0,0.3);
+  border: 2px solid transparent;
+}
+
+.lobby-tab:hover {
+  color: #fff;
+  background: rgba(0,240,255,0.2);
+  border-color: rgba(0,240,255,0.5);
+}
+
+.lobby-tab.active {
+  color: #fff;
+  background: var(--cyan);
+  color: #000;
+  border-color: #fff;
+  box-shadow: 0 0 15px var(--cyan);
+  text-shadow: none;
+}
+
+.lobby-nav-actions {
+  display: flex;
+  gap: 15px;
+  pointer-events: auto;
+}
+
+.lobby-action-btn {
+  background: rgba(0,0,0,0.5);
+  border: 2px solid rgba(255,255,255,0.2);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: skew(-10deg);
+  color: #fff;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.lobby-action-btn:hover {
+  background: var(--cyan);
+  color: #000;
+  border-color: #fff;
+  box-shadow: 0 0 15px var(--cyan);
+}
+
+.lobby-main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.lobby-hero {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 40px;
+  padding-bottom: max(40px, env(safe-area-inset-bottom));
+}
+
+.lobby-character {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.char-model {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--cyan);
+  filter: drop-shadow(0 0 20px rgba(0,240,255,0.3));
+  animation: float 4s ease-in-out infinite;
+}
+
+.char-name {
+  font-family: 'Arial Black', 'Impact', sans-serif;
+  font-size: 32px;
+  color: #fff;
+  text-transform: uppercase;
+  margin-top: 10px;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+}
+
+.char-level {
+  font-family: 'Arial Black', 'Impact', sans-serif;
+  font-size: 18px;
+  color: #ffd700;
+  background: rgba(0,0,0,0.6);
+  padding: 2px 10px;
+  border-radius: 4px;
+  margin-top: 5px;
+}
+
+.lobby-play-section {
+  align-self: flex-end;
+  width: 100%;
+  max-width: 400px;
+  background: rgba(10, 15, 29, 0.85);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--cyan);
+  box-shadow: 0 0 30px rgba(0,240,255,0.2);
+  transform: skew(-2deg);
+  padding: 20px;
+  z-index: 10;
+  pointer-events: auto;
+}

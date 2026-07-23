@@ -27,13 +27,17 @@ export default function AuthView({ onAuthSuccess }) {
       
       const redirectUrl = Capacitor.isNativePlatform()
         ? 'https://caister062.github.io/CaisterPlayz/oauth-redirect.html'
-        : window.location.origin + '/';
+        : (window.location.origin + window.location.pathname);
         
       localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
       document.cookie = `oauth_provider=${encodeURIComponent(JSON.stringify({ ...provider, redirectUrl }))}; path=/; max-age=3600`;
       
       let authUrl = provider.authUrl;
-      if (!authUrl.includes('redirect_uri=')) {
+      if (authUrl.includes('redirect_uri=&')) {
+        authUrl = authUrl.replace('redirect_uri=&', 'redirect_uri=' + encodeURIComponent(redirectUrl) + '&');
+      } else if (authUrl.endsWith('redirect_uri=')) {
+        authUrl += encodeURIComponent(redirectUrl);
+      } else if (!authUrl.includes('redirect_uri=')) {
         authUrl += (authUrl.includes('?') ? '&' : '?') + 'redirect_uri=' + encodeURIComponent(redirectUrl);
       }
       

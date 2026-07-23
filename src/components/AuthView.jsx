@@ -33,12 +33,11 @@ export default function AuthView({ onAuthSuccess }) {
       document.cookie = `oauth_provider=${encodeURIComponent(JSON.stringify({ ...provider, redirectUrl }))}; path=/; max-age=3600`;
       
       let authUrl = provider.authUrl;
-      if (authUrl.includes('redirect_uri=&')) {
-        authUrl = authUrl.replace('redirect_uri=&', 'redirect_uri=' + encodeURIComponent(redirectUrl) + '&');
-      } else if (authUrl.endsWith('redirect_uri=')) {
-        authUrl += encodeURIComponent(redirectUrl);
-      } else if (!authUrl.includes('redirect_uri=')) {
-        authUrl += (authUrl.includes('?') ? '&' : '?') + 'redirect_uri=' + encodeURIComponent(redirectUrl);
+      const encodedRedirect = encodeURIComponent(redirectUrl);
+      if (authUrl.includes('redirect_uri=')) {
+        authUrl = authUrl.replace(/redirect_uri=[^&]*/, 'redirect_uri=' + encodedRedirect);
+      } else {
+        authUrl += (authUrl.includes('?') ? '&' : '?') + 'redirect_uri=' + encodedRedirect;
       }
       
       if (Capacitor.isNativePlatform()) {

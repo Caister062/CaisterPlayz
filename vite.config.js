@@ -24,10 +24,10 @@ export default defineConfig({
       ],
 
       manifest: {
-        name: 'CaisterPlayz — Fortnite & Fitness',
-        short_name: 'CaisterPlayz',
+        name: 'IndieStream — Independent Music Social Network',
+        short_name: 'IndieStream',
         description:
-          'The social network for Fortnite gamers and fitness grinders. Share wins, track gains, find squads.',
+          'Upload your original music, find your audience, and discover underground tracks. The premier social platform for independent artists.',
         theme_color: '#0a0e27',
         background_color: '#0a0e27',
         display: 'standalone',

@@ -14,7 +14,7 @@ import UploadView from './components/music/UploadView';
 export default function App() {
   const [tab, setTab] = useState('discover');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [userId, setUserId] = useState(pb.authStore.model?.id || null);
+  const [userId, setUserId] = useState(localStorage.getItem('cplayz_user_id') || pb.authStore.model?.id || null);
   const [booting, setBooting] = useState(true);
 
   // Audio Player State
@@ -25,7 +25,12 @@ export default function App() {
   useEffect(() => {
     // Basic auth logic from original App.jsx
     const unsub = pb.authStore.onChange((token, model) => {
-      setUserId(model?.id || null);
+      const storedId = localStorage.getItem('cplayz_user_id');
+      if (model?.id) {
+        setUserId(model.id);
+      } else if (!storedId || !storedId.startsWith('guest_')) {
+        setUserId(null);
+      }
     }, true);
 
     setTimeout(() => setBooting(false), 2000);
@@ -90,7 +95,7 @@ export default function App() {
             <div className="centered">
               <h2>{me?.displayName || 'Artist Profile'}</h2>
               <p>Total Streams: 0</p>
-              <button className="btn outline" onClick={() => { pb.authStore.clear(); setUserId(null); }}>Log Out</button>
+              <button className="btn outline" onClick={() => { pb.authStore.clear(); localStorage.removeItem('cplayz_user_id'); setUserId(null); }}>Log Out</button>
             </div>
           )}
         </div>

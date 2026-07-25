@@ -256,7 +256,7 @@ export default function AuthView({ onAuthSuccess }) {
       </h1>
       
       <p style={{ color: 'var(--cyan)', textTransform: 'uppercase', fontSize: 14, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 30 }}>
-        The Ultimate Fortnite Gaming Community
+        Independent Music Social Network
       </p>
 
       {error && (

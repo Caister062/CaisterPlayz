@@ -9,7 +9,7 @@
 import PocketBase from 'pocketbase';
 import { createInterface } from 'readline';
 
-const PB_URL = process.env.VITE_PB_URL || 'https://caisterplayz-caisterplayz-backend.hf.space';
+const PB_URL = process.env.VITE_PB_URL || 'https://caisterplayz.pockethost.io';
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 const ask = (q) => new Promise(r => rl.question(q, r));

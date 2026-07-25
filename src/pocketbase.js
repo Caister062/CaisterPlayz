@@ -2,7 +2,7 @@ import PocketBase from 'pocketbase';
 
 const PB_URL =
   import.meta.env.VITE_PB_URL ||
-  'https://caisterplayz-caisterplayz-backend.hf.space';
+  'https://caisterplayz.pockethost.io';
 
 console.log('Signal Core URL:', PB_URL);
 

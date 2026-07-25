@@ -1,17 +1,17 @@
 export const THEME = {
   colors: {
-    background: '#121212', // Clean dark theme for item shop vibe
+    background: '#121212', // Spotify Background
     surface: '#1c1c1e',
-    surfaceLighter: '#2c2c2e',
-    primary: '#00ffea', // Slurp Cyan
-    secondary: '#b15be2', // Epic Rarity Purple
+    surfaceLighter: '#282828',
+    primary: '#1DB954', // Spotify Green
+    secondary: '#191414',
     text: '#ffffff',
-    textMuted: '#999999',
+    textMuted: '#b3b3b3',
     border: '#333333',
-    success: '#65d564', // Uncommon Green
-    warning: '#f18805', // Legendary Orange
+    success: '#1DB954',
+    warning: '#f18805',
     danger: '#ef476f',
-    gold: '#FFD700', // Mythic Gold
+    gold: '#FFD700',
   },
   roundness: {
     sm: 6,

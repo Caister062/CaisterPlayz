@@ -21,13 +21,21 @@ export default function AuthView({ onAuthSuccess }) {
     try {
       setLoading(true);
       setError('');
+      
+      if (!Capacitor.isNativePlatform()) {
+        const authData = await pb.collection('users').authWithOAuth2({ provider: providerName });
+        if (authData?.record?.id) {
+          localStorage.setItem('cplayz_user_id', authData.record.id);
+          onAuthSuccess(authData.record.id);
+        }
+        return;
+      }
+      
       const authMethods = await pb.collection('users').listAuthMethods();
       const provider = authMethods.oauth2?.providers?.find((p) => p.name === providerName);
       if (!provider) throw new Error(`${providerName} login is not enabled in backend.`);
       
-      const redirectUrl = Capacitor.isNativePlatform()
-        ? 'https://caister062.github.io/CaisterPlayz/oauth-redirect.html'
-        : (window.location.origin + window.location.pathname);
+      const redirectUrl = 'https://caister062.github.io/CaisterPlayz/oauth-redirect.html';
         
       localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
       document.cookie = `oauth_provider=${encodeURIComponent(JSON.stringify({ ...provider, redirectUrl }))}; path=/; max-age=3600`;
@@ -40,11 +48,7 @@ export default function AuthView({ onAuthSuccess }) {
         authUrl += (authUrl.includes('?') ? '&' : '?') + 'redirect_uri=' + encodedRedirect;
       }
       
-      if (Capacitor.isNativePlatform()) {
-        await Browser.open({ url: authUrl });
-      } else {
-        window.location.href = authUrl;
-      }
+      await Browser.open({ url: authUrl });
     } catch (err) {
       console.error(err);
       setError(`Failed to start ${providerName} login: ${err.message}`);

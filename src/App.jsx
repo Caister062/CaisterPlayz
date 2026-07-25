@@ -1,253 +1,68 @@
 import { useState, useEffect } from 'react';
-import { Radio, Search, Lock, User, Plus, Bell, Loader, ShieldAlert, MessageSquare, Trophy, Star, Play } from 'lucide-react';
+import { Music, Search, Upload, User, ShieldAlert, Disc } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import pb from './pocketbase';
-import { useRealtimePosts, useAllUsers, useNotifications, useFollows, useUserProfile, useSystemConfig, useSquads } from './hooks';
-import { applyTheme } from './utils';
-import FeedView from './components/FeedView';
-import AdminView from './components/AdminView';
-import Composer from './components/Composer';
-
-import DailyQuestView from './components/DailyQuestView';
-import WorkoutsView from './components/WorkoutsView';
-import ChallengesView from './components/ChallengesView';
-import ProgressView from './components/ProgressView';
-import SeasonsView from './components/SeasonsView';
-import GuildsView from './components/GuildsView';
-import PlayerStatsView from './components/PlayerStatsView';
-import QuestClipsView from './components/QuestClipsView';
-import NotificationsView from './components/NotificationsView';
-import LoadingScreen from './components/LoadingScreen';
-import FortniteLfgView from './components/FortniteLfgView';
-import ItemShopView from './components/ItemShopView';
-
-function CpMark({ size = 18 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <text x="256" y="390" textAnchor="middle" fontFamily="'Arial Black','Impact',sans-serif" fontWeight="900" fontSize="340" fill="white" letterSpacing="-20">CP</text>
-    </svg>
-  );
-}
-
+import { useUserProfile } from './hooks';
 import AuthView from './components/AuthView';
+import LoadingScreen from './components/LoadingScreen';
+
+import AudioPlayer from './components/music/AudioPlayer';
+import DiscoverView from './components/music/DiscoverView';
+import UploadView from './components/music/UploadView';
 
 export default function App() {
-  const [tab, setTab] = useState('daily_quest');
+  const [tab, setTab] = useState('discover');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [dmRecipientId, setDmRecipientId] = useState(null);
-  const [showCompose, setShowCompose] = useState(false);
   const [userId, setUserId] = useState(pb.authStore.model?.id || null);
   const [booting, setBooting] = useState(true);
-  const [viewProfile, setViewProfile] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [exploreQuery, setExploreQuery] = useState('');
-  const [dismissedAnnounce, setDismissedAnnounce] = useState(localStorage.getItem('cp_dismissed_announce'));
+
+  // Audio Player State
+  const [currentTrack, setCurrentTrack] = useState(null);
+  const [playlist, setPlaylist] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
 
   useEffect(() => {
-    const handleOAuthRedirect = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const state = urlParams.get('state');
-      const code = urlParams.get('code');
-
-      if (state && code) {
-        try {
-          // Try localStorage first, then fallback to cookie to survive Safari ITP
-          let providerStr = localStorage.getItem('oauth_provider');
-          if (!providerStr) {
-            const match = document.cookie.match(new RegExp('(^| )oauth_provider=([^;]+)'));
-            if (match) providerStr = decodeURIComponent(match[2]);
-          }
-
-          if (providerStr) {
-            localStorage.removeItem('oauth_provider');
-            document.cookie = 'oauth_provider=; Max-Age=0; path=/';
-            
-            const provider = JSON.parse(providerStr);
-            const redirectUrl = provider.redirectUrl || (window.location.origin + window.location.pathname);
-            
-            const authData = await pb.collection('users').authWithOAuth2Code(
-              provider.name,
-              code,
-              provider.codeVerifier,
-              redirectUrl,
-              { displayName: 'Operator' }
-            );
-            
-            if (authData.record.displayName === 'Operator' && authData.meta?.name) {
-              pb.collection('users').update(authData.record.id, { displayName: authData.meta.name }).catch(console.error);
-            }
-            
-            localStorage.setItem('cplayz_user_id', authData.record.id);
-            setUserId(authData.record.id);
-          } else {
-            throw new Error('Login session expired. Please try again.');
-          }
-        } catch (e) {
-          console.error('OAuth callback failed', e);
-          alert('Authentication failed: ' + e.message);
-        } finally {
-          localStorage.removeItem('oauth_provider');
-          document.cookie = 'oauth_provider=; Max-Age=0; path=/';
-          window.history.replaceState(null, '', window.location.pathname);
-          setBooting(false);
-        }
-      }
-    };
-    handleOAuthRedirect();
-
-    const adminKey = localStorage.getItem('caister_admin');
-    const adminEmails = ['caismoretton@gmail.com', 'nexusnpc0@gmail.com'];
-
-    if (adminKey === 'CAISTER_CORE_ADMIN') {
-      setIsAdmin(true);
-    }
-
-    const savedTheme = localStorage.getItem('cplayz_theme');
-    if (savedTheme) {
-      applyTheme(savedTheme);
-    }
-
+    // Basic auth logic from original App.jsx
     const unsub = pb.authStore.onChange((token, model) => {
       setUserId(model?.id || null);
-      if (model?.email && adminEmails.includes(model.email.toLowerCase())) {
-        setIsAdmin(true);
-      }
     }, true);
 
-    // Online Presence Heartbeat
-    let presenceInterval;
-    if (pb.authStore.isValid) {
-      const pingPresence = async () => {
-        try {
-          await pb.collection('users').update(pb.authStore.model.id, {
-            isOnline: true,
-            lastActive: new Date().toISOString()
-          });
-        } catch (err) {
-          if (err.status === 401 || err.status === 404) {
-            console.warn('Session expired or account deleted. Logging out.');
-            pb.authStore.clear();
-            localStorage.removeItem('cplayz_user_id');
-            setUserId(null);
-          }
-        }
-      };
-      pingPresence();
-      presenceInterval = setInterval(pingPresence, 60000); // Every minute
-    }
+    setTimeout(() => setBooting(false), 2000);
 
-    if (window.location.search.includes('code=')) {
-      // Don't disable booting yet, wait for OAuth to finish in the handleOAuthRedirect promise
-    } else {
-      setTimeout(() => setBooting(false), 3000); // Match the new 2.5s premium loading animation + small buffer
-    }
-
-    let appUrlListener = null;
-    if (Capacitor.isNativePlatform()) {
-      CapApp.addListener('appUrlOpen', async (data) => {
-        if (data.url.toLowerCase().includes('caisterplayz://oauth')) {
-          try {
-            const urlObj = new URL(data.url);
-            const state = urlObj.searchParams.get('state');
-            const code = urlObj.searchParams.get('code');
-            if (state && code) {
-              let providerStr = localStorage.getItem('oauth_provider');
-              if (providerStr) {
-                const provider = JSON.parse(providerStr);
-                try {
-                  const { Browser } = await import('@capacitor/browser');
-                  await Browser.close();
-                } catch (e) {}
-
-                const redirectUrl = provider.redirectUrl || 'caisterplayz://oauth';
-                const authData = await pb.collection('users').authWithOAuth2Code(
-                  provider.name,
-                  code,
-                  provider.codeVerifier,
-                  redirectUrl,
-                  { displayName: 'Operator' }
-                );
-                
-                if (authData.record.displayName === 'Operator' && authData.meta?.name) {
-                  pb.collection('users').update(authData.record.id, { displayName: authData.meta.name }).catch(console.error);
-                }
-                
-                localStorage.setItem('cplayz_user_id', authData.record.id);
-                setUserId(authData.record.id);
-              }
-            }
-          } catch (e) {
-            console.error('Deep link OAuth failed:', e);
-            alert('Authentication failed: ' + e.message);
-          } finally {
-            localStorage.removeItem('oauth_provider');
-            setBooting(false);
-          }
-        }
-      }).then(listener => {
-        appUrlListener = listener;
-      });
-    }
-    
-    return () => {
-      unsub();
-      if (presenceInterval) clearInterval(presenceInterval);
-      if (appUrlListener) appUrlListener.remove();
-    };
+    return () => unsub();
   }, []);
 
-  const { posts, newPostsQueue, flushNewPosts, latestPostId, loading, loadMore, hasMore, loadingMore, refresh: refPosts } = useRealtimePosts();
-  const users = useAllUsers();
-  const { squads } = useSquads();
-  const { notifications, unreadCount, refresh: refNotif } = useNotifications(userId);
-  const followData = useFollows(userId);
-  const { profile: me, refresh: refMe } = useUserProfile(userId);
-
-  const pUser = viewProfile ? users.find(u => u.id === viewProfile) : null;
-  const { config } = useSystemConfig();
-
-  if (config) window.cplayz_config = config;
-
-  const goProfile = uid => {
-    if (uid === userId) {
-      setTab('progress');
-    } else {
-      setViewProfile(uid);
-      setTab('player_stats');
-    }
-  };
-
-  const goHashtag = tag => {
-    setExploreQuery(tag);
-    setTab('explore');
-  };
-
-  const goMention = mentionStr => {
-    const username = mentionStr.slice(1).toLowerCase();
-    const targetUser = users.find(u => u.displayName.toLowerCase() === username);
-    if (targetUser) {
-      goProfile(targetUser.id);
-    }
-  };
+  const { profile: me } = useUserProfile(userId);
 
   const goTab = t => {
-    if (tab === t) {
-      if (t === 'profile' && viewProfile) {
-        setViewProfile(null);
-      }
-      return;
-    }
-    
-    // Haptic feedback on nav switch
+    if (tab === t) return;
     if (navigator.vibrate) navigator.vibrate(8);
-    
-    // Switch immediately to prevent getting stuck
-    if (t === 'profile') setViewProfile(null);
     setTab(t);
-    
     setIsTransitioning(true);
     setTimeout(() => setIsTransitioning(false), 300);
+  };
+
+  const playTrack = (track, list, index) => {
+    setCurrentTrack(track);
+    if (list) {
+      setPlaylist(list);
+      setCurrentIndex(index);
+    }
+  };
+
+  const handleNextTrack = () => {
+    if (playlist.length > 0 && currentIndex < playlist.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setCurrentTrack(playlist[currentIndex + 1]);
+    }
+  };
+
+  const handlePrevTrack = () => {
+    if (playlist.length > 0 && currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      setCurrentTrack(playlist[currentIndex - 1]);
+    }
   };
 
   if (booting) {
@@ -258,112 +73,55 @@ export default function App() {
     return <AuthView onAuthSuccess={(id) => setUserId(id)} />;
   }
 
-  const NAV = [
-    { id: 'daily_quest', icon: Radio, label: 'Quest' },
-    { id: 'workouts', icon: Search, label: 'Workouts' },
-    { id: 'leaderboards', icon: Trophy, label: 'Leaderboards' },
-    { id: 'guilds', icon: ShieldAlert, label: 'Guilds' },
-    { id: 'seasons', icon: Star, label: 'Seasons' },
-    { id: 'progress', icon: User, label: 'Progress' },
-    { id: 'clips', icon: Play, label: 'Clips' },
-    { id: 'home', icon: Bell, label: 'Community' },
-  ];
-
   return (
-    <div className="console">
-      {config?.lockdown && !isAdmin ? (
-        <div style={{ display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',padding:20,textAlign:'center' }}>
-          <ShieldAlert size={64} color="#f43f5e" style={{ marginBottom:20 }} />
-
-          <h1 style={{ fontSize:24,fontWeight:900,color:'#f43f5e',textTransform:'uppercase',letterSpacing:'0.1em' }}>
-            Drop Zone Locked
-          </h1>
-
-          <p style={{ marginTop:10,color:'var(--text2)',fontSize:14 }}>
-            CaisterPlayz is under maintenance. Drop back in later.
-          </p>
+    <div className="music-app-container">
+      <header className="music-top-nav">
+        <div className="brand">
+          <Disc size={28} className="spin-icon" color="#10b981" />
+          <h1>CaisterPlayz Music</h1>
         </div>
-      ) : (
-        <>
-          <div className="rift-flash-overlay" />
-          <header className="lobby-top-nav">
-              <div className="lobby-nav-tabs">
-                <button className={`lobby-tab ${tab === 'daily_quest' ? 'active' : ''}`} onClick={() => goTab('daily_quest')}>PLAY</button>
-                <button className={`lobby-tab ${tab === 'fortnite_lfg' ? 'active' : ''}`} onClick={() => goTab('fortnite_lfg')}>SQUAD LFG</button>
-                <button className={`lobby-tab ${tab === 'clips' ? 'active' : ''}`} onClick={() => goTab('clips')}>CLIPS</button>
-             </div>
-             <div className="lobby-nav-actions">
-                <button className="lobby-action-btn" onClick={() => goTab('notifications')}>
-                  <Bell size={22} />
-                  {unreadCount > 0 && <span className="hud-pip" />}
-                </button>
-                {isAdmin ? (
-                  <button className="lobby-action-btn admin-btn" onClick={() => goTab('admin')}>
-                    <ShieldAlert size={22} />
-                  </button>
-                ) : (
-                  <button className="lobby-action-btn admin-btn" onClick={() => {
-                    const key = prompt('Enter God Mode Key:');
-                    if (key && key.trim() === 'CAISTER_CORE_ADMIN') {
-                      localStorage.setItem('caister_admin', 'CAISTER_CORE_ADMIN');
-                      setIsAdmin(true);
-                      goTab('admin');
-                    }
-                  }}>
-                    <ShieldAlert size={22} />
-                  </button>
-                )}
-             </div>
-          </header>
+      </header>
 
-          <main className="lobby-main">
-            <div className={`tab-content ${isTransitioning ? 'tab-slide-enter' : ''}`} style={{ height: '100%', overflowY: 'auto' }}>
-              {tab === 'daily_quest' && <DailyQuestView user={me} config={config} users={users} onOpenComposer={() => setShowCompose(true)} />}
-              {tab === 'fortnite_lfg' && <FortniteLfgView posts={posts} users={users} currentUserId={userId} onComposeLfg={() => setShowCompose(true)} />}
-              {tab === 'clips' && <QuestClipsView currentUserId={userId} users={users} posts={posts} />}
-              {tab === 'player_stats' && <PlayerStatsView user={pUser} onBack={() => setTab('daily_quest')} />}
-              {tab === 'notifications' && <NotificationsView notifications={notifications} users={users} currentUserId={userId} onRefresh={refNotif} />}
-            </div>
-          </main>
-
-
-
-          {/* ─ Composer ─ */}
-          {showCompose && userId && (
-            <Composer
-              currentUserId={userId}
-              currentUser={me}
-              onClose={() => setShowCompose(false)}
-            />
-          )}
-
-          {/* ─ Global Announcement Modal ─ */}
-          {config?.globalAnnouncement && !isAdmin && String(config.globalAnnouncement.timestamp) !== dismissedAnnounce && (
-            <div className="modal-backdrop">
-              <div className="modal" style={{ border: '2px solid var(--cyan)', boxShadow: '0 0 30px var(--cyan-glow)' }}>
-                <div className="modal-head" style={{ color: 'var(--cyan)' }}>
-                  <ShieldAlert size={20} />
-                  COMMUNITY BROADCAST
-                </div>
-                <div className="modal-body" style={{ textAlign: 'center', padding: '20px 10px', fontSize: 16 }}>
-                  {config.globalAnnouncement.text}
-                </div>
-                <div className="modal-actions" style={{ justifyContent: 'center' }}>
-                  <button 
-                    className="btn primary" 
-                    onClick={() => {
-                      localStorage.setItem('cp_dismissed_announce', String(config.globalAnnouncement.timestamp));
-                      setDismissedAnnounce(String(config.globalAnnouncement.timestamp));
-                    }}
-                  >
-                    Acknowledge
-                  </button>
-                </div>
-              </div>
+      <main className="music-main">
+        <div className={`tab-content ${isTransitioning ? 'fade-enter' : ''}`}>
+          {tab === 'discover' && <DiscoverView onPlayTrack={playTrack} />}
+          {tab === 'upload' && <UploadView user={me} />}
+          {tab === 'profile' && (
+            <div className="centered">
+              <h2>{me?.displayName || 'Artist Profile'}</h2>
+              <p>Total Streams: 0</p>
+              <button className="btn outline" onClick={() => { pb.authStore.clear(); setUserId(null); }}>Log Out</button>
             </div>
           )}
-        </>
+        </div>
+      </main>
+
+      {currentTrack && (
+        <AudioPlayer 
+          currentTrack={currentTrack} 
+          onNext={handleNextTrack} 
+          onPrev={handlePrevTrack} 
+        />
       )}
+
+      <nav className="music-bottom-nav">
+        <button className={`nav-item ${tab === 'discover' ? 'active' : ''}`} onClick={() => goTab('discover')}>
+          <Music size={24} />
+          <span>Discover</span>
+        </button>
+        <button className={`nav-item ${tab === 'search' ? 'active' : ''}`} onClick={() => goTab('search')}>
+          <Search size={24} />
+          <span>Search</span>
+        </button>
+        <button className={`nav-item ${tab === 'upload' ? 'active' : ''}`} onClick={() => goTab('upload')}>
+          <Upload size={24} />
+          <span>Upload</span>
+        </button>
+        <button className={`nav-item ${tab === 'profile' ? 'active' : ''}`} onClick={() => goTab('profile')}>
+          <User size={24} />
+          <span>Profile</span>
+        </button>
+      </nav>
     </div>
   );
 }

@@ -1,17 +1,8 @@
-import React, { useEffect, useState } from 'react';
-
-// Polyfill React.use for React Navigation v7 compatibility in React 18
-if (typeof (React as any).use !== 'function') {
-  (React as any).use = (promiseOrContext: any) => {
-    return React.useContext(promiseOrContext);
-  };
-}
-import { ActivityIndicator, View, StatusBar } from 'react-native';
-import { Slot, Stack, useRouter, useSegments } from 'expo-router';
+import React, { useEffect } from 'react';
+import { View, StatusBar } from 'react-native';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
 import { THEME } from '../lib/theme';
-import { Session } from '@supabase/supabase-js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,78 +23,17 @@ export default function RootLayout() {
 }
 
 function AppNavigationState() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hasOnboarded, setHasOnboarded] = useState(false);
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        checkOnboarding(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        await checkOnboarding(session.user.id);
-      } else {
-        setHasOnboarded(false);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const checkOnboarding = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username, display_name')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (data && data.username && !data.username.startsWith('user_')) {
-        setHasOnboarded(true);
-      } else {
-        setHasOnboarded(false);
-      }
-    } catch {
-      setHasOnboarded(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (loading) return;
-
     const inAuthGroup = segments[0] === '(auth)';
-
-    // MOCK AUTHENTICATION BYPASS FOR DEVELOPMENT
-    // Since we don't have a real Supabase backend connected yet, we bypass auth.
+    
+    // Bypass authentication for the Spotify UI
     if (inAuthGroup) {
-      router.replace('/(tabs)/discover');
+      router.replace('/(tabs)/');
     }
-  }, [session, loading, hasOnboarded, segments]);
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: THEME.colors.background, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={THEME.colors.primary} />
-      </View>
-    );
-  }
+  }, [segments]);
 
   return (
     <Stack
@@ -125,16 +55,7 @@ function AppNavigationState() {
       <Stack.Screen name="(auth)/forgot-password" options={{ title: 'Reset Password', headerBackTitle: 'Back' }} />
       <Stack.Screen name="(auth)/onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="journey/[id]" options={{ title: 'Entry Details', headerBackTitle: 'Back' }} />
-      <Stack.Screen name="journey/create" options={{ title: 'New Journey Entry', headerBackTitle: 'Back' }} />
-      <Stack.Screen name="beacons/[id]" options={{ title: 'Beacon Lobby', headerBackTitle: 'Back' }} />
-      <Stack.Screen name="profile/[id]" options={{ title: 'Gamer Journey', headerBackTitle: 'Back' }} />
       <Stack.Screen name="settings/index" options={{ title: 'Settings', headerBackTitle: 'Back' }} />
-      <Stack.Screen name="settings/delete-account" options={{ title: 'Delete Account', headerBackTitle: 'Back' }} />
-      <Stack.Screen name="moderator/index" options={{ title: 'Moderator Dashboard', headerBackTitle: 'Back' }} />
-      <Stack.Screen name="legal/terms" options={{ title: 'Terms of Service', headerBackTitle: 'Back' }} />
-      <Stack.Screen name="legal/privacy" options={{ title: 'Privacy Policy', headerBackTitle: 'Back' }} />
-      <Stack.Screen name="legal/guidelines" options={{ title: 'Community Guidelines', headerBackTitle: 'Back' }} />
     </Stack>
   );
 }

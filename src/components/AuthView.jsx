@@ -3,7 +3,7 @@ import { Loader, ShieldAlert, Mail, Lock, User as UserIcon } from 'lucide-react'
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { SignInWithApple } from '@capacitor-community/apple-sign-in';
-import pb from '../pocketbase';
+import { supabase } from '../supabase';
 
 export default function AuthView({ onAuthSuccess }) {
   const [view, setView] = useState('LOGIN'); // LOGIN, SIGNUP, FORGOT
@@ -22,33 +22,15 @@ export default function AuthView({ onAuthSuccess }) {
       setLoading(true);
       setError('');
       
-      if (!Capacitor.isNativePlatform()) {
-        const authData = await pb.collection('users').authWithOAuth2({ provider: providerName });
-        if (authData?.record?.id) {
-          localStorage.setItem('cplayz_user_id', authData.record.id);
-          onAuthSuccess(authData.record.id);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: providerName,
+        options: {
+          redirectTo: Capacitor.isNativePlatform() ? 'com.caisterplayz.social://login-callback' : 'https://caister062.github.io/CaisterPlayz/'
         }
-        return;
-      }
+      });
       
-      const authMethods = await pb.collection('users').listAuthMethods();
-      const provider = authMethods.oauth2?.providers?.find((p) => p.name === providerName);
-      if (!provider) throw new Error(`${providerName} login is not enabled in backend.`);
+      if (error) throw error;
       
-      const redirectUrl = 'https://caister062.github.io/CaisterPlayz/oauth-redirect.html';
-        
-      localStorage.setItem('oauth_provider', JSON.stringify({ ...provider, redirectUrl }));
-      document.cookie = `oauth_provider=${encodeURIComponent(JSON.stringify({ ...provider, redirectUrl }))}; path=/; max-age=3600`;
-      
-      let authUrl = provider.authUrl;
-      const encodedRedirect = encodeURIComponent(redirectUrl);
-      if (authUrl.includes('redirect_uri=')) {
-        authUrl = authUrl.replace(/redirect_uri=[^&]*/, 'redirect_uri=' + encodedRedirect);
-      } else {
-        authUrl += (authUrl.includes('?') ? '&' : '?') + 'redirect_uri=' + encodedRedirect;
-      }
-      
-      await Browser.open({ url: authUrl });
     } catch (err) {
       console.error(err);
       setError(`Failed to start ${providerName} login: ${err.message}`);
@@ -68,21 +50,16 @@ export default function AuthView({ onAuthSuccess }) {
           scopes: 'email name',
         });
         
-        if (response && response.authorizationCode) {
-          const authData = await pb.collection('users').authWithOAuth2Code(
-            'apple',
-            response.authorizationCode,
-            '', 
-            'https://caister062.github.io/CaisterPlayz/',
-            { displayName: response.givenName ? `${response.givenName} ${response.familyName || ''}`.trim() : 'Operator' }
-          );
+        if (response && response.identityToken) {
+          const { data, error } = await supabase.auth.signInWithIdToken({
+            provider: 'apple',
+            token: response.identityToken,
+          });
           
-          if (authData.record.displayName === 'Operator' && authData.meta?.name) {
-            pb.collection('users').update(authData.record.id, { displayName: authData.meta.name }).catch(console.error);
+          if (error) throw error;
+          if (data.session) {
+            onAuthSuccess(data.session.user.id);
           }
-          
-          localStorage.setItem('cplayz_user_id', authData.record.id);
-          onAuthSuccess(authData.record.id);
         }
       } else {
         handleOAuth('apple');
@@ -100,52 +77,20 @@ export default function AuthView({ onAuthSuccess }) {
     setMessage('');
     setLoading(true);
 
-    let loginEmail = email.trim();
-    
     try {
-      // First try native PocketBase login (works for real emails and exact PocketBase usernames)
-      let authData;
-      try {
-        authData = await pb.collection('users').authWithPassword(loginEmail, password);
-      } catch (firstErr) {
-        // If native login fails and it doesn't look like an email, try the guest email fallback
-        if (!loginEmail.includes('@')) {
-          const guestEmail = `${loginEmail.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
-          authData = await pb.collection('users').authWithPassword(guestEmail, password);
-        } else {
-          throw firstErr;
-        }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      
+      if (data.session) {
+        onAuthSuccess(data.session.user.id);
       }
-      localStorage.setItem('cplayz_user_id', authData.record.id);
-      onAuthSuccess(authData.record.id);
     } catch (err) {
       console.error(err);
-      
-      let errorText = err.message || 'Login failed.';
-      
-      const validationData = err.response?.data || err.data?.data || err.data;
-      
-      if (validationData && typeof validationData === 'object') {
-        const fieldErrors = Object.entries(validationData)
-          .map(([field, errorObj]) => {
-            if (errorObj && errorObj.message) {
-              return `${field}: ${errorObj.message}`;
-            }
-            return null;
-          })
-          .filter(Boolean)
-          .join(' | ');
-          
-        if (fieldErrors) {
-          errorText = fieldErrors;
-        } else {
-          errorText = `Raw Error: ${JSON.stringify(err.response || err.data || err)}`;
-        }
-      } else {
-        errorText = `Raw Error: ${JSON.stringify(err.response || err.data || err)}`;
-      }
-      
-      setError(errorText);
+      setError(err.message || 'Login failed.');
     } finally {
       setLoading(false);
     }
@@ -165,60 +110,28 @@ export default function AuthView({ onAuthSuccess }) {
 
     try {
       const trimmedEmail = email.trim();
-      const isEmail = trimmedEmail.includes('@');
-      const data = {
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: trimmedEmail,
         password,
-        passwordConfirm,
-        displayName: displayName || (isEmail ? trimmedEmail.split('@')[0] : trimmedEmail),
-        xp: 0,
-        level: 1,
-        streak: 0,
-        badges: []
-      };
-      
-      if (isEmail) {
-        data.email = trimmedEmail;
-      } else {
-        // PocketBase requires an email by default. If the user only provided a username,
-        // we map it to username and generate a dummy email so it passes backend validation.
-        data.username = trimmedEmail;
-        data.email = `${trimmedEmail.toLowerCase().replace(/[^a-z0-9]/g, '')}@guest.caisterplayz.com`;
-      }
+        options: {
+          data: {
+            display_name: displayName || trimmedEmail.split('@')[0],
+          }
+        }
+      });
 
-      await pb.collection('users').create(data);
+      if (error) throw error;
       
-      // Auto-login after signup
-      const authData = await pb.collection('users').authWithPassword(data.email, password);
-      localStorage.setItem('cplayz_user_id', authData.record.id);
-      onAuthSuccess(authData.record.id);
+      if (data.session) {
+        onAuthSuccess(data.session.user.id);
+      } else {
+        setMessage('Check your email for the confirmation link!');
+        setView('LOGIN');
+      }
     } catch (err) {
       console.error(err);
-      
-      let errorText = err.message || 'Signup failed.';
-      
-      const validationData = err.response?.data || err.data?.data || err.data;
-      
-      if (validationData && typeof validationData === 'object') {
-        const fieldErrors = Object.entries(validationData)
-          .map(([field, errorObj]) => {
-            if (errorObj && errorObj.message) {
-              return `${field}: ${errorObj.message}`;
-            }
-            return null;
-          })
-          .filter(Boolean)
-          .join(' | ');
-          
-        if (fieldErrors) {
-          errorText = fieldErrors;
-        } else {
-          errorText = `Raw Error: ${JSON.stringify(err.response || err.data || err)}`;
-        }
-      } else {
-        errorText = `Raw Error: ${JSON.stringify(err.response || err.data || err)}`;
-      }
-      
-      setError(errorText);
+      setError(err.message || 'Signup failed.');
     } finally {
       setLoading(false);
     }
@@ -231,12 +144,13 @@ export default function AuthView({ onAuthSuccess }) {
     setLoading(true);
 
     try {
-      await pb.collection('users').requestPasswordReset(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
       setMessage('Password reset email sent. Check your inbox.');
       setView('LOGIN');
     } catch (err) {
       console.error(err);
-      setError('Failed to send reset email.');
+      setError('Failed to send reset email: ' + err.message);
     } finally {
       setLoading(false);
     }

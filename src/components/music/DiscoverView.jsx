@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, MoreVertical, Heart, Flag } from 'lucide-react';
-import pb from '../../pocketbase';
+import { supabase } from '../../supabase';
 
 
 
@@ -8,22 +8,33 @@ export default function DiscoverView({ onPlayTrack }) {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const myUserId = pb.authStore.model?.id;
+  const [myUserId, setMyUserId] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setMyUserId(session?.user?.id || null);
+    });
+  }, []);
 
   const fetchTracks = async () => {
     try {
-      const records = await pb.collection('tracks').getList(1, 50, {
-        sort: '-created',
-      });
-      if (records.items.length > 0) {
-        const formatted = records.items.map(t => ({
+      const { data: records, error } = await supabase
+        .from('tracks')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+        
+      if (error) throw error;
+      
+      if (records && records.length > 0) {
+        const formatted = records.map(t => ({
           id: t.id,
           title: t.title,
-          artistName: t.artistName,
-          coverUrl: t.coverFile ? pb.files.getUrl(t, t.coverFile) : null,
-          audioUrl: pb.files.getUrl(t, t.audioFile),
-          likedBy: t.likedBy || [],
-          likes: (t.likedBy || []).length
+          artistName: t.artist_name,
+          coverUrl: t.cover_url,
+          audioUrl: t.audio_url,
+          likedBy: t.liked_by || [],
+          likes: (t.liked_by || []).length
         }));
         setTracks(formatted);
       } else {
@@ -60,9 +71,10 @@ export default function DiscoverView({ onPlayTrack }) {
       }));
       
       // Update backend
-      await pb.collection('tracks').update(track.id, {
-        likedBy: newLikedBy
-      });
+      await supabase
+        .from('tracks')
+        .update({ liked_by: newLikedBy })
+        .eq('id', track.id);
     } catch (err) {
       console.error("Failed to like track", err);
       // Revert on error

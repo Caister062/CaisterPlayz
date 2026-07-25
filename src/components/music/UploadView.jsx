@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Upload, Music, Image as ImageIcon, AlertTriangle, CheckCircle } from 'lucide-react';
-import pb from '../../pocketbase';
+import { CheckCircle, Upload as UploadIcon, Music, Image as ImageIcon, AlertTriangle } from 'lucide-react';
+import { supabase } from '../../supabase';
 
 export default function UploadView({ user }) {
   const [title, setTitle] = useState('');
@@ -31,18 +31,49 @@ export default function UploadView({ user }) {
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('artistId', user.id);
-      formData.append('artistName', user.displayName || user.name || 'Unknown Artist');
-      formData.append('audioFile', audioFile);
+      // Upload audio
+      const audioPath = `${user?.id || 'guest'}/${Date.now()}_${audioFile.name}`;
+      const { error: audioUploadError } = await supabase.storage
+        .from('music-assets')
+        .upload(audioPath, audioFile);
+      
+      if (audioUploadError) throw audioUploadError;
+
+      const { data: { publicUrl: audioUrl } } = supabase.storage
+        .from('music-assets')
+        .getPublicUrl(audioPath);
+
+      // Upload cover if exists
+      let coverUrl = null;
       if (coverFile) {
-        formData.append('coverFile', coverFile);
+        const coverPath = `${user?.id || 'guest'}/${Date.now()}_${coverFile.name}`;
+        const { error: coverUploadError } = await supabase.storage
+          .from('music-assets')
+          .upload(coverPath, coverFile);
+          
+        if (coverUploadError) throw coverUploadError;
+        
+        const { data: { publicUrl: cUrl } } = supabase.storage
+          .from('music-assets')
+          .getPublicUrl(coverPath);
+        coverUrl = cUrl;
       }
 
-      // Upload directly to PocketBase without hiding errors
-      await pb.collection('tracks').create(formData);
+      // Insert into database
+      const { error: dbError } = await supabase
+        .from('tracks')
+        .insert({
+          title,
+          description,
+          artist_id: user?.id,
+          artist_name: user?.displayName || user.name || 'Unknown Artist',
+          audio_url: audioUrl,
+          cover_url: coverUrl,
+          play_count: 0,
+          liked_by: []
+        });
+
+      if (dbError) throw dbError;
 
       setSuccess(true);
       setTitle('');

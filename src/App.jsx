@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Music, Search, Upload, User, ShieldAlert, Disc } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
-import pb from './pocketbase';
+import { supabase } from './supabase';
 import { useUserProfile } from './hooks';
 import AuthView from './components/AuthView';
 import LoadingScreen from './components/LoadingScreen';
@@ -14,7 +14,7 @@ import UploadView from './components/music/UploadView';
 export default function App() {
   const [tab, setTab] = useState('discover');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [userId, setUserId] = useState(localStorage.getItem('cplayz_user_id') || pb.authStore.model?.id || null);
+  const [userId, setUserId] = useState(localStorage.getItem('cplayz_user_id') || null);
   const [booting, setBooting] = useState(true);
 
   // Audio Player State
@@ -23,19 +23,31 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(-1);
 
   useEffect(() => {
-    // Basic auth logic from original App.jsx
-    const unsub = pb.authStore.onChange((token, model) => {
-      const storedId = localStorage.getItem('cplayz_user_id');
-      if (model?.id) {
-        setUserId(model.id);
-      } else if (!storedId || !storedId.startsWith('guest_')) {
-        setUserId(null);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUserId(session.user.id);
+      } else {
+        const storedId = localStorage.getItem('cplayz_user_id');
+        if (!storedId || !storedId.startsWith('guest_')) {
+          setUserId(null);
+        }
       }
-    }, true);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUserId(session.user.id);
+      } else {
+        const storedId = localStorage.getItem('cplayz_user_id');
+        if (!storedId || !storedId.startsWith('guest_')) {
+          setUserId(null);
+        }
+      }
+    });
 
     setTimeout(() => setBooting(false), 2000);
 
-    return () => unsub();
+    return () => subscription.unsubscribe();
   }, []);
 
   const { profile: me } = useUserProfile(userId);
@@ -95,7 +107,7 @@ export default function App() {
             <div className="centered">
               <h2>{me?.displayName || 'Artist Profile'}</h2>
               <p>Total Streams: 0</p>
-              <button className="btn outline" onClick={() => { pb.authStore.clear(); localStorage.removeItem('cplayz_user_id'); setUserId(null); }}>Log Out</button>
+              <button className="btn outline" onClick={async () => { await supabase.auth.signOut(); localStorage.removeItem('cplayz_user_id'); setUserId(null); }}>Log Out</button>
             </div>
           )}
         </div>

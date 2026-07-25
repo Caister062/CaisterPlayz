@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import pb from './pocketbase';
+import { supabase } from './supabase';
 
 /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
    DEVICE / GUEST AUTH
@@ -373,20 +373,24 @@ export function useUserProfile(userId) {
     if (!userId) return;
 
     try {
-      const res = await pb.collection('users').getOne(userId);
-      let stats = {};
-      try {
-        const statsRes = await pb.collection('cplayz_posts').getList(1, 1, { filter: `userId="${userId}" && type="player_stats"` });
-        if (statsRes.items.length > 0) {
-          stats = JSON.parse(statsRes.items[0].text);
-        }
-      } catch(e){}
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) throw error;
 
-      setProfile({ ...res, ...stats });
+      setProfile({
+        id: data.id,
+        displayName: data.display_name,
+        xp: data.xp,
+        level: data.level,
+      });
     } catch {
       if (localStorage.getItem('cplayz_user_id') === userId) {
         localStorage.removeItem('cplayz_user_id');
-        pb.authStore.clear();
+        await supabase.auth.signOut();
         window.location.reload();
       }
     }

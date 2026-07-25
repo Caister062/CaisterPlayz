@@ -41,14 +41,8 @@ export default function UploadView({ user }) {
         formData.append('coverFile', coverFile);
       }
 
-      // Try to upload to PocketBase
-      try {
-        await pb.collection('tracks').create(formData);
-      } catch (pbErr) {
-        console.warn("PocketBase upload failed, probably missing collection.", pbErr);
-        // Fallback for demonstration / github pages build
-        await new Promise(r => setTimeout(r, 2000));
-      }
+      // Upload directly to PocketBase without hiding errors
+      await pb.collection('tracks').create(formData);
 
       setSuccess(true);
       setTitle('');

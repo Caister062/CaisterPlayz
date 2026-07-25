@@ -2,65 +2,73 @@ import React, { useState, useEffect } from 'react';
 import { Play, MoreVertical, Heart, Flag } from 'lucide-react';
 import pb from '../../pocketbase';
 
-const MOCK_TRACKS = [
-  {
-    id: 'mock1',
-    title: 'Neon Nights',
-    artistName: 'SynthWave Dave',
-    coverUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&q=80&w=300&h=300',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    likes: 234
-  },
-  {
-    id: 'mock2',
-    title: 'Acoustic Sunrise',
-    artistName: 'Sarah Strings',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=300&h=300',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-    likes: 89
-  },
-  {
-    id: 'mock3',
-    title: 'Urban Flow',
-    artistName: 'DJ React',
-    coverUrl: 'https://images.unsplash.com/photo-1493225457124-a1a2a5956093?auto=format&fit=crop&q=80&w=300&h=300',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-    likes: 412
-  }
-];
+
 
 export default function DiscoverView({ onPlayTrack }) {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchTracks() {
-      try {
-        const records = await pb.collection('tracks').getList(1, 50, {
-          sort: '-created',
-        });
-        if (records.items.length > 0) {
-          const formatted = records.items.map(t => ({
-            id: t.id,
-            title: t.title,
-            artistName: t.artistName,
-            coverUrl: t.coverFile ? pb.files.getUrl(t, t.coverFile) : null,
-            audioUrl: pb.files.getUrl(t, t.audioFile),
-            likes: 0
-          }));
-          setTracks(formatted);
-        } else {
-          setTracks(MOCK_TRACKS);
-        }
-      } catch (err) {
-        console.warn("Could not fetch tracks, using mock data.", err);
-        setTracks(MOCK_TRACKS);
-      } finally {
-        setLoading(false);
+  const myUserId = pb.authStore.model?.id;
+
+  const fetchTracks = async () => {
+    try {
+      const records = await pb.collection('tracks').getList(1, 50, {
+        sort: '-created',
+      });
+      if (records.items.length > 0) {
+        const formatted = records.items.map(t => ({
+          id: t.id,
+          title: t.title,
+          artistName: t.artistName,
+          coverUrl: t.coverFile ? pb.files.getUrl(t, t.coverFile) : null,
+          audioUrl: pb.files.getUrl(t, t.audioFile),
+          likedBy: t.likedBy || [],
+          likes: (t.likedBy || []).length
+        }));
+        setTracks(formatted);
+      } else {
+        setTracks([]);
       }
+    } catch (err) {
+      console.error("Could not fetch tracks.", err);
+      setTracks([]);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchTracks();
   }, []);
+
+  const handleLike = async (e, track) => {
+    e.stopPropagation();
+    if (!myUserId) return alert("Log in to like tracks!");
+    
+    try {
+      const isLiked = track.likedBy.includes(myUserId);
+      const newLikedBy = isLiked 
+        ? track.likedBy.filter(id => id !== myUserId)
+        : [...track.likedBy, myUserId];
+        
+      // Optimistic UI update
+      setTracks(prev => prev.map(t => {
+        if (t.id === track.id) {
+          return { ...t, likedBy: newLikedBy, likes: newLikedBy.length };
+        }
+        return t;
+      }));
+      
+      // Update backend
+      await pb.collection('tracks').update(track.id, {
+        likedBy: newLikedBy
+      });
+    } catch (err) {
+      console.error("Failed to like track", err);
+      // Revert on error
+      fetchTracks();
+    }
+  };
 
   if (loading) {
     return <div className="centered">Loading new music...</div>;
@@ -72,6 +80,14 @@ export default function DiscoverView({ onPlayTrack }) {
         <h2>New Releases</h2>
         <p>Discover original music from independent artists around the world.</p>
       </div>
+
+      {tracks.length === 0 && !loading && (
+        <div className="empty-state centered">
+          <Music size={48} color="var(--text2)" style={{ marginBottom: 16 }} />
+          <h3>No Tracks Yet</h3>
+          <p style={{ color: 'var(--text2)' }}>Be the first to upload an original track to IndieStream!</p>
+        </div>
+      )}
 
       <div className="track-grid">
         {tracks.map((track, i) => (
@@ -87,9 +103,20 @@ export default function DiscoverView({ onPlayTrack }) {
                 <div className="track-title">{track.title}</div>
                 <div className="track-artist">{track.artistName}</div>
               </div>
-              <button className="icon-btn" onClick={(e) => { e.stopPropagation(); alert('Track reported to admins.'); }} title="Report Track">
-                <Flag size={16} />
-              </button>
+              <div className="track-actions" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <button 
+                  className="icon-btn" 
+                  onClick={(e) => handleLike(e, track)} 
+                  title="Like Track"
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, color: track.likedBy?.includes(myUserId) ? '#f43f5e' : '#fff' }}
+                >
+                  <Heart size={18} fill={track.likedBy?.includes(myUserId) ? "#f43f5e" : "transparent"} />
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>{track.likes}</span>
+                </button>
+                <button className="icon-btn" onClick={(e) => { e.stopPropagation(); alert('Track reported to admins.'); }} title="Report Track">
+                  <Flag size={16} />
+                </button>
+              </div>
             </div>
           </div>
         ))}

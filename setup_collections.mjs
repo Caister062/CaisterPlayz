@@ -77,6 +77,34 @@ async function main() {
     console.log('✓ cplayz_reports created');
   }
 
+  // ── tracks ──
+  try {
+    const existing = await pb.collections.getOne('tracks');
+    console.log('✓ tracks already exists (id:', existing.id, ')');
+  } catch {
+    console.log('Creating tracks...');
+    await pb.collections.create({
+      name: 'tracks',
+      type: 'base',
+      fields: [
+        { name: 'title', type: 'text', required: true },
+        { name: 'description', type: 'text', required: false },
+        { name: 'artistId', type: 'relation', required: false, options: { collectionId: '_pb_users_auth_', cascadeDelete: false, minSelect: null, maxSelect: 1, displayFields: [] } },
+        { name: 'artistName', type: 'text', required: true },
+        { name: 'audioFile', type: 'file', required: true, options: { maxSelect: 1, maxSize: 52428800, mimeTypes: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/aac', 'audio/flac'] } },
+        { name: 'coverFile', type: 'file', required: false, options: { maxSelect: 1, maxSize: 5242880, mimeTypes: ['image/jpeg', 'image/png'] } },
+        { name: 'likedBy', type: 'relation', required: false, options: { collectionId: '_pb_users_auth_', cascadeDelete: false, minSelect: null, maxSelect: null, displayFields: [] } },
+        { name: 'playCount', type: 'number', required: false, options: { min: 0 } }
+      ],
+      listRule: '',
+      viewRule: '',
+      createRule: '',
+      updateRule: '',
+      deleteRule: '',
+    });
+    console.log('✓ tracks created');
+  }
+
   console.log('\n🎉 Setup complete! Report & block functionality should now work.\n');
   rl.close();
 }

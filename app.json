@@ -1,10 +1,13 @@
 {
   "expo": {
-    "name": "The Locker Room",
-    "slug": "the-locker-room",
+    "name": "CaisterPlayz",
+    "slug": "caisterplayz",
     "version": "1.0.0",
     "ios": {
-      "bundleIdentifier": "com.caisterplayz200.caimo"
+      "bundleIdentifier": "com.caisterplayz.social",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "extra": {
       "eas": {

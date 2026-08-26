@@ -31,13 +31,37 @@ export default function UploadView({ user }) {
     setError(null);
 
     try {
+      // Ensure we have current authenticated user id
+      let currentUserId = user?.id;
+      let currentArtistName = user?.displayName || user?.name;
+
+      if (!currentUserId || !currentArtistName) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user) {
+          currentUserId = currentUserId || sessionData.session.user.id;
+          currentArtistName = currentArtistName || sessionData.session.user.user_metadata?.display_name || sessionData.session.user.email?.split('@')[0];
+        }
+      }
+
+      currentArtistName = currentArtistName || 'Independent Artist';
+
+      // Sanitize filename for Supabase storage
+      const sanitize = (name) => name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const safeAudioName = sanitize(audioFile.name);
+
       // Upload audio
-      const audioPath = `${user?.id || 'guest'}/${Date.now()}_${audioFile.name}`;
+      const audioPath = `${currentUserId || 'public'}/${Date.now()}_${safeAudioName}`;
       const { error: audioUploadError } = await supabase.storage
         .from('music-assets')
-        .upload(audioPath, audioFile);
+        .upload(audioPath, audioFile, {
+          cacheControl: '3600',
+          upsert: true
+        });
       
-      if (audioUploadError) throw audioUploadError;
+      if (audioUploadError) {
+        console.error('Audio upload error:', audioUploadError);
+        throw new Error(`Audio upload failed: ${audioUploadError.message}`);
+      }
 
       const { data: { publicUrl: audioUrl } } = supabase.storage
         .from('music-assets')
@@ -46,34 +70,43 @@ export default function UploadView({ user }) {
       // Upload cover if exists
       let coverUrl = null;
       if (coverFile) {
-        const coverPath = `${user?.id || 'guest'}/${Date.now()}_${coverFile.name}`;
+        const safeCoverName = sanitize(coverFile.name);
+        const coverPath = `${currentUserId || 'public'}/${Date.now()}_${safeCoverName}`;
         const { error: coverUploadError } = await supabase.storage
           .from('music-assets')
-          .upload(coverPath, coverFile);
+          .upload(coverPath, coverFile, {
+            cacheControl: '3600',
+            upsert: true
+          });
           
-        if (coverUploadError) throw coverUploadError;
-        
-        const { data: { publicUrl: cUrl } } = supabase.storage
-          .from('music-assets')
-          .getPublicUrl(coverPath);
-        coverUrl = cUrl;
+        if (coverUploadError) {
+          console.warn('Cover upload warning:', coverUploadError);
+        } else {
+          const { data: { publicUrl: cUrl } } = supabase.storage
+            .from('music-assets')
+            .getPublicUrl(coverPath);
+          coverUrl = cUrl;
+        }
       }
 
       // Insert into database
       const { error: dbError } = await supabase
         .from('tracks')
         .insert({
-          title,
-          description,
-          artist_id: user?.id,
-          artist_name: user?.displayName || user.name || 'Unknown Artist',
+          title: title.trim(),
+          description: description ? description.trim() : '',
+          artist_id: currentUserId || null,
+          artist_name: currentArtistName,
           audio_url: audioUrl,
-          cover_url: coverUrl,
+          cover_url: coverUrl || '',
           play_count: 0,
           liked_by: []
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database track insert error:', dbError);
+        throw new Error(`Failed to save track: ${dbError.message}`);
+      }
 
       setSuccess(true);
       setTitle('');
@@ -82,7 +115,8 @@ export default function UploadView({ user }) {
       setCoverFile(null);
       setAgreed(false);
     } catch (err) {
-      setError(err.message || 'Upload failed');
+      console.error(err);
+      setError(err.message || 'Upload failed. Please check your connection and try again.');
     } finally {
       setIsUploading(false);
     }

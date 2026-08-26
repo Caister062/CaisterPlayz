@@ -23,7 +23,7 @@ export default function AuthView({ onAuthSuccess }) {
       
       const { response } = await SignInWithApple.authorize({
         clientId: 'com.caisterplayz.social',
-        redirectURI: 'https://caister062.github.io/CaisterPlayz/',
+        redirectURI: 'https://caimoretton-collab.github.io/CaisterPlayz/',
         scopes: 'email name',
       });
       

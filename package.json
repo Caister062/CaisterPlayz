@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
-  "homepage": "https://Caister062.github.io/CaisterPlayz",
+  "homepage": "https://caimoretton-collab.github.io/CaisterPlayz",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",

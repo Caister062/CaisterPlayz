@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, Upload as UploadIcon, Music, Image as ImageIcon, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Upload, Music, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../supabase';
 
 export default function UploadView({ user }) {
